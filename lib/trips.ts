@@ -1,5 +1,9 @@
 export type Choice = { label: string; description: string; price: string };
-export type ChoiceGroup = { label: string; choices: Record<string, Choice> };
+export type ChoiceGroup = { label: string; choices: Record<string, Choice>; selectionMode?: "group" | "individual" };
+export function choiceGroupMode(planId: string, groupId: string, group: ChoiceGroup) {
+  // Existing catalogs predate this setting; B/g0 is the original massage question.
+  return group.selectionMode || (planId === "B" && groupId === "g0" ? "individual" : "group");
+}
 export type TripPlan = {
   code: string;
   title: string;
@@ -99,4 +103,21 @@ export function cleanPreferences(
       ([group, choice]) => !!plan.groups?.[group]?.choices?.[choice],
     ),
   );
+}
+
+export type VoteChange = "new" | "unchanged" | "switch" | "details";
+/** Compare what will actually be saved, rather than whether a field was ever touched. */
+export function getVoteChange(plan: TripPlan, draft: VoteDraft, savedPlanId?: string | null, savedDetails?: VoteDetails | null): VoteChange {
+  if (!savedPlanId) return "new";
+  if (draft.planId !== savedPlanId) return "switch";
+  if (!savedDetails || savedDetails.planId !== savedPlanId) return "details";
+  try {
+    const next = prepareVoteDetails(plan, draft);
+    const previous = prepareVoteDetails(plan, voteDraftFromDetails(savedDetails));
+    const preferenceKey = (values: Record<string, string> = {}) => JSON.stringify(Object.entries(values).sort(([a], [b]) => a.localeCompare(b)));
+    return next.note === previous.note && next.familyCount === previous.familyCount && next.familyNote === previous.familyNote && preferenceKey(next.preferences) === preferenceKey(previous.preferences) ? "unchanged" : "details";
+  } catch {
+    // Incomplete inputs remain editable; submission still uses prepareVoteDetails validation.
+    return "details";
+  }
 }

@@ -1,13 +1,13 @@
 "use client";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { createOpeningAudio, type OpeningAudioState } from "@/lib/opening-audio";
+import { createOpeningAudio, watchOpeningAudioReady, type OpeningAudioState } from "@/lib/opening-audio";
 import OpeningSplash from "./opening-splash";
+import { openingHistory } from "@/lib/opening-history";
 import LoadingIndicator from "./loading-indicator";
 
 // Source video is 60 fps. These cuts are seconds on the extracted audio timeline.
 const CUES = [0, 0.183333, 1, 2.116667, 2.983333, 6.133333, 8.616667];
 const DURATION = 10.85;
-const START_DELAY_MS = 800;
 type Plans = [string, string];
 function HostShot({side, plans}: {side: "chill" | "walk"; plans: Plans}) {
   const chill = side === "chill";
@@ -21,6 +21,9 @@ function HostShot({side, plans}: {side: "chill" | "walk"; plans: Plans}) {
 export default function OpeningAnimation({onFinish, plans}: {onFinish: () => void; plans: Plans}) {
   const [step, setStep] = useState(0), [started, setStarted] = useState(false);
   const [audioState, setAudioState] = useState<OpeningAudioState>("idle");
+  const [soundReady, setSoundReady] = useState(false), [startAttempts, setStartAttempts] = useState(0), [slowStart, setSlowStart] = useState(false);
+  const [preloadSlow, setPreloadSlow] = useState(false);
+  const requested = useRef(false), skipButtonRef = useRef<HTMLButtonElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null), stageRef = useRef<HTMLDivElement>(null), progressRef = useRef<HTMLDivElement>(null);
   const finishRef = useRef(onFinish), sceneRef = useRef(-1);
   const mounted = useRef(false), startedAt = useRef<number | null>(null);
@@ -42,22 +45,24 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
     const controller = createOpeningAudio(audio, {
       getTime: () => startedAt.current === null ? null : elapsed(),
       duration: DURATION, onState: setAudioState,
+      onPlaybackStart: (position) => {
+        if (!mounted.current || startedAt.current !== null) return;
+        startedAt.current = performance.now() - Math.max(0, position) * 1000;
+        sceneRef.current = -1;
+        openingHistory.markSeen();
+        setStarted(true);
+      },
     });
     sound.current = controller;
-    // Decode and prepaint under the title card during the 800 ms entrance hold.
+    const stopWatchingReadiness = watchOpeningAudioReady(audio, setSoundReady);
+    // Decode and prepaint while the visitor is on the START cover.
     for (const src of ["/assets/intro-hosts.png", "/assets/intro-outing-props-v2.png", "/assets/intro-ganbanyoku-v3.png"]) {
       const img = new Image();
       img.src = src;
       void img.decode().catch(() => {});
     }
-    const timer = setTimeout(() => {
-      if (!mounted.current) return;
-      startedAt.current = performance.now();
-      sceneRef.current = -1;
-      setStarted(true);
-      controller.start();
-    }, START_DELAY_MS);
     const unlockSound = (event: Event) => {
+      if (startedAt.current === null) return;
       if (event.target instanceof Element && event.target.closest(".film-controls")) return;
       controller.interact();
     };
@@ -72,7 +77,7 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
     window.addEventListener("keydown", key);
     return () => {
       mounted.current = false;
-      clearTimeout(timer);
+      stopWatchingReadiness();
       controller.dispose();
       if (sound.current === controller) sound.current = null;
       document.removeEventListener("visibilitychange", resume);
@@ -82,6 +87,31 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
       document.body.style.overflow = previous;
     };
   }, []);
+
+  useEffect(() => {
+    if (soundReady || started) return;
+    // Some mobile browsers defer media preloading until a real tap.
+    const timer = setTimeout(() => setPreloadSlow(true), 4000);
+    return () => clearTimeout(timer);
+  }, [soundReady, started]);
+
+  function startFromClick() {
+    const controller = sound.current;
+    if (!controller || startedAt.current !== null) return;
+    setSlowStart(false);
+    setStartAttempts(value => value + 1);
+    // No timer or await here: audio starts inside the actual button click.
+    if (!requested.current) { requested.current = true; controller.start(); }
+    else controller.interact();
+  }
+  useEffect(() => {
+    if (started) skipButtonRef.current?.focus({ preventScroll: true });
+  }, [started]);
+  useEffect(() => {
+    if (!startAttempts || started) return;
+    const timer = setTimeout(() => setSlowStart(true), 5000);
+    return () => clearTimeout(timer);
+  }, [startAttempts, started]);
 
   useEffect(() => {
     if (!started) return;
@@ -100,7 +130,7 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
     return () => { active = false; cancelAnimationFrame(frame); };
   }, [started]);
 
-  // One timeline drives visuals even when a browser blocks or delays the audio.
+  // Start the visual clock only after music starts; later recovery rejoins that clock.
   useLayoutEffect(() => {
     const stage = stageRef.current;
     if (!stage || !started) return;
@@ -108,15 +138,28 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
     for (const animation of stage.getAnimations({ subtree: true })) animation.currentTime = offset;
   }, [shotGroup, started]);
 
+  const waitingForPreload = !soundReady && !preloadSlow && audioState !== "error" && audioState !== "blocked";
+  const waitingForPlayback = startAttempts > 0 && audioState === "loading" && !slowStart;
+  const preparing = waitingForPreload || waitingForPlayback;
+
   return <section className="film-opening" data-audio-state={audioState} role="dialog" aria-modal="true" aria-label="揪是要對決開場動畫">
-    <audio ref={audioRef} src="/assets/autumn-opening-score.m4a" preload="auto" />
+    <audio ref={audioRef} src="/assets/autumn-opening-score.m4a?v=2" preload="auto" />
     <div className="film-controls">
-      <button type="button" onClick={onFinish} autoFocus>跳過動畫 ↗</button>
+      <button ref={skipButtonRef} type="button" onClick={onFinish}>跳過動畫 ↗</button>
     </div>
-    {audioState === "blocked" && <button className="film-audio-note film-sound-prompt" onClick={(event) => { event.stopPropagation(); sound.current?.interact(); }}>音樂自動重試中，也可點一下接上</button>}
-    {audioState === "error" && <button className="film-audio-note film-sound-prompt" onClick={(event) => { event.stopPropagation(); sound.current?.interact(); }}>音樂自動重試中，也可點一下重試</button>}
+    {started && audioState === "blocked" && <button className="film-audio-note film-sound-prompt" onClick={(event) => { event.stopPropagation(); sound.current?.interact(); }}>音樂自動重試中，也可點一下接上</button>}
+    {started && audioState === "error" && <button className="film-audio-note film-sound-prompt" onClick={(event) => { event.stopPropagation(); sound.current?.interact(); }}>音樂自動重試中，也可點一下重試</button>}
     {started && audioState === "loading" && <div className="film-audio-note"><LoadingIndicator label="音樂載入中" compact /></div>}
-    {!started && <OpeningSplash />}
+    {!started && <OpeningSplash>
+      <div className="film-start-match" aria-label={plans.join("對決")}><span>{plans[0]}</span><b aria-hidden="true">VS</b><span>{plans[1]}</span></div>
+      <button type="button" className="film-start-button" onClick={startFromClick} disabled={preparing} aria-busy={preparing} aria-describedby="film-start-hint">
+        {preparing
+          ? <LoadingIndicator label={waitingForPlayback ? "準備開場" : "音樂準備中"} compact />
+          : <><span>{startAttempts > 0 ? "再試一次" : "開始對決"}</span><span className="film-start-play" aria-hidden="true">▶</span></>}
+      </button>
+      <p id="film-start-hint" className="film-start-hint" role="status">{audioState === "error" ? "音樂暫時沒載入，請再試一次，或右上跳過。" : audioState === "blocked" ? "瀏覽器尚未允許播放，請再點一次，或右上跳過。" : slowStart ? "音樂還在準備，你可以再試一次，或右上跳過。" : "點一下，精彩即刻開場。"}</p>
+      <span className="film-start-partners">馴錢師 <b>×</b> Egroup</span>
+    </OpeningSplash>}
       <div ref={stageRef} className={"film-stage film-step-" + shotGroup} key={shotGroup} data-scene={step} data-playing={started} aria-hidden="true">
         {step === 0 && <div className="film-type-flash"><span>揪是</span><strong>要對決</strong></div>}
         {shotGroup === 1 && <div className="film-host-sequence">
@@ -142,7 +185,7 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
           <div className="montage-versus"><span>{plans[0]}<small>老街走讀 · 餐敘 · 手作</small></span><b>VS</b><span>{plans[1]}<small>按摩舒壓 · 飯店下午茶</small></span></div>
         </div>}
         {step === 6 && <div className="film-ending">
-          <span className="ending-eyebrow">THE AUTUMN SHOWDOWN</span>
+          <span className="ending-eyebrow">THE AUTUMN OUTING</span>
           <h2 className="ending-logo"><span>揪是</span><strong>要對決</strong></h2>
           <p className="ending-message">你的一票，<strong>決定秋遊去哪！</strong></p>
           <div className="ending-partnership" aria-label="馴錢師與 Egroup 聯名"><span className="partner-name partner-trainer">馴錢師</span><b className="partner-cross" aria-hidden="true">×</b><span className="partner-name partner-egroup">Egroup</span></div>

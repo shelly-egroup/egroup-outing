@@ -1,18 +1,27 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
-import AccountMenu from "./account-menu";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import OutingHeader from "./outing-header";
+import { votingAccessMessage } from "@/lib/voting-access";
+import { voteReminder } from "@/lib/vote-reminder";
 import ImageLightbox from "./image-lightbox";
 import LiveResults from "./live-results";
 import LoadingIndicator from "./loading-indicator";
+import LoadingPanel from "./loading-panel";
 import VersusBadge from "./versus-badge";
 import PlanPicker from "./plan-picker";
+import PlanCard from "./plan-card";
+import SavedVoteCard from "./saved-vote-card";
 import PreferenceGroup from "./preference-group";
 import OpeningAnimation from "./opening-animation";
+import OutingLoading from "./outing-loading";
+import { openingHistory } from "@/lib/opening-history";
 import { useOuting } from "./outing-provider";
 import { defaultCatalog } from "@/lib/default-catalog";
 import {
+  choiceGroupMode,
   cleanPreferences,
+  getVoteChange,
   deadlineLabel,
   emptyDraft,
   voteDraftFromDetails,
@@ -28,10 +37,14 @@ export default function TripShowdown() {
     catalogStatus,
     user,
     authReady,
+    profileReady,
+    votingAccess,
+    canVote,
     signingIn,
     myDetails,
     detailsReady,
     votes,
+    votesReady,
     connected,
     error,
     now,
@@ -40,8 +53,9 @@ export default function TripShowdown() {
   } = context;
   const catalog = remoteCatalog || defaultCatalog;
   const plans = sortedPlans(catalog).filter(([, plan]) => plan.active);
-  const [intro, setIntro] = useState(true);
-  const finishIntro = useCallback(() => setIntro(false), []);
+  const [intro, setIntro] = useState(false), [introReady, setIntroReady] = useState(false);
+  useLayoutEffect(() => { setIntro(!openingHistory.hasSeen()); setIntroReady(true); }, []);
+  const finishIntro = useCallback(() => { openingHistory.markSeen(); setIntro(false); }, []);
   const [draft, setDraft] = useState<VoteDraft>(emptyDraft);
   const [review, setReview] = useState(false),
     [saving, setSaving] = useState(false),
@@ -49,6 +63,7 @@ export default function TripShowdown() {
     [success, setSuccess] = useState(false);
   const [copyStatus, setCopyStatus] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const heroActionsRef = useRef<HTMLDivElement>(null);
   const dirty = useRef(false),
     previousUid = useRef<string | null>(null);
   const planDrafts = useRef<Record<string, Pick<VoteDraft, "preferences" | "note">>>({});
@@ -112,6 +127,13 @@ export default function TripShowdown() {
     : [];
   const familyCountValid = !draft.bringingFamily || (Number.isSafeInteger(draft.familyCount) && draft.familyCount > 0);
   const familySummary = draft.bringingFamily ? (familyCountValid ? "帶 " + draft.familyCount + " 位家眷，共 " + (draft.familyCount + 1) + " 人同行" : "請填家眷人數") : "自己參加";
+  const voteChange = selected ? getVoteChange(selected, draft, actualVote?.planId, myDetails) : "new";
+  const voteSynced = votesReady && detailsReady;
+  const unchangedVote = voteSynced && voteChange === "unchanged";
+  const headerVote = voteReminder({ ready: authReady && (!user || votesReady), hasVoted: !!actualVote,
+    savedPlan: actualVote ? catalog.plans[actualVote.planId] : undefined, draftPlan: selected,
+    hasChanges: voteSynced && !!selected && dirty.current && !unchangedVote });
+  const voteActionLabel = unchangedVote ? "已投票 ✓" : voteChange === "switch" ? "確認改票" : voteChange === "details" ? "更新選擇" : "確認並投票";
   const planNoteLabel = "備註";
   const summary = [
     "姓名：" + (user?.displayName || ""),
@@ -122,7 +144,8 @@ export default function TripShowdown() {
     ...(draft.bringingFamily && draft.familyNote.trim() ? ["家眷備註：" + draft.familyNote.trim()] : []),
   ].join("\n");
   async function save() {
-    if (saving) return;
+    if (saving || !voteSynced || !canVote) return;
+    if (unchangedVote) { setReview(false); return; }
     setSaving(true);
     setSaveError("");
     try {
@@ -146,6 +169,7 @@ export default function TripShowdown() {
       setCopyStatus("無法自動複製，請選取摘要文字複製。");
     }
   }
+  if (!introReady) return <OutingLoading />;
   return (
     <>
       {intro && (
@@ -164,15 +188,10 @@ export default function TripShowdown() {
             秋季員旅・雙方案對決・你的一票決定全員行程　　
           </span>
         </div>
-        <div className="topbar wrap">
-          <Link href="/" className="brand">
-            揪是要對決<span>2026</span>
-          </Link>
-          <AccountMenu />
-        </div>
+        <OutingHeader active={!intro} heroActions={heroActionsRef} vote={authReady && votesReady && actualVote ? headerVote : undefined} />
         <header className="outing-hero wrap">
           <div className="hero-copy">
-            <span className="eyebrow">THE AUTUMN SHOWDOWN</span>
+            <span className="eyebrow">THE AUTUMN OUTING</span>
             <p className="event-meta">
               {catalog.settings.eventDate.replaceAll("-", ".")} · 預計{" "}
               {catalog.settings.expectedVoters} 人
@@ -188,14 +207,15 @@ export default function TripShowdown() {
               看完行程，選一個你最想去的方案。
             </p>
             <p className="hero-joke"><span>這次不吃</span> 牛肉麵！</p>
-            <div className="hero-actions">
+            <div className="hero-actions" ref={heroActionsRef}>
               <a href="#plans" className="button button-dark">
                 看方案，選陣營
               </a>
-              <button className="button button-white" onClick={() => setIntro(true)}>
+              <a href="#results" className="button button-white">看即時戰況</a>
+              <button type="button" className="button button-white hero-replay" onClick={() => setIntro(true)}>
+                <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10a9 9 0 1 1 2.6 8.4" /><path d="M3 4v6h6" /></svg>
                 重播開場
               </button>
-              <a href="#results" className="button button-white">看即時戰況</a>
             </div>
           </div>
           <div className="hero-art">
@@ -219,7 +239,7 @@ export default function TripShowdown() {
               <b>01</b> 看方案
             </li>
             <li className={draft.planId ? "current" : ""}>
-              <b>02</b> 選偏好
+              <b>02</b> 選陣營
             </li>
             <li className={actualVote ? "current" : ""}>
               <b>03</b> 登入投票
@@ -230,11 +250,9 @@ export default function TripShowdown() {
               {error}
             </p>
           )}
-          {!ready && (
+          {!ready && catalogStatus !== "loading" && (
             <div className="notice" role="status">
-              {catalogStatus === "loading"
-                ? <LoadingIndicator label="正在載入最新方案" compact />
-                : catalogStatus === "error"
+              {catalogStatus === "error"
                   ? "目前無法連上投票服務。你可以先看行程，稍後再試。"
                   : "主辦人正在準備投票，先看看這次的行程。"}
               {context.isAdmin && <Link href="/admin" className="button button-white organizer-button">主辦入口</Link>}
@@ -255,59 +273,15 @@ export default function TripShowdown() {
                   : "每人一票，截止前都能改票"}
               </p>
             </div>
-            <div className="plan-grid" data-duel={plans.length === 2}>
+            <div className={"plan-grid-shell" + (catalogStatus === "loading" ? " is-loading" : "")}>
+            <div className="plan-grid" data-duel={plans.length === 2} inert={catalogStatus === "loading"} aria-hidden={catalogStatus === "loading" || undefined}>
               {plans.length === 2 && <VersusBadge />}
               {plans.map(([id, plan]) => (
-                <article
-                  key={id}
-                  className={
-                    "plan-card tone-" +
-                    plan.color +
-                    (draft.planId === id ? " is-selected" : "")
-                  }
-                >
-                  <div className="plan-card-top">
-                    <span className="plan-code" aria-hidden="true">{plan.code}</span>
-                    <span className="eyebrow">{plan.category}</span>
-                    {actualVote?.planId === id && (
-                      <span className="your-vote">你的這一票 ✓</span>
-                    )}
-                  </div>
-                  <h3>{(plan.title === "大稻埕人文慢旅" ? ["大稻埕", "人文慢旅"] : plan.title.includes("＋") ? [plan.title.slice(0, plan.title.indexOf("＋")), plan.title.slice(plan.title.indexOf("＋"))] : [plan.title]).map((line, index) => <span key={index}>{line}</span>)}</h3>
-                  <p className="plan-description">{plan.description}</p>
-                  <div className="pill-row">
-                    {(plan.tags || []).map((tag) => (
-                      <span key={tag} className="pill">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="plan-itinerary" aria-label={plan.shortName + "完整行程"}>
-                    <ol>
-                      {(plan.schedule || []).map((stop, index) => (
-                        <li key={index}>
-                          <time>{stop.time}</time>
-                          <div>
-                            <strong>{stop.title}</strong>
-                            <p>{stop.description}</p>
-                          </div>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                  <p className="compare-price">{plan.priceNote}</p>
-                  <button
-                    className={"button choose-button " + (plan.color === "yellow" || draft.planId === id ? "button-dark" : "button-white")}
-                    disabled={saving}
-                    aria-pressed={draft.planId === id}
-                    onClick={() => choose(id)}
-                  >
-                    {draft.planId === id
-                      ? "已選擇 " + plan.shortName + " ✓"
-                      : "我偏好" + plan.shortName}
-                  </button>
-                </article>
+                <PlanCard key={id} plan={plan} selected={draft.planId === id}
+                  hasVoted={actualVote?.planId === id} disabled={saving} onChoose={() => choose(id)} />
               ))}
+            </div>
+            {catalogStatus === "loading" && <div className="plan-loading-overlay"><LoadingPanel label="兩派行程準備中" description="正在同步最新方案，馬上就好。" /></div>}
             </div>
             {plans.length === 0 && (
               <p className="state-box">目前沒有開放中的方案。</p>
@@ -332,7 +306,7 @@ export default function TripShowdown() {
                 </button>
               )}
             </div>
-            <PlanPicker plans={plans} selectedId={draft.planId} disabled={saving || intro} onChoose={id => choose(id, false)} />
+            <PlanPicker plans={plans} selectedId={draft.planId} disabled={saving || intro || catalogStatus === "loading"} onChoose={id => choose(id, false)} />
             <div id="selection-content">
             {!selected ? (
               <p className="selection-hint">選好陣營，就能接著挑午餐、按摩或下午茶。先選偏好，最後再登入投票。</p>
@@ -346,7 +320,7 @@ export default function TripShowdown() {
                     <h3>{selected.title}</h3>
                   </div>
                   {Object.entries(selected.groups || {}).map(([groupId, group]) => (
-                    <PreferenceGroup key={draft.planId + ":" + groupId} groupId={groupId} group={group}
+                    <PreferenceGroup key={draft.planId + ":" + groupId} groupId={groupId} group={group} individual={choiceGroupMode(draft.planId, groupId, group) === "individual"}
                       selectedId={preferences[groupId] || ""} disabled={saving || !selected.active || !votingOpen || intro}
                       onChoose={choiceId => {
                         const next = { ...draft.preferences };
@@ -411,17 +385,7 @@ export default function TripShowdown() {
                     <div><dt>同行安排</dt><dd>{familySummary}</dd></div>
                     {draft.bringingFamily && draft.familyNote.trim() && <div><dt>家眷備註</dt><dd className="private-note-text">{draft.familyNote}</dd></div>}
                   </dl>
-                  {actualVote && (
-                    <p className="saved-vote">
-                      已投給：
-                      {catalog.plans[actualVote.planId]?.title || "已下架方案"}
-                    </p>
-                  )}
-                  {success && (
-                    <p role="status" className="success-message">
-                      ✓ 投票已成功儲存，戰況同步更新。
-                    </p>
-                  )}
+                  {actualVote && <SavedVoteCard plan={catalog.plans[actualVote.planId]} justSaved={success} changingSide={voteChange === "switch"} pendingChanges={voteChange === "details"} connected={connected} />}
                   {saveError && !review && (
                     <p className="notice-error" role="alert">
                       {saveError}
@@ -443,9 +407,19 @@ export default function TripShowdown() {
                         {signingIn ? <LoadingIndicator label="正在登入" compact /> : "Google 登入，繼續投票"}
                       </button>
                       <p className="quiet">
-                        登入後再確認送出，剛才的選擇會保留。
+                        請用 egroup. 開頭的 Google 帳號；其他帳號需主辦審核。登入後，剛才的選擇會保留。
                       </p>
                     </>
+                  ) : !profileReady ? (
+                    <LoadingIndicator label="確認投票資格中" />
+                  ) : !canVote ? (
+                    <div className="voting-access-note" role="status">
+                      <span className="eyebrow">VOTING ACCESS</span>
+                      <strong>{votingAccess === "rejected" ? "帳號未通過審核" : votingAccess ? "等待主辦人審核" : "暫時無法確認投票資格"}</strong>
+                      <span className="voting-access-email">{user.email}</span>
+                      <p>{votingAccess ? votingAccessMessage(votingAccess) : "請確認連線後重新整理，剛才的選擇尚未送出。"}</p>
+                      <button type="button" className="text-button" onClick={login}>改用公司 Google 帳號 →</button>
+                    </div>
                   ) : (
                     <>
                       <p className="signed-as">
@@ -454,7 +428,7 @@ export default function TripShowdown() {
                       <button
                         className="button button-dark"
                         disabled={
-                          saving || !connected || !ready || !detailsReady || !familyCountValid
+                          saving || !canVote || !connected || !ready || !voteSynced || !familyCountValid || unchangedVote
                         }
                         onClick={() => {
                           setSaveError("");
@@ -463,14 +437,14 @@ export default function TripShowdown() {
                       >
                         {saving
                           ? <LoadingIndicator label="儲存中" compact />
-                          : actualVote
-                            ? "確認改票"
-                            : "確認並投票"}
+                          : !voteSynced && !error
+                            ? <LoadingIndicator label="同步你的投票" compact />
+                          : voteActionLabel}
                       </button>
                       <p className="quiet">
                         {!connected
                           ? "連線恢復後才能送出。"
-                          : "截止前可修改，每個 Google 帳號只計一票。"}
+                          : unchangedVote ? "目前的選擇已儲存；修改內容後就能更新。" : voteChange === "details" ? "更新偏好與同行安排，陣營票數不變。" : "截止前可修改，每個 Google 帳號只計一票。"}
                       </p>
                     </>
                   )}
@@ -485,7 +459,7 @@ export default function TripShowdown() {
                     </>
                   )}
                   <p className="privacy-note">
-                    送出後，姓名、Google 頭像與所選方案會顯示於公開戰況；備註與家眷資料只顯示給你與主辦人。
+                    送出後，姓名、Google 頭像、陣營及餐廳／體驗選擇會顯示於公開戰況；Email、備註與家眷資料只顯示給你與主辦人。
                   </p>
                 </aside>
               </div>
@@ -494,12 +468,7 @@ export default function TripShowdown() {
           </section>
           <LiveResults catalog={catalog} motionEnabled={!intro} />
         </main>
-        <footer className="site-footer">
-          <div className="wrap">
-            <span>{catalog.settings.title} · 兩個方案皆自行前往</span>
-            {context.isAdmin && <Link className="button button-white organizer-button" href="/admin">主辦入口</Link>}
-          </div>
-        </footer>
+        <footer className="site-footer"><div className="wrap">{catalog.settings.title} · 兩個方案皆自行前往</div></footer>
       </div>
       <dialog
         ref={dialogRef}
@@ -517,7 +486,7 @@ export default function TripShowdown() {
         <div className="confirm-content">
           <span className="eyebrow">ONE LAST LOOK</span>
           <h2 id="confirm-vote-title">
-            {actualVote ? "確認更新這一票？" : "這一票，就投這裡！"}
+            {voteChange === "switch" ? "確定換到這一派？" : voteChange === "details" ? "確認更新你的選擇？" : unchangedVote ? "這一票已經儲存" : "這一票，就投這裡！"}
           </h2>
           <p>{user?.displayName} 的選擇</p>
           <div className="confirm-plan"><span className="team-label">{selected?.code} · {selected?.shortName}</span><strong>{selected?.title}</strong></div>
@@ -548,10 +517,10 @@ export default function TripShowdown() {
             </button>
             <button
               className="button button-dark"
-              disabled={saving || !votingOpen || !connected || !familyCountValid}
+              disabled={saving || !canVote || !votingOpen || !connected || !familyCountValid || !voteSynced || unchangedVote}
               onClick={save}
             >
-              {saving ? <LoadingIndicator label="正在儲存" compact /> : !votingOpen ? "投票已截止" : "確定送出 ✓"}
+              {saving ? <LoadingIndicator label="正在儲存" compact /> : !canVote ? "尚未取得投票資格" : !votingOpen ? "投票已截止" : unchangedVote ? "已投票 ✓" : "確定送出 ✓"}
             </button>
           </div>
         </div>

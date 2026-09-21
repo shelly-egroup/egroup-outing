@@ -2,9 +2,10 @@
   "extends": "./tsconfig.audio.json",
   "include": [
     "../lib/trips.ts",
-    "../lib/vote-reminder.ts"
+    "../lib/vote-summary.ts",
+    "../lib/calendar.ts"
   ],
   "compilerOptions": {
-    "outDir": "../.tools/vote-tests"
+    "outDir": "../.tools/summary-tests"
   }
 }

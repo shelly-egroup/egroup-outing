@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.audio.json",
+  "include": [
+    "../lib/voting-access.ts",
+    "../lib/catalog-impact.ts",
+    "../lib/trips.ts"
+  ],
+  "compilerOptions": {
+    "outDir": "../.tools/admin-tests"
+  }
+}

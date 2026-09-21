@@ -1,5 +1,2 @@
-import OpeningSplash from "@/components/opening-splash";
-
-export default function Loading() {
-  return <main className="opening-route-loading"><OpeningSplash loading /></main>;
-}
+import OutingLoading from "@/components/outing-loading";
+export default function Loading() { return <OutingLoading />; }

@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.audio.json",
+  "include": [
+    "../lib/score-motion.ts",
+    "../components/use-score-motion.ts"
+  ],
+  "compilerOptions": {
+    "rootDir": "..",
+    "outDir": "../.tools/score-tests"
+  }
+}

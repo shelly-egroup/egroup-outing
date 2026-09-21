@@ -1,9 +1,19 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { onValue, ref } from "firebase/database";
 import AccountMenu from "./account-menu";
 import LoadingIndicator from "./loading-indicator";
+import LoadingPanel from "./loading-panel";
+import CatalogImpactDialog from "./catalog-impact-dialog";
+import { catalogImpacts, catalogImpactKey, choiceSelectionCounts } from "@/lib/catalog-impact";
+import AdminPlanEditor from "./admin-plan-editor";
+import AdminCatalogPreview from "./admin-catalog-preview";
+import CalendarField from "./calendar-field";
+import { parseCalendarDate, taipeiDeadline } from "@/lib/calendar";
+import AdminMembers from "./admin-members";
+import { getVotingAccess, type RegisteredUser } from "@/lib/voting-access";
+import AdminVoteOverview from "./admin-vote-overview";
 import { useOuting } from "./outing-provider";
 import { getFirebase } from "@/lib/firebase";
 import { defaultCatalog } from "@/lib/default-catalog";
@@ -46,12 +56,29 @@ export default function AdminDashboard() {
   const [draft, setDraft] = useState<Catalog | null>(null),
     [version, setVersion] = useState<number | null>(null),
     [dirty, setDirty] = useState(false);
+  const [view, setView] = useState<"overview" | "editor" | "members">("overview");
+  const [reviewChanges, setReviewChanges] = useState(false);
+  const editorForm = useRef<HTMLFormElement>(null);
+  const [editorMode, setEditorMode] = useState<"edit" | "preview">("edit");
   const [saving, setSaving] = useState(false),
     [message, setMessage] = useState(""),
     [failed, setFailed] = useState("");
   const [details, setDetails] = useState<Record<string, VoteDetails>>({}),
     [detailsError, setDetailsError] = useState("");
   const [detailsReady, setDetailsReady] = useState(false);
+  const impacts = catalog && draft ? catalogImpacts(catalog, draft, votes, details) : [];
+  const impactsKey = catalogImpactKey(impacts);
+  const [members, setMembers] = useState<Record<string, RegisteredUser>>({});
+  const [membersReady, setMembersReady] = useState(false), [membersError, setMembersError] = useState("");
+  const emails = Object.fromEntries(Object.entries(members).map(([uid, member]) => [uid, member.email || ""]));
+  const pendingMembers = Object.values(members).filter(member => getVotingAccess(member.email, member.voteReview) === "pending").length;
+  useEffect(() => {
+    setMembers({}); setMembersReady(false); setMembersError("");
+    if (!isAdmin) return;
+    return onValue(ref(getFirebase().database, "users"), snapshot => {
+      setMembers(snapshot.val() || {}); setMembersReady(true); setMembersError("");
+    }, () => { setMembersReady(false); setMembersError("帳號名單讀取失敗，請重新整理後再試。"); });
+  }, [isAdmin]);
   useEffect(() => {
     if (catalog && !dirty) {
       setDraft(structuredClone(catalog));
@@ -93,9 +120,31 @@ export default function AdminDashboard() {
   function editPlan(id: string, change: (plan: TripPlan) => void) {
     edit((next) => change(next.plans[id]));
   }
-  async function save(event?: React.FormEvent) {
+  function cancelEdits() {
+    if (saving || !catalog) return;
+    setDraft(structuredClone(catalog));
+    setVersion(catalog.updatedAt);
+    setDirty(false);
+    setReviewChanges(false);
+    setFailed("");
+    setMessage("已取消變更，恢復已儲存的版本。");
+  }
+  async function save(event?: React.FormEvent<HTMLFormElement>, acceptedImpacts?: string) {
     event?.preventDefault();
     if (!draft || saving) return;
+    const form = event?.currentTarget || editorForm.current;
+    if (form && !form.checkValidity()) {
+      setEditorMode("edit");
+      setFailed("還有欄位需要補齊，已回到編輯畫面。");
+      requestAnimationFrame(() => form.reportValidity());
+      return;
+    }
+    if (!parseCalendarDate(draft.settings.eventDate)) {
+      setFailed("請選擇有效的活動日期。");
+      return;
+    }
+    if (!votesReady || !detailsReady) { setFailed("正在確認既有投票，請等明細同步完成後再儲存。"); return; }
+    if (impacts.length && (acceptedImpacts !== impactsKey || impacts.some(item => item.removed))) { setFailed(""); setReviewChanges(true); return; }
     setSaving(true);
     setFailed("");
     setMessage("");
@@ -105,7 +154,8 @@ export default function AdminDashboard() {
         plan.tags = plan.tags.map((tag) => tag.trim()).filter(Boolean).slice(0, 10);
         if (!plan.tags.length) plan.tags = [plan.shortName];
       }
-      await saveCatalog(cleaned, version);
+      await saveCatalog(cleaned, version, acceptedImpacts);
+      setReviewChanges(false);
       setDirty(false);
       setMessage("已儲存，首頁已同步更新。");
     } catch (error) {
@@ -132,14 +182,8 @@ export default function AdminDashboard() {
       setSaving(false);
     }
   }
-  const voterIds = Object.keys(votes);
-  const familyResponses = voterIds.filter(uid => details[uid]?.familyCount !== undefined).length;
-  const familyTotal = voterIds.reduce((sum, uid) => {
-    const count = details[uid]?.familyCount ?? 0;
-    return sum + (Number.isSafeInteger(count) && count > 0 ? count : 0);
-  }, 0);
   const access = !authReady || (user && !profileReady) ? (
-    <div className="state-box"><LoadingIndicator label="確認登入狀態中" /></div>
+    <LoadingPanel label="主辦控制室準備中" description="正在確認登入身分。" />
   ) : !user ? (
     <div className="access-card">
       <h1>主辦人的控制室</h1>
@@ -163,11 +207,13 @@ export default function AdminDashboard() {
   ) : null;
   return (
     <div className="admin-page">
+      <div className="admin-header">
       <div className="topbar wrap">
         <Link className="brand" href="/">
           ← 回秋遊首頁
         </Link>
         <AccountMenu />
+      </div>
       </div>
       <main className="wrap admin-main">
         {access || (
@@ -175,16 +221,16 @@ export default function AdminDashboard() {
             <div className="section-heading">
               <div>
                 <span className="eyebrow">ORGANIZER DESK</span>
-                <h1>方案管理</h1>
+                <h1>主辦控制室</h1>
               </div>
               <span className="live-state">
                 {connected ? "已連線" : "連線中斷"}
               </span>
             </div>
             <p className="quiet">
-              編輯後按「儲存變更」，同事的頁面會即時更新。已有人投票的方案建議下架，保留原有票數。
+              先看戰況與大家的偏好，再安排這次秋遊。方案內容也能直接在卡片上編輯。
             </p>
-            {catalogStatus === "loading" && <LoadingIndicator label="載入方案中" />}
+            {catalogStatus === "loading" && <LoadingPanel label="正在整理最新方案" description="活動設定與各組選項即將就緒。" />}
             {catalogStatus === "error" && (
               <p className="notice notice-error">
                 無法讀取資料庫，請確認 Firebase 的規則設定。
@@ -201,12 +247,19 @@ export default function AdminDashboard() {
                   disabled={saving || !connected}
                   onClick={seed}
                 >
-                  {saving ? "建立中…" : "匯入目前兩個方案"}
+                  {saving ? <LoadingIndicator label="建立中" compact /> : "匯入目前兩個方案"}
                 </button>
               </div>
             )}
+            <div className="organizer-view-tabs" role="group" aria-label="主辦功能">
+              <button type="button" aria-pressed={view === "overview"} onClick={() => setView("overview")}>戰況與明細</button>
+              <button type="button" aria-pressed={view === "members"} onClick={() => setView("members")}>帳號與審核{membersReady && <span>{pendingMembers ? pendingMembers + " 待審" : Object.keys(members).length + " 人"}</span>}</button>
+              <button type="button" aria-pressed={view === "editor"} onClick={() => setView("editor")}>編輯方案{dirty && <span>未儲存</span>}</button>
+            </div>
+            {catalog && <div hidden={view !== "overview"}><AdminVoteOverview catalog={catalog} votes={votes} details={details} emails={emails} ready={votesReady && detailsReady && membersReady} error={votesError || detailsError || membersError} /></div>}
+            <div hidden={view !== "members"}><AdminMembers members={members} ready={membersReady} error={membersError} votes={votes} votesReady={votesReady} catalog={catalog} /></div>
             {draft && (
-              <form onSubmit={save} onInvalidCapture={(event) => {
+              <form ref={editorForm} hidden={view !== "editor"} noValidate onSubmit={save} onInvalidCapture={(event) => {
                 const detail = (event.target as HTMLElement).closest("details");
                 if (detail) detail.open = true;
               }}>
@@ -226,19 +279,7 @@ export default function AdminDashboard() {
                         }
                       />
                     </label>
-                    <label>
-                      活動日期
-                      <input
-                        type="date"
-                        required
-                        value={draft.settings.eventDate}
-                        onChange={(e) =>
-                          edit((d) => {
-                            d.settings.eventDate = e.target.value;
-                          })
-                        }
-                      />
-                    </label>
+                    <CalendarField label="活動日期" required value={draft.settings.eventDate} onChange={value => edit(d => { d.settings.eventDate = value; })} />
                     <label>
                       預計參加人數
                       <input
@@ -254,20 +295,7 @@ export default function AdminDashboard() {
                         }
                       />
                     </label>
-                    <label>
-                      投票截止時間（台北時間，可留白）
-                      <input
-                        type="datetime-local"
-                        value={localDeadline(draft.settings.closesAt)}
-                        onChange={(e) =>
-                          edit((d) => {
-                            d.settings.closesAt = e.target.value
-                              ? new Date(e.target.value + ":00+08:00").getTime()
-                              : 0;
-                          })
-                        }
-                      />
-                    </label>
+                    <CalendarField label="投票截止時間（台北時間，可留白）" withTime value={localDeadline(draft.settings.closesAt)} defaultDate={draft.settings.eventDate} onChange={value => edit(d => { d.settings.closesAt = taipeiDeadline(value); })} />
                   </div>
                   <label className="toggle-label">
                     <input
@@ -283,12 +311,13 @@ export default function AdminDashboard() {
                   </label>
                 </fieldset>
                 <div className="section-heading">
-                  <h2>方案清單</h2>
+                  <div><h2>把方案排成你想要的樣子</h2><p className="quiet">上方是首頁卡片，下方是這一派的選配項目。</p></div>
                   <button
                     className="button button-white"
                     type="button"
                     disabled={saving || Object.keys(draft.plans).length >= 8}
-                    onClick={() =>
+                    onClick={() => {
+                      setEditorMode("edit");
                       edit((d) => {
                         const id = nextKey(d.plans, "", 8);
                         d.plans[id] = {
@@ -313,438 +342,55 @@ export default function AdminDashboard() {
                           order: Object.keys(d.plans).length,
                           active: false,
                         };
-                      })
-                    }
+                      });
+                    }}
                   >
                     ＋ 新增方案
                   </button>
                 </div>
-                {sortedPlans(draft).map(([id, plan]) => (
-                  <details className="admin-plan" key={id}>
-                    <summary>
-                      <span className={"plan-code tone-" + plan.color}>
-                        {plan.code}
-                      </span>
-                      <strong>{plan.title}</strong>
-                      <span>
-                        {plan.active ? "上架中" : "已下架"} ·{" "}
-                        {
-                          Object.values(votes).filter((v) => v.planId === id)
-                            .length
-                        }{" "}
-                        票
-                      </span>
-                    </summary>
-                    <fieldset disabled={saving} className="admin-plan-body">
-                      <div className="admin-fields">
-                        {(
-                          [
-                            "code",
-                            "title",
-                            "shortName",
-                            "category",
-                            "priceNote",
-                          ] as const
-                        ).map((field, index) => (
-                          <label key={field}>
-                            {
-                              [
-                                "方案代號",
-                                "方案名稱",
-                                "陣營名稱",
-                                "方案分類",
-                                "費用說明",
-                              ][index]
-                            }
-                            <input
-                              required
-                              maxLength={field === "code" ? 8 : 150}
-                              value={plan[field]}
-                              onChange={(e) =>
-                                editPlan(id, (p) => {
-                                  p[field] = e.target.value;
-                                })
-                              }
-                            />
-                          </label>
-                        ))}
-                        <label>
-                          配色
-                          <select
-                            value={plan.color}
-                            onChange={(e) =>
-                              editPlan(id, (p) => {
-                                p.color = e.target.value as TripPlan["color"];
-                              })
-                            }
-                          >
-                            <option value="yellow">走讀黃</option>
-                            <option value="coral">放鬆紅</option>
-                          </select>
-                        </label>
-                        <label>
-                          排序
-                          <input
-                            type="number"
-                            min={0}
-                            max={99}
-                            required
-                            value={plan.order}
-                            onChange={(e) =>
-                              editPlan(id, (p) => {
-                                p.order = Number(e.target.value);
-                              })
-                            }
-                          />
-                        </label>
-                      </div>
-                      <label>
-                        方案介紹
-                        <textarea
-                          required
-                          maxLength={1200}
-                          rows={3}
-                          value={plan.description}
-                          onChange={(e) =>
-                            editPlan(id, (p) => {
-                              p.description = e.target.value;
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        特色標籤（用逗號分隔）
-                        <input
-                          maxLength={250}
-                          value={(plan.tags || []).join("，")}
-                          onChange={(e) =>
-                            editPlan(id, (p) => {
-                              p.tags = e.target.value
-                                .split(/[,，]/)
-                                .map((t) => t.trim());
-                            })
-                          }
-                        />
-                      </label>
-                      <label className="toggle-label">
-                        <input
-                          type="checkbox"
-                          checked={plan.active}
-                          onChange={(e) =>
-                            editPlan(id, (p) => {
-                              p.active = e.target.checked;
-                            })
-                          }
-                        />
-                        方案上架
-                      </label>
-                      <div className="editor-section">
-                        <h3>行程</h3>
-                        {(plan.schedule || []).map((stop, index) => (
-                          <div className="schedule-editor" key={index}>
-                            <label>
-                              時間
-                              <input
-                                required
-                                value={stop.time}
-                                maxLength={30}
-                                onChange={(e) =>
-                                  editPlan(id, (p) => {
-                                    p.schedule[index].time = e.target.value;
-                                  })
-                                }
-                              />
-                            </label>
-                            <label>
-                              行程名稱
-                              <input
-                                required
-                                value={stop.title}
-                                maxLength={100}
-                                onChange={(e) =>
-                                  editPlan(id, (p) => {
-                                    p.schedule[index].title = e.target.value;
-                                  })
-                                }
-                              />
-                            </label>
-                            <label>
-                              說明
-                              <input
-                                value={stop.description}
-                                maxLength={500}
-                                onChange={(e) =>
-                                  editPlan(id, (p) => {
-                                    p.schedule[index].description =
-                                      e.target.value;
-                                  })
-                                }
-                              />
-                            </label>
-                            <button
-                              className="text-button"
-                              type="button"
-                              disabled={plan.schedule.length <= 1}
-                              onClick={() =>
-                                editPlan(id, (p) => {
-                                  p.schedule.splice(index, 1);
-                                })
-                              }
-                            >
-                              移除
-                            </button>
-                          </div>
-                        ))}
-                        <button
-                          className="text-button"
-                          type="button"
-                          disabled={plan.schedule.length >= 12}
-                          onClick={() =>
-                            editPlan(id, (p) => {
-                              p.schedule.push({
-                                time: "午後",
-                                title: "新行程",
-                                description: "",
-                              });
-                            })
-                          }
-                        >
-                          ＋ 新增行程
-                        </button>
-                      </div>
-                      <div className="editor-section">
-                        <h3>選配項目</h3>
-                        {Object.entries(plan.groups || {}).map(
-                          ([groupId, group]) => (
-                            <div className="group-editor" key={groupId}>
-                              <div className="group-editor-title">
-                                <label>
-                                  選配問題
-                                  <input
-                                    required
-                                    maxLength={100}
-                                    value={group.label}
-                                    onChange={(e) =>
-                                      editPlan(id, (p) => {
-                                        p.groups![groupId].label =
-                                          e.target.value;
-                                      })
-                                    }
-                                  />
-                                </label>
-                                <button
-                                  className="text-button"
-                                  type="button"
-                                  onClick={() =>
-                                    editPlan(id, (p) => {
-                                      delete p.groups![groupId];
-                                    })
-                                  }
-                                >
-                                  移除此組
-                                </button>
-                              </div>
-                              {Object.entries(group.choices || {}).map(
-                                ([choiceId, choice]) => (
-                                  <div className="choice-editor" key={choiceId}>
-                                    <label>
-                                      名稱
-                                      <input
-                                        required
-                                        maxLength={100}
-                                        value={choice.label}
-                                        onChange={(e) =>
-                                          editPlan(id, (p) => {
-                                            p.groups![groupId].choices[
-                                              choiceId
-                                            ].label = e.target.value;
-                                          })
-                                        }
-                                      />
-                                    </label>
-                                    <label>
-                                      說明
-                                      <input
-                                        maxLength={250}
-                                        value={choice.description}
-                                        onChange={(e) =>
-                                          editPlan(id, (p) => {
-                                            p.groups![groupId].choices[
-                                              choiceId
-                                            ].description = e.target.value;
-                                          })
-                                        }
-                                      />
-                                    </label>
-                                    <label>
-                                      價格
-                                      <input
-                                        maxLength={50}
-                                        value={choice.price}
-                                        onChange={(e) =>
-                                          editPlan(id, (p) => {
-                                            p.groups![groupId].choices[
-                                              choiceId
-                                            ].price = e.target.value;
-                                          })
-                                        }
-                                      />
-                                    </label>
-                                    <button
-                                      className="text-button"
-                                      type="button"
-                                      disabled={
-                                        Object.keys(group.choices).length <= 1
-                                      }
-                                      onClick={() =>
-                                        editPlan(id, (p) => {
-                                          delete p.groups![groupId].choices[
-                                            choiceId
-                                          ];
-                                        })
-                                      }
-                                    >
-                                      移除
-                                    </button>
-                                  </div>
-                                ),
-                              )}
-                              <button
-                                className="text-button"
-                                type="button"
-                                disabled={
-                                  Object.keys(group.choices).length >= 20
-                                }
-                                onClick={() =>
-                                  editPlan(id, (p) => {
-                                    p.groups![groupId].choices[
-                                      nextKey(
-                                        p.groups![groupId].choices,
-                                        "c",
-                                        20,
-                                      )
-                                    ] = {
-                                      label: "新選項",
-                                      description: "",
-                                      price: "",
-                                    };
-                                  })
-                                }
-                              >
-                                ＋ 新增選項
-                              </button>
-                            </div>
-                          ),
-                        )}
-                        <button
-                          className="button button-white"
-                          type="button"
-                          disabled={Object.keys(plan.groups || {}).length >= 6}
-                          onClick={() =>
-                            editPlan(id, (p) => {
-                              p.groups ||= {};
-                              p.groups[nextKey(p.groups, "g", 6)] = {
-                                label: "新的選配問題",
-                                choices: {
-                                  c0: {
-                                    label: "新選項",
-                                    description: "",
-                                    price: "",
-                                  },
-                                },
-                              };
-                            })
-                          }
-                        >
-                          ＋ 新增選配問題
-                        </button>
-                      </div>
-                    </fieldset>
-                  </details>
-                ))}
+                <div className="visual-editor-toolbar">
+                  <div className="editor-view-switch" role="group" aria-label="編輯或預覽">
+                    <button type="button" aria-pressed={editorMode === "edit"} onClick={() => setEditorMode("edit")}>直接編輯</button>
+                    <button type="button" aria-pressed={editorMode === "preview"} onClick={() => setEditorMode("preview")}>預覽畫面</button>
+                  </div>
+                  <span>{editorMode === "edit" ? "虛線內的文字都能改 · 改完別忘了儲存" : "預覽包含尚未儲存的修改"}</span>
+                </div>
+                <div className="admin-editor-grid" hidden={editorMode !== "edit"}>
+                  {sortedPlans(draft).map(([id, plan]) => <AdminPlanEditor key={id} planId={id} plan={plan} saving={saving}
+                    voteCount={Object.values(votes).filter(vote => vote.planId === id).length}
+                    selectedChoices={choiceSelectionCounts(id, votes, details)} choicesReady={votesReady && detailsReady}
+                    edit={change => editPlan(id, change)} />)}
+                </div>
+                {editorMode === "preview" && <AdminCatalogPreview catalog={draft} />}
                 {dirty && catalog && catalog.updatedAt !== version && (
                   <div className="notice notice-error">
                     另一位管理員剛更新了方案。請先重新載入，避免覆蓋對方的修改。
                     <button
                       type="button"
                       className="text-button"
-                      onClick={() => {
-                        setDirty(false);
-                        setFailed("");
-                      }}
+                      onClick={cancelEdits}
                     >
                       放棄本機修改並載入
                     </button>
                   </div>
                 )}
+                {!!impacts.length && <p className="catalog-change-notice" role="status">這次修改涉及 {impacts.length} 個已有人選擇的項目，儲存前會列出內容與名單供你確認。</p>}
                 <div className="admin-savebar">
-                  <span>{dirty ? "有尚未儲存的變更" : "所有變更已儲存"}</span>
+                  <span role="status">{saving ? "正在同步到首頁…" : dirty ? "草稿已修改 · 尚未更新首頁" : "所有變更已儲存"}</span>
+                  <div className="admin-save-actions">
+                  <button type="button" className="button button-white" disabled={saving || !dirty || !catalog} onClick={cancelEdits}>取消變更</button>
                   <button
                     className="button button-yellow"
-                    disabled={saving || !dirty || !connected}
+                    disabled={saving || !dirty || !connected || !votesReady || !detailsReady}
                     type="submit"
                   >
                     {saving ? <LoadingIndicator label="儲存中" compact /> : "儲存變更 ✓"}
                   </button>
+                  </div>
                 </div>
               </form>
             )}
-            <section className="admin-voters">
-              <div className="section-heading">
-                <h2>投票明細</h2>
-                <span>
-                  {votesReady
-                    ? Object.keys(votes).length + " 人已投票"
-                    : votesError ? "暫時無法讀取" : <LoadingIndicator label="讀取中" compact />}
-                </span>
-              </div>
-              {(detailsError || votesError) && <p role="alert">{detailsError || votesError}</p>}
-              {votesReady && detailsReady && <div className="admin-attendance">
-                <span>同事<b>{voterIds.length}</b></span><span>家眷<b>{familyTotal}</b></span><span>同行合計<b>{voterIds.length + familyTotal}</b></span>
-                <small>{familyResponses < voterIds.length ? (voterIds.length - familyResponses) + " 位同事尚未填寫家眷資料，合計以已填資料計算。" : "家眷不重複計入投票票數；同行合計包含投票同事與家眷。"}</small>
-              </div>}
-              <div className="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>同事</th>
-                      <th>方案</th>
-                      <th>選配偏好</th>
-                      <th>方案備註</th>
-                      <th>家眷人數</th>
-                      <th>家眷備註</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(votes).map(([uid, vote]) => {
-                      const detail = details[uid];
-                      const plan = catalog?.plans[vote.planId];
-                      return (
-                        <tr key={uid}>
-                          <td>{vote.displayName}</td>
-                          <td>{plan?.title || "已下架方案"}</td>
-                          <td>
-                            {Object.entries(detail?.preferences || {})
-                              .map(
-                                ([group, choice]) =>
-                                  plan?.groups?.[group]?.choices?.[choice]
-                                    ?.label || "已移除選項",
-                              )
-                              .join("、") || "請主辦安排"}
-                          </td>
-                          <td className="private-note-text">{detail?.note || "—"}</td>
-                          <td>{!detailsReady ? "讀取中" : detail?.familyCount === undefined ? "尚未填寫" : detail.familyCount > 0 ? detail.familyCount + " 位（不含本人）" : "自己參加"}</td>
-                          <td className="private-note-text">{(detail?.familyCount ?? 0) > 0 ? detail?.familyNote || "—" : "—"}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                {votesReady && Object.keys(votes).length === 0 && (
-                  <p className="state-box">還沒有人投票。</p>
-                )}
-              </div>
-            </section>
+
           </>
         )}
         {(failed || error) && (
@@ -758,6 +404,7 @@ export default function AdminDashboard() {
           </p>
         )}
       </main>
+      {isAdmin && <CatalogImpactDialog open={reviewChanges} impacts={impacts} busy={saving} error={failed} onClose={() => setReviewChanges(false)} onConfirm={() => save(undefined, impactsKey)} />}
     </div>
   );
 }

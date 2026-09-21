@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import {
   createContext,
   useContext,
@@ -15,12 +16,16 @@ import {
 } from "firebase/auth";
 import {
   onValue,
+  get,
   ref,
   update,
   serverTimestamp,
   runTransaction,
 } from "firebase/database";
 import { adminEmails, getFirebase } from "@/lib/firebase";
+import { catalogImpacts, catalogImpactKey } from "@/lib/catalog-impact";
+import LoginDialog from "./login-dialog";
+import { getVotingAccess, isVotingAllowed, normalizedEmail, votingAccessMessage, type RegisteredUser, type VotingAccess } from "@/lib/voting-access";
 import {
   prepareVoteDetails,
   isVotingOpen,
@@ -35,6 +40,8 @@ type ContextValue = {
   profileReady: boolean;
   signingIn: boolean;
   isAdmin: boolean;
+  votingAccess: VotingAccess | null;
+  canVote: boolean;
   catalog: Catalog | null;
   catalogStatus: "loading" | "ready" | "empty" | "error";
   votes: Record<string, PublicVote>;
@@ -48,7 +55,7 @@ type ContextValue = {
   login: () => Promise<void>;
   logout: () => Promise<void>;
   submitVote: (draft: VoteDraft) => Promise<void>;
-  saveCatalog: (catalog: Catalog, version: number | null) => Promise<void>;
+  saveCatalog: (catalog: Catalog, version: number | null, acceptedImpacts?: string) => Promise<void>;
 };
 const OutingContext = createContext<ContextValue | null>(null);
 export function useOuting() {
@@ -70,6 +77,7 @@ function readableError(error: unknown) {
   return "暫時無法完成操作，請稍後再試。";
 }
 export function OutingProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null),
     [authReady, setAuthReady] = useState(false),
     [signingIn, setSigningIn] = useState(false);
@@ -85,9 +93,12 @@ export function OutingProvider({ children }: { children: ReactNode }) {
     [error, setError] = useState(""),
     [offset, setOffset] = useState(0),
     [now, setNow] = useState(Date.now());
-  const [profile, setProfile] = useState<{ uid: string; role: string } | null>(null);
+  const [profile, setProfile] = useState<(RegisteredUser & { uid: string }) | null>(null);
+  const [loginOpen, setLoginOpen] = useState(false);
   const [profileReady, setProfileReady] = useState(false);
   const isAdmin = !!user && profile?.uid === user.uid && profile.role === "admin";
+  const votingAccess = user && profileReady && profile?.uid === user.uid ? getVotingAccess(user.email, profile.voteReview) : null;
+  const canVote = votingAccess !== null && isVotingAllowed(votingAccess);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now() + offset), 1000);
     return () => clearInterval(timer);
@@ -169,9 +180,10 @@ export function OutingProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onValue(profileRef, (snapshot) => {
       if (!active) return;
       const value = snapshot.val();
-      setProfile(value ? { uid: user.uid, role: value.role || "member" } : null);
+      setProfile(value ? { ...value, uid: user.uid, role: value.role || "member" } : null);
     }, () => {
       if (!active) return;
+      setProfile(null);
       setProfileReady(true);
       setError("無法讀取使用者資料，請重新整理後再試。");
     });
@@ -179,10 +191,10 @@ export function OutingProvider({ children }: { children: ReactNode }) {
       if (!active) return;
       await runTransaction(profileRef, (current) => ({
         ...current,
-        email: user.email || "",
+        email: normalizedEmail(user.email),
         displayName: typeof claims.name === "string" ? claims.name : "同事",
         photoURL: typeof claims.picture === "string" ? claims.picture : "",
-        role: adminEmails.includes(user.email?.toLowerCase() || "") ? "admin" : current?.role || "member",
+        role: adminEmails.includes(normalizedEmail(user.email)) ? "admin" : current?.role || "member",
         createdAt: current?.createdAt || serverTimestamp(),
         updatedAt: serverTimestamp(),
       }), { applyLocally: false });
@@ -194,13 +206,15 @@ export function OutingProvider({ children }: { children: ReactNode }) {
     });
     return () => { active = false; unsubscribe(); };
   }, [user]);
-  async function login() {
+  async function login() { setError(""); setLoginOpen(true); }
+  async function startGoogleLogin() {
     setSigningIn(true);
     setError("");
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
       await signInWithPopup(getFirebase().auth, provider);
+      setLoginOpen(false);
     } catch (error) {
       setError(readableError(error));
     } finally {
@@ -213,10 +227,15 @@ export function OutingProvider({ children }: { children: ReactNode }) {
       setError("");
     } catch (error) {
       setError(readableError(error));
+      throw error;
     }
+    router.replace("/", { scroll: true });
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }
   async function submitVote(draft: VoteDraft) {
     if (!user) throw new Error("請先使用 Google 登入。");
+    if (!votingAccess) throw new Error("投票資格尚未確認，請稍後再試。");
+    if (!canVote) throw new Error(votingAccessMessage(votingAccess));
     if (!connected) throw new Error("目前連線中斷，請恢復連線後再送出。");
     if (!catalog || catalogStatus !== "ready")
       throw new Error("方案尚未準備好，請稍後再試。");
@@ -226,6 +245,10 @@ export function OutingProvider({ children }: { children: ReactNode }) {
     if (!plan?.active) throw new Error("這個方案已停止接受投票，請重新選擇。");
     const privateDetails = prepareVoteDetails(plan, draft);
     const token = await user.getIdTokenResult();
+    const latestProfile = (await get(ref(getFirebase().database, "users/" + user.uid))).val() as RegisteredUser | null;
+    const access = getVotingAccess(user.email, latestProfile?.voteReview);
+    if (!latestProfile || !isVotingAllowed(access)) throw new Error(votingAccessMessage(access));
+    if (getFirebase().auth.currentUser?.uid !== user.uid) throw new Error("登入帳號已變更，請重新確認投票。");
     const publicVote = {
       planId: draft.planId,
       displayName:
@@ -247,9 +270,16 @@ export function OutingProvider({ children }: { children: ReactNode }) {
       throw new Error("投票未完成。可能已截止或方案已更新，請確認後再試。");
     }
   }
-  async function saveCatalog(next: Catalog, version: number | null) {
+  async function saveCatalog(next: Catalog, version: number | null, acceptedImpacts?: string) {
     if (!isAdmin) throw new Error("只有主辦人可以管理方案。");
     if (!connected) throw new Error("連線中斷，尚未儲存。");
+    if (version !== null) {
+      const latest = (await get(ref(getFirebase().database, "outing"))).val();
+      if (!latest?.catalog || latest.catalog.updatedAt !== version) throw new Error("方案已被其他管理員更新，請重新載入後再編輯。");
+      const impacts = catalogImpacts(latest.catalog, next, latest.votes || {}, latest.voteDetails || {});
+      if (impacts.some(item => item.removed)) throw new Error("有隊友已選擇你要移除的項目，請保留原選項後再儲存。");
+      if (impacts.length && acceptedImpacts !== catalogImpactKey(impacts)) throw new Error("受影響的投票已更新，請重新確認變更內容與名單後再儲存。");
+    }
     const result = await runTransaction(
       ref(getFirebase().database, "outing/catalog"),
       (current) => {
@@ -272,6 +302,8 @@ export function OutingProvider({ children }: { children: ReactNode }) {
         profileReady,
         signingIn,
         isAdmin,
+        votingAccess,
+        canVote,
         catalog,
         catalogStatus,
         votes,
@@ -289,6 +321,7 @@ export function OutingProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
+      <LoginDialog open={loginOpen} busy={signingIn} error={error} onClose={() => setLoginOpen(false)} onContinue={startGoogleLogin} />
     </OutingContext.Provider>
   );
 }

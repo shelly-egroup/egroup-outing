@@ -52,11 +52,11 @@ export async function startDrawSound(beats: DrawBeat[], signal: AbortSignal): Pr
         // The landing chord starts on the same beat as the final highlighted choice.
         // A warmer, sustained major chord makes the result distinct from the light steps.
         [523.25, 659.25, 783.99].forEach((frequency, voice) =>
-          tone(at, frequency, .52, [.12, .095, .08][voice], "sine", .055));
+          tone(at, frequency, .6, [.24, .19, .16][voice], "triangle", .075));
       } else {
         // Rounded plucks in a major pentatonic palette, without sharp square-wave buzz.
         const notes = [440, 523.25, 587.33, 659.25];
-        tone(at, notes[index % notes.length], .075, .075, "triangle");
+        tone(at, notes[index % notes.length], .11, .32, "triangle", .024);
       }
     });
     tail = setTimeout(stop, (beats.at(-1)!.at + .9) * 1000);

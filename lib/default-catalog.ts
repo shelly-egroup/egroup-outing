@@ -100,6 +100,7 @@ export const defaultCatalog: Catalog = {
       groups: {
         g0: {
           label: "按摩想選哪一種？",
+          selectionMode: "individual",
           choices: {
             c0: {
               label: "足湯腳底按摩・60分鐘",

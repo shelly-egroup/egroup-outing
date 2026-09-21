@@ -3,11 +3,24 @@ type Options = {
   getTime: () => number | null;
   duration: number;
   onState: (state: OpeningAudioState) => void;
+  onPlaybackStart?: (position: number) => void;
 };
+
+/** Preload on the cover without consuming the visitor's playback gesture. */
+export function watchOpeningAudioReady(audio: HTMLMediaElement, onReady: (ready: boolean) => void) {
+  const events = ["loadedmetadata", "loadeddata", "canplay", "canplaythrough", "progress", "emptied", "error"];
+  const update = () => onReady(!audio.error && audio.readyState >= 3);
+  audio.preload = "auto";
+  for (const event of events) audio.addEventListener(event, update);
+  // Do not restart an existing download when React remounts effects in development.
+  if (audio.networkState === 0) audio.load();
+  update();
+  return () => { for (const event of events) audio.removeEventListener(event, update); };
+}
 
 /** Keep media recovery independent of the visual clock and browser permission. */
 export function createOpeningAudio(audio: HTMLMediaElement, options: Options) {
-  let active = true, requested = false, pending = false;
+  let active = true, requested = false, pending = false, playbackStarted = false;
   let state: OpeningAudioState = "idle";
   let attempt = 0;
   let retryTimer: ReturnType<typeof setTimeout> | undefined;
@@ -16,6 +29,10 @@ export function createOpeningAudio(audio: HTMLMediaElement, options: Options) {
   function report(next: OpeningAudioState) {
     if (!active || next === state) return;
     state = next;
+    if (next === "playing" && !playbackStarted) {
+      playbackStarted = true;
+      options.onPlaybackStart?.(audio.currentTime);
+    }
     options.onState(next);
   }
   function clearRetry() {
@@ -119,7 +136,7 @@ export function createOpeningAudio(audio: HTMLMediaElement, options: Options) {
       if (!active || requested) return;
       requested = true;
       audio.volume = .55;
-      // Start audibly; failures retry automatically while the visual clock is running.
+      // Called directly by START; play() must stay in the trusted click call stack.
       play(false);
     },
     interact() {

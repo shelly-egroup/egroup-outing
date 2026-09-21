@@ -3,10 +3,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const compiled = await readFile(new URL("../.tools/audio-tests/opening-audio.js", import.meta.url), "utf8");
-const { createOpeningAudio } = await import("data:text/javascript;base64," + Buffer.from(compiled).toString("base64"));
+const { createOpeningAudio, watchOpeningAudioReady } = await import("data:text/javascript;base64," + Buffer.from(compiled).toString("base64"));
 
 class Media extends EventTarget {
   readyState = 4;
+  networkState = 1;
+  preload = "none";
   currentTime = 0;
   paused = true;
   muted = false;
@@ -218,4 +220,137 @@ test("the optional click retries immediately and cancels the scheduled retry", a
   assert.equal(states.at(-1), "playing");
   await new Promise(resolve => setTimeout(resolve, 650));
   assert.equal(audio.calls, 2);
+});
+
+
+test("START calls play synchronously; media readiness alone never starts music", async t => {
+  const audio = new Media(), starts = [];
+  const controller = createOpeningAudio(audio, { getTime: () => null, duration: 10.85, onState() {}, onPlaybackStart: position => starts.push(position) });
+  t.after(() => controller.dispose());
+  audio.fire("canplay");
+  controller.resume();
+  await settle();
+  assert.equal(audio.calls, 0);
+  assert.deepEqual(starts, []);
+  controller.start();
+  assert.equal(audio.calls, 1, "play remains in the START click call stack");
+  assert.equal(audio.muted, false);
+  assert.equal(audio.volume, .55);
+  await settle();
+  assert.deepEqual(starts, [0]);
+});
+
+test("the visual start waits for audible playback and is not restarted by buffering", async t => {
+  const audio = new Media(), starts = [];
+  let elapsed = null, resolve;
+  audio.behavior = () => new Promise(done => { resolve = done; });
+  const controller = createOpeningAudio(audio, {
+    getTime: () => elapsed, duration: 10.85, onState() {},
+    onPlaybackStart: position => { starts.push(position); elapsed = position; },
+  });
+  t.after(() => controller.dispose());
+  controller.start();
+  await settle();
+  assert.equal(elapsed, null);
+  audio.currentTime = .02;
+  audio.fire("playing");
+  resolve();
+  await settle();
+  assert.deepEqual(starts, [.02]);
+  elapsed = 3;
+  audio.fire("waiting");
+  audio.fire("playing");
+  assert.deepEqual(starts, [.02]);
+  assert.equal(audio.currentTime, 3);
+});
+
+test("failed START holds the cover until a successful retry", async t => {
+  const audio = new Media(), starts = [];
+  const controller = createOpeningAudio(audio, { getTime: () => null, duration: 10.85, onState() {}, onPlaybackStart: position => starts.push(position) });
+  t.after(() => controller.dispose());
+  audio.behavior = () => Promise.reject({ name: "NotAllowedError" });
+  controller.start();
+  await settle();
+  assert.deepEqual(starts, []);
+  audio.behavior = () => Promise.resolve();
+  controller.interact();
+  await settle();
+  assert.deepEqual(starts, [0]);
+});
+
+test("skipping a pending START never begins the visual timeline", async () => {
+  const audio = new Media(), starts = [];
+  let resolve;
+  audio.behavior = () => new Promise(done => { resolve = done; });
+  const controller = createOpeningAudio(audio, { getTime: () => null, duration: 10.85, onState() {}, onPlaybackStart: position => starts.push(position) });
+  controller.start();
+  controller.dispose();
+  resolve();
+  audio.fire("playing");
+  await settle();
+  assert.deepEqual(starts, []);
+  assert.equal(audio.paused, true);
+});
+
+
+test("the cover waits for playable data, not just metadata, without playing early", () => {
+  const audio = new Media(), ready = [];
+  audio.readyState = 0;
+  const stop = watchOpeningAudioReady(audio, value => ready.push(value));
+  assert.equal(audio.preload, "auto");
+  assert.equal(ready.at(-1), false);
+  audio.readyState = 1;
+  audio.fire("loadedmetadata");
+  assert.equal(ready.at(-1), false);
+  audio.readyState = 2;
+  audio.fire("loadeddata");
+  assert.equal(ready.at(-1), false);
+  audio.readyState = 3;
+  audio.fire("canplay");
+  assert.equal(ready.at(-1), true);
+  assert.equal(audio.calls, 0);
+  stop();
+});
+
+test("cached audio is ready immediately without resetting its buffer", () => {
+  const audio = new Media(), ready = [];
+  const stop = watchOpeningAudioReady(audio, value => ready.push(value));
+  assert.deepEqual(ready, [true]);
+  assert.equal(audio.loadCalls, 0);
+  assert.equal(audio.calls, 0);
+  stop();
+});
+
+test("preloading starts an empty media element but leaves an active download alone", () => {
+  const audio = new Media();
+  audio.readyState = 0;
+  audio.networkState = 0;
+  const stop = watchOpeningAudioReady(audio, () => {});
+  assert.equal(audio.loadCalls, 1);
+  stop();
+  audio.networkState = 2;
+  const stopAgain = watchOpeningAudioReady(audio, () => {});
+  assert.equal(audio.loadCalls, 1);
+  assert.equal(audio.calls, 0);
+  stopAgain();
+});
+
+test("readiness follows media reset and errors and removes listeners on cleanup", () => {
+  const audio = new Media(), ready = [];
+  const stop = watchOpeningAudioReady(audio, value => ready.push(value));
+  audio.readyState = 0;
+  audio.fire("emptied");
+  assert.equal(ready.at(-1), false);
+  audio.readyState = 4;
+  audio.error = { code: 2 };
+  audio.fire("error");
+  assert.equal(ready.at(-1), false);
+  audio.error = null;
+  audio.fire("canplaythrough");
+  assert.equal(ready.at(-1), true);
+  stop();
+  const count = ready.length;
+  audio.fire("progress");
+  audio.fire("canplay");
+  assert.equal(ready.length, count);
 });
