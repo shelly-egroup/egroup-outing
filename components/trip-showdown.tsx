@@ -52,6 +52,7 @@ export default function TripShowdown() {
     submitVote,
   } = context;
   const catalog = remoteCatalog || defaultCatalog;
+  const eventAnnouncement = catalog.settings.title + " · 兩個方案皆自行前往";
   const plans = sortedPlans(catalog).filter(([, plan]) => plan.active);
   const [intro, setIntro] = useState(false), [introReady, setIntroReady] = useState(false);
   useLayoutEffect(() => { setIntro(!openingHistory.hasSeen()); setIntroReady(true); }, []);
@@ -182,13 +183,7 @@ export default function TripShowdown() {
         />
       )}
       <div hidden={intro} className="outing-page">
-        <div className="ticker">
-          <span>
-            10/29 秋季員旅・雙方案對決・你的一票決定全員行程　　10/29
-            秋季員旅・雙方案對決・你的一票決定全員行程　　
-          </span>
-        </div>
-        <OutingHeader active={!intro} heroActions={heroActionsRef} vote={authReady && votesReady && actualVote ? headerVote : undefined} />
+        <OutingHeader announcement={eventAnnouncement} active={!intro} heroActions={heroActionsRef} vote={authReady && votesReady && actualVote ? headerVote : undefined} />
         <header className="outing-hero wrap">
           <div className="hero-copy">
             <span className="eyebrow">THE AUTUMN OUTING</span>
@@ -385,6 +380,10 @@ export default function TripShowdown() {
                     <div><dt>同行安排</dt><dd>{familySummary}</dd></div>
                     {draft.bringingFamily && draft.familyNote.trim() && <div><dt>家眷備註</dt><dd className="private-note-text">{draft.familyNote}</dd></div>}
                   </dl>
+                  <div className="review-event-reminder">
+                    <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="5" width="16" height="16" rx="1" /><path d="M8 3v4M16 3v4M4 10h16M8 14h3M8 17h6" /></svg>
+                    <p><strong>{catalog.settings.title}</strong><span>兩個方案皆自行前往</span></p>
+                  </div>
                   {actualVote && <SavedVoteCard plan={catalog.plans[actualVote.planId]} justSaved={success} changingSide={voteChange === "switch"} pendingChanges={voteChange === "details"} connected={connected} />}
                   {saveError && !review && (
                     <p className="notice-error" role="alert">
@@ -406,9 +405,6 @@ export default function TripShowdown() {
                       >
                         {signingIn ? <LoadingIndicator label="正在登入" compact /> : "Google 登入，繼續投票"}
                       </button>
-                      <p className="quiet">
-                        請用 egroup. 開頭的 Google 帳號；其他帳號需主辦審核。登入後，剛才的選擇會保留。
-                      </p>
                     </>
                   ) : !profileReady ? (
                     <LoadingIndicator label="確認投票資格中" />
@@ -468,7 +464,7 @@ export default function TripShowdown() {
           </section>
           <LiveResults catalog={catalog} motionEnabled={!intro} />
         </main>
-        <footer className="site-footer"><div className="wrap">{catalog.settings.title} · 兩個方案皆自行前往</div></footer>
+        <footer className="site-footer"><div className="wrap">{eventAnnouncement}</div></footer>
       </div>
       <dialog
         ref={dialogRef}

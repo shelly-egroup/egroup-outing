@@ -47,8 +47,9 @@ button {
   padding: 0.55rem 0;
   font-weight: 800;
   letter-spacing: 0.12em;
-  animation: tick 24s linear infinite;
+  animation: tick 44s linear infinite;
 }
+.ticker-flag { display: inline-block; width: 13px; height: 14px; margin-right: 10px; color: var(--yellow); opacity: .72; vertical-align: -1px; }
 @keyframes tick { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .ticker span { animation: none; } }
 header {
@@ -2870,3 +2871,9 @@ button.choice-supporters-more:focus-visible { outline: 2px solid var(--rank-acce
 
 .hero-replay { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
 .hero-replay svg { flex: none; }
+
+.review-event-reminder { display: flex; align-items: center; gap: 10px; margin: 18px 0; padding: 12px 14px; background: #fff9e7; border-left: 2px solid #d9bd61; color: var(--ink); }
+.review-event-reminder > svg { flex: none; color: #87712f; }
+.review-event-reminder p { display: grid; gap: 3px; margin: 0; font-size: 12px; line-height: 1.6; }
+.review-event-reminder strong { font-weight: 750; }
+.review-event-reminder p > span { color: #6b6044; }

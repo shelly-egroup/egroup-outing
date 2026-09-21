@@ -1,9 +1,10 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { Fragment, useEffect, useRef, useState, type RefObject } from "react";
 import AccountMenu from "./account-menu";
 import type { VoteReminder } from "@/lib/vote-reminder";
-export default function OutingHeader({ active, heroActions, vote }: { active: boolean; heroActions: RefObject<HTMLDivElement | null>; vote?: VoteReminder }) {
+export default function OutingHeader({ active, heroActions, vote, announcement }: { active: boolean; heroActions: RefObject<HTMLDivElement | null>; vote?: VoteReminder; announcement: string }) {
+  const tickerMessages = ["10/29 秋季員旅・雙方案對決・你的一票決定全員行程", announcement];
   const [compact, setCompact] = useState(false);
   const bar = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -32,8 +33,14 @@ export default function OutingHeader({ active, heroActions, vote }: { active: bo
     window.addEventListener("resize",sync); sync();
     return () => { observer.disconnect();window.removeEventListener("resize",sync);document.documentElement.style.removeProperty("--outing-header-offset"); };
   }, [active, compact]);
-  return <div className={"outing-header" + (compact ? " is-compact" : "")}>
-    <div className="topbar wrap" ref={bar}>
+  return <div className={"outing-header" + (compact ? " is-compact" : "")} ref={bar}>
+    <div className="ticker">
+      <p className="sr-only">{tickerMessages.join("　　")}</p>
+      <span aria-hidden="true">{[...tickerMessages, ...tickerMessages].map((message, index) => <Fragment key={index}>
+        <svg className="ticker-flag" width="15" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 18V3h12l-3 4 3 4H4" /></svg>{message}{"　　"}
+      </Fragment>)}</span>
+    </div>
+    <div className="topbar wrap">
       <Link href="/" className="brand">揪是要對決<span>2026</span></Link>
       <div className="header-actions">
         {vote && <a className="header-vote" href={vote.target} data-tone={vote.tone} data-pending={vote.pending} title={"我的投票：" + vote.label + " · " + vote.status} aria-label={"我的投票，" + vote.label + "，" + vote.status + "。查看你的選擇"}>
