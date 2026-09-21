@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.audio.json",
+  "compilerOptions": {
+    "outDir": "../.tools/draw-tests"
+  },
+  "include": [
+    "../lib/light-draw.ts",
+    "../lib/light-draw-sound.ts"
+  ]
+}

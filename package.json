@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:audio": "tsc -p tests/tsconfig.audio.json && node --test tests/opening-audio.test.mjs",
+    "test:votes": "tsc -p tests/tsconfig.votes.json && node --test tests/vote-details.test.mjs",
+    "test:draw": "tsc -p tests/tsconfig.draw.json && node --test tests/light-draw.test.mjs"
   },
   "engines": {
     "node": ">=20.9.0"

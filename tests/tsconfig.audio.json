@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "types": [],
+    "outDir": "../.tools/audio-tests",
+    "rootDir": "../lib"
+  },
+  "include": [
+    "../lib/opening-audio.ts"
+  ]
+}

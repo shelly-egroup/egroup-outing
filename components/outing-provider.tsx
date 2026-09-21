@@ -22,7 +22,7 @@ import {
 } from "firebase/database";
 import { adminEmails, getFirebase } from "@/lib/firebase";
 import {
-  cleanPreferences,
+  prepareVoteDetails,
   isVotingOpen,
   type Catalog,
   type PublicVote,
@@ -224,8 +224,7 @@ export function OutingProvider({ children }: { children: ReactNode }) {
       throw new Error("投票已截止，這次變更沒有送出。");
     const plan = catalog.plans[draft.planId];
     if (!plan?.active) throw new Error("這個方案已停止接受投票，請重新選擇。");
-    if (draft.note.length > 1000) throw new Error("備註請控制在 1000 字以內。");
-    const preferences = cleanPreferences(plan, draft.preferences);
+    const privateDetails = prepareVoteDetails(plan, draft);
     const token = await user.getIdTokenResult();
     const publicVote = {
       planId: draft.planId,
@@ -236,9 +235,7 @@ export function OutingProvider({ children }: { children: ReactNode }) {
       updatedAt: serverTimestamp(),
     };
     const details = {
-      planId: draft.planId,
-      preferences,
-      note: draft.note.trim(),
+      ...privateDetails,
       updatedAt: serverTimestamp(),
     };
     try {

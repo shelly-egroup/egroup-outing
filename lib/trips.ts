@@ -35,14 +35,35 @@ export type VoteDetails = {
   planId: string;
   preferences?: Record<string, string>;
   note: string;
+  familyCount?: number;
+  familyNote?: string;
   updatedAt: number;
 };
 export type VoteDraft = {
   planId: string;
   preferences: Record<string, string>;
   note: string;
+  bringingFamily: boolean;
+  familyCount: number;
+  familyNote: string;
 };
-export const emptyDraft: VoteDraft = { planId: "", preferences: {}, note: "" };
+export const emptyDraft: VoteDraft = { planId: "", preferences: {}, note: "", bringingFamily: false, familyCount: 0, familyNote: "" };
+export function voteDraftFromDetails(details: VoteDetails): VoteDraft {
+  const count = details.familyCount ?? 0;
+  const familyCount = Number.isSafeInteger(count) && count > 0 ? count : 0;
+  return { planId: details.planId, preferences: details.preferences || {}, note: details.note || "", bringingFamily: familyCount > 0, familyCount, familyNote: familyCount > 0 ? details.familyNote || "" : "" };
+}
+export function prepareVoteDetails(plan: TripPlan, draft: VoteDraft): Omit<VoteDetails, "updatedAt"> {
+  if (draft.note.length > 1000) throw new Error("方案備註請控制在 1000 字以內。");
+  if (draft.bringingFamily && (!Number.isSafeInteger(draft.familyCount) || draft.familyCount < 1))
+    throw new Error("請填寫家眷總人數，至少 1 位，不包含你自己。");
+  if (draft.bringingFamily && draft.familyNote.length > 1000) throw new Error("家眷備註請控制在 1000 字以內。");
+  return {
+    planId: draft.planId, preferences: cleanPreferences(plan, draft.preferences), note: draft.note.trim(),
+    familyCount: draft.bringingFamily ? draft.familyCount : 0,
+    familyNote: draft.bringingFamily ? draft.familyNote.trim() : "",
+  };
+}
 export function sortedPlans(catalog: Catalog) {
   return Object.entries(catalog.plans || {}).sort(
     (a, b) => a[1].order - b[1].order,

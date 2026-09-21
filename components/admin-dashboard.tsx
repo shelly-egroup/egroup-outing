@@ -51,6 +51,7 @@ export default function AdminDashboard() {
     [failed, setFailed] = useState("");
   const [details, setDetails] = useState<Record<string, VoteDetails>>({}),
     [detailsError, setDetailsError] = useState("");
+  const [detailsReady, setDetailsReady] = useState(false);
   useEffect(() => {
     if (catalog && !dirty) {
       setDraft(structuredClone(catalog));
@@ -58,6 +59,7 @@ export default function AdminDashboard() {
     }
   }, [catalog, dirty]);
   useEffect(() => {
+    setDetailsReady(false);
     if (!isAdmin) {
       setDetails({});
       return;
@@ -66,9 +68,10 @@ export default function AdminDashboard() {
       ref(getFirebase().database, "outing/voteDetails"),
       (snap) => {
         setDetails(snap.val() || {});
+        setDetailsReady(true);
         setDetailsError("");
       },
-      () => setDetailsError("無法讀取投票明細，請確認管理員權限。"),
+      () => { setDetailsReady(false); setDetailsError("無法讀取投票明細，請確認管理員權限。"); },
     );
   }, [isAdmin]);
   useEffect(() => {
@@ -129,6 +132,12 @@ export default function AdminDashboard() {
       setSaving(false);
     }
   }
+  const voterIds = Object.keys(votes);
+  const familyResponses = voterIds.filter(uid => details[uid]?.familyCount !== undefined).length;
+  const familyTotal = voterIds.reduce((sum, uid) => {
+    const count = details[uid]?.familyCount ?? 0;
+    return sum + (Number.isSafeInteger(count) && count > 0 ? count : 0);
+  }, 0);
   const access = !authReady || (user && !profileReady) ? (
     <div className="state-box"><LoadingIndicator label="確認登入狀態中" /></div>
   ) : !user ? (
@@ -690,6 +699,10 @@ export default function AdminDashboard() {
                 </span>
               </div>
               {(detailsError || votesError) && <p role="alert">{detailsError || votesError}</p>}
+              {votesReady && detailsReady && <div className="admin-attendance">
+                <span>同事<b>{voterIds.length}</b></span><span>家眷<b>{familyTotal}</b></span><span>同行合計<b>{voterIds.length + familyTotal}</b></span>
+                <small>{familyResponses < voterIds.length ? (voterIds.length - familyResponses) + " 位同事尚未填寫家眷資料，合計以已填資料計算。" : "家眷不重複計入投票票數；同行合計包含投票同事與家眷。"}</small>
+              </div>}
               <div className="table-scroll">
                 <table>
                   <thead>
@@ -697,7 +710,9 @@ export default function AdminDashboard() {
                       <th>同事</th>
                       <th>方案</th>
                       <th>選配偏好</th>
-                      <th>備註（僅管理員）</th>
+                      <th>方案備註</th>
+                      <th>家眷人數</th>
+                      <th>家眷備註</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -717,7 +732,9 @@ export default function AdminDashboard() {
                               )
                               .join("、") || "請主辦安排"}
                           </td>
-                          <td>{detail?.note || "—"}</td>
+                          <td className="private-note-text">{detail?.note || "—"}</td>
+                          <td>{!detailsReady ? "讀取中" : detail?.familyCount === undefined ? "尚未填寫" : detail.familyCount > 0 ? detail.familyCount + " 位（不含本人）" : "自己參加"}</td>
+                          <td className="private-note-text">{(detail?.familyCount ?? 0) > 0 ? detail?.familyNote || "—" : "—"}</td>
                         </tr>
                       );
                     })}

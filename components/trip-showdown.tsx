@@ -6,6 +6,8 @@ import ImageLightbox from "./image-lightbox";
 import LiveResults from "./live-results";
 import LoadingIndicator from "./loading-indicator";
 import VersusBadge from "./versus-badge";
+import PlanPicker from "./plan-picker";
+import PreferenceGroup from "./preference-group";
 import OpeningAnimation from "./opening-animation";
 import { useOuting } from "./outing-provider";
 import { defaultCatalog } from "@/lib/default-catalog";
@@ -13,6 +15,7 @@ import {
   cleanPreferences,
   deadlineLabel,
   emptyDraft,
+  voteDraftFromDetails,
   isVotingOpen,
   sortedPlans,
   type VoteDraft,
@@ -48,7 +51,7 @@ export default function TripShowdown() {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const dirty = useRef(false),
     previousUid = useRef<string | null>(null);
-  const planPreferences = useRef<Record<string, Record<string, string>>>({});
+  const planDrafts = useRef<Record<string, Pick<VoteDraft, "preferences" | "note">>>({});
   const selected = catalog.plans[draft.planId];
   const actualVote = user ? votes[user.uid] : null;
   const votingOpen = isVotingOpen(catalog, now);
@@ -59,17 +62,13 @@ export default function TripShowdown() {
     if (previousUid.current && previousUid.current !== user?.uid) {
       setDraft(emptyDraft);
       dirty.current = false;
-      planPreferences.current = {};
+      planDrafts.current = {};
       setReview(false);
       setSuccess(false);
     }
     previousUid.current = user?.uid || null;
     if (user && detailsReady && myDetails && !dirty.current) {
-      setDraft({
-        planId: myDetails.planId,
-        preferences: myDetails.preferences || {},
-        note: myDetails.note,
-      });
+      setDraft(voteDraftFromDetails(myDetails));
     }
   }, [user, authReady, myDetails, detailsReady]);
   useEffect(() => {
@@ -92,8 +91,8 @@ export default function TripShowdown() {
   }
   function choose(id: string, scroll = true) {
     if (id !== draft.planId) {
-      if (draft.planId) planPreferences.current[draft.planId] = draft.preferences;
-      edit({ planId: id, preferences: planPreferences.current[id] || {} });
+      if (draft.planId) planDrafts.current[draft.planId] = { preferences: draft.preferences, note: draft.note };
+      edit({ planId: id, preferences: planDrafts.current[id]?.preferences || {}, note: planDrafts.current[id]?.note || "" });
     }
     setSaveError("");
     if (scroll) requestAnimationFrame(() =>
@@ -111,11 +110,16 @@ export default function TripShowdown() {
         value: group.choices[preferences[id]]?.label || "請主辦安排",
       }))
     : [];
+  const familyCountValid = !draft.bringingFamily || (Number.isSafeInteger(draft.familyCount) && draft.familyCount > 0);
+  const familySummary = draft.bringingFamily ? (familyCountValid ? "帶 " + draft.familyCount + " 位家眷，共 " + (draft.familyCount + 1) + " 人同行" : "請填家眷人數") : "自己參加";
+  const planNoteLabel = "備註";
   const summary = [
     "姓名：" + (user?.displayName || ""),
     "主方案：" + (selected?.title || ""),
     ...preferenceSummary.map((item) => item.label + "：" + item.value),
-    "備註：" + (draft.note.trim() || "無"),
+    planNoteLabel + "：" + (draft.note.trim() || "無"),
+    "家眷：" + familySummary,
+    ...(draft.bringingFamily && draft.familyNote.trim() ? ["家眷備註：" + draft.familyNote.trim()] : []),
   ].join("\n");
   async function save() {
     if (saving) return;
@@ -162,7 +166,7 @@ export default function TripShowdown() {
         </div>
         <div className="topbar wrap">
           <Link href="/" className="brand">
-            秋遊・就是要對決<span>2026</span>
+            揪是要對決<span>2026</span>
           </Link>
           <AccountMenu />
         </div>
@@ -176,7 +180,7 @@ export default function TripShowdown() {
             <h1>
               秋遊去哪？
               <br />
-              <em>這次，聽你的。</em>
+              <em>揪 差你一票</em>
             </h1>
             <p>
               走讀老街，還是好好放鬆？
@@ -196,8 +200,8 @@ export default function TripShowdown() {
           </div>
           <div className="hero-art">
             <img
-              src="/assets/autumn-showdown-hero-v2.png"
-              alt="大稻埕走讀與按摩下午茶的秋遊對決"
+              src="/assets/jo-showdown-hero-v3.png"
+              alt="揪是要對決：大稻埕走讀與按摩下午茶"
             />
             <div className="hero-art-badge">
               秋遊
@@ -328,26 +332,12 @@ export default function TripShowdown() {
                 </button>
               )}
             </div>
-            <fieldset className="quick-plan-picker" disabled={saving}>
-              <legend>在這裡也能直接選，隨時切換陣營</legend>
-              <div className="quick-plan-options">
-                {plans.map(([id, plan]) => (
-                  <button key={id} type="button"
-                    className={"quick-plan-option tone-" + plan.color + (draft.planId === id ? " picked" : "")}
-                    aria-pressed={draft.planId === id} aria-controls="selection-content"
-                    onClick={() => choose(id, false)}>
-                    <span className="quick-plan-code" aria-hidden="true">{plan.code}</span>
-                    <span><b>{plan.shortName}</b><small>{plan.title}</small></span>
-                    <span className="quick-plan-check" aria-hidden="true">{draft.planId === id ? "✓" : "＋"}</span>
-                  </button>
-                ))}
-              </div>
-            </fieldset>
+            <PlanPicker plans={plans} selectedId={draft.planId} disabled={saving || intro} onChoose={id => choose(id, false)} />
             <div id="selection-content">
             {!selected ? (
               <p className="selection-hint">選好陣營，就能接著挑午餐、按摩或下午茶。先選偏好，最後再登入投票。</p>
             ) : (
-              <div className="selection-layout">
+              <div className="selection-layout" data-team-tone={selected.color}>
                 <div className="preference-panel">
                   <div className={"selected-banner tone-" + selected.color}>
                     <span>
@@ -355,72 +345,15 @@ export default function TripShowdown() {
                     </span>
                     <h3>{selected.title}</h3>
                   </div>
-                  {Object.entries(selected.groups || {}).map(
-                    ([groupId, group]) => (
-                      <fieldset
-                        className="preference-group"
-                        key={groupId}
-                        disabled={saving || !selected.active || !votingOpen}
-                      >
-                        <legend>
-                          {group.label}
-                          <small>可先留白，交給主辦安排</small>
-                        </legend>
-                        <div className="preference-choices">
-                          {Object.entries(group.choices || {}).map(
-                            ([choiceId, choice]) => (
-                              <label
-                                className={
-                                  "preference-choice" +
-                                  (preferences[groupId] === choiceId
-                                    ? " checked"
-                                    : "")
-                                }
-                                key={choiceId}
-                              >
-                                <input
-                                  type="radio"
-                                  name={groupId}
-                                  value={choiceId}
-                                  checked={preferences[groupId] === choiceId}
-                                  onChange={() =>
-                                    edit({
-                                      preferences: {
-                                        ...draft.preferences,
-                                        [groupId]: choiceId,
-                                      },
-                                    })
-                                  }
-                                />
-                                <span>
-                                  <b>{choice.label}</b>
-                                  {choice.description && (
-                                    <small>{choice.description}</small>
-                                  )}
-                                </span>
-                                {choice.price && (
-                                  <strong>{choice.price}</strong>
-                                )}
-                              </label>
-                            ),
-                          )}
-                          <label className="preference-choice arrange-choice">
-                            <input
-                              type="radio"
-                              name={groupId}
-                              checked={!preferences[groupId]}
-                              onChange={() => {
-                                const next = { ...draft.preferences };
-                                delete next[groupId];
-                                edit({ preferences: next });
-                              }}
-                            />
-                            <span>請主辦安排</span>
-                          </label>
-                        </div>
-                      </fieldset>
-                    ),
-                  )}
+                  {Object.entries(selected.groups || {}).map(([groupId, group]) => (
+                    <PreferenceGroup key={draft.planId + ":" + groupId} groupId={groupId} group={group}
+                      selectedId={preferences[groupId] || ""} disabled={saving || !selected.active || !votingOpen || intro}
+                      onChoose={choiceId => {
+                        const next = { ...draft.preferences };
+                        if (choiceId) next[groupId] = choiceId; else delete next[groupId];
+                        edit({ preferences: next });
+                      }} />
+                  ))}
                   {draft.planId === "B" && (
                     <details className="menu-details">
                       <summary>看完整店家價目表（點圖可放大）</summary>
@@ -437,23 +370,36 @@ export default function TripShowdown() {
                     </details>
                   )}
                   <label className="note-field">
-                    飲食、按摩注意事項或其他備註
-                    <small>只有你與主辦人看得到。</small>
+                    {planNoteLabel}（選填）
+                    <small>沒有特別需求可以留白，只有你與主辦人看得到。</small>
                     <textarea
                       maxLength={1000}
                       rows={3}
                       value={draft.note}
                       disabled={saving || !votingOpen}
-                      placeholder="例如：不吃牛肉、按摩需避開肩頸…"
+                      placeholder={draft.planId === "B" ? "例如：按摩力道輕一點、需避開肩頸，或其他需要協助的事…" : "例如：素食、不吃牛肉、走路需要多休息、手作注意事項…"}
                       onChange={(event) => edit({ note: event.target.value })}
                     />
                     <span>{draft.note.length} / 1000</span>
                   </label>
+                  <fieldset className="family-fieldset" disabled={saving || !votingOpen}>
+                    <legend>會帶家眷一起來嗎？</legend>
+                    <p className="quiet">一起安排座位和餐點，填家眷人數就好，不包含你自己。</p>
+                    <div className="family-toggle">
+                      <label className={"preference-choice" + (!draft.bringingFamily ? " checked" : "")}><input type="radio" name="bringing-family" checked={!draft.bringingFamily} onChange={() => edit({ bringingFamily: false })} /><span>自己參加</span></label>
+                      <label className={"preference-choice" + (draft.bringingFamily ? " checked" : "")}><input type="radio" name="bringing-family" checked={draft.bringingFamily} onChange={() => edit({ bringingFamily: true, familyCount: Math.max(1, draft.familyCount) })} /><span>帶家眷一起</span></label>
+                    </div>
+                    {draft.bringingFamily && <div className="family-fields">
+                      <label className="family-count-label" htmlFor="family-count">家眷總人數<span className="family-count-input"><input id="family-count" type="number" min={1} step={1} inputMode="numeric" required value={draft.familyCount || ""} aria-invalid={!familyCountValid} aria-describedby="family-count-help" onChange={event => edit({ familyCount: Number(event.target.value) || 0 })} /><span>位</span></span></label>
+                      <p id="family-count-help" className={familyCountValid ? "quiet" : "notice-error"}>{familyCountValid ? "加上你，這次共 " + (draft.familyCount + 1) + " 人一起出發。" : "請填至少 1 位，不包含你自己。"}</p>
+                      <label className="note-field family-note">家眷備註（選填）<small>例如小朋友同行、兒童椅、餐點或行動需求，只給你與主辦看。</small><textarea maxLength={1000} rows={3} value={draft.familyNote} placeholder="有什麼需要主辦幫忙安排的，都可以寫在這裡。" onChange={event => edit({ familyNote: event.target.value })} /><span>{draft.familyNote.length} / 1000</span></label>
+                    </div>}
+                  </fieldset>
                 </div>
                 <aside className="vote-review" aria-label="投票摘要">
                   <span className="eyebrow">YOUR VOTE</span>
                   <h3>{actualVote ? "你的選擇" : "準備好站這一邊？"}</h3>
-                  <strong className="review-plan">{selected.title}</strong>
+                  <div className="review-plan"><span className="team-label">{selected.code} · {selected.shortName}</span><strong>{selected.title}</strong></div>
                   <dl>
                     {preferenceSummary.map((item) => (
                       <div key={item.label}>
@@ -461,6 +407,9 @@ export default function TripShowdown() {
                         <dd>{item.value}</dd>
                       </div>
                     ))}
+                    {draft.note.trim() && <div><dt>{planNoteLabel}</dt><dd className="private-note-text">{draft.note}</dd></div>}
+                    <div><dt>同行安排</dt><dd>{familySummary}</dd></div>
+                    {draft.bringingFamily && draft.familyNote.trim() && <div><dt>家眷備註</dt><dd className="private-note-text">{draft.familyNote}</dd></div>}
                   </dl>
                   {actualVote && (
                     <p className="saved-vote">
@@ -505,7 +454,7 @@ export default function TripShowdown() {
                       <button
                         className="button button-dark"
                         disabled={
-                          saving || !connected || !ready || !detailsReady
+                          saving || !connected || !ready || !detailsReady || !familyCountValid
                         }
                         onClick={() => {
                           setSaveError("");
@@ -536,14 +485,14 @@ export default function TripShowdown() {
                     </>
                   )}
                   <p className="privacy-note">
-                    送出後，姓名、Google 頭像與所選方案會顯示於公開戰況；備註只顯示給你與主辦人。
+                    送出後，姓名、Google 頭像與所選方案會顯示於公開戰況；備註與家眷資料只顯示給你與主辦人。
                   </p>
                 </aside>
               </div>
             )}
             </div>
           </section>
-          <LiveResults catalog={catalog} />
+          <LiveResults catalog={catalog} motionEnabled={!intro} />
         </main>
         <footer className="site-footer">
           <div className="wrap">
@@ -555,6 +504,7 @@ export default function TripShowdown() {
       <dialog
         ref={dialogRef}
         className="confirm-dialog"
+        data-team-tone={selected?.color}
         aria-labelledby="confirm-vote-title"
         onCancel={(event) => {
           if (saving) event.preventDefault();
@@ -570,7 +520,7 @@ export default function TripShowdown() {
             {actualVote ? "確認更新這一票？" : "這一票，就投這裡！"}
           </h2>
           <p>{user?.displayName} 的選擇</p>
-          <strong className="confirm-plan">{selected?.title}</strong>
+          <div className="confirm-plan"><span className="team-label">{selected?.code} · {selected?.shortName}</span><strong>{selected?.title}</strong></div>
           <dl>
             {preferenceSummary.map((item) => (
               <div key={item.label}>
@@ -578,8 +528,10 @@ export default function TripShowdown() {
                 <dd>{item.value}</dd>
               </div>
             ))}
+            <div><dt>同行安排</dt><dd>{familySummary}</dd></div>
+            {draft.bringingFamily && draft.familyNote.trim() && <div><dt>家眷備註</dt><dd className="private-note-text">{draft.familyNote}</dd></div>}
           </dl>
-          {draft.note && <p className="confirm-note">備註：{draft.note}</p>}
+          {draft.note && <p className="confirm-note">{planNoteLabel}：{draft.note}</p>}
           <p className="quiet">截止前可以改票；更新後仍只計一票。</p>
           {saveError && (
             <p className="notice-error" role="alert">
@@ -596,7 +548,7 @@ export default function TripShowdown() {
             </button>
             <button
               className="button button-dark"
-              disabled={saving || !votingOpen || !connected}
+              disabled={saving || !votingOpen || !connected || !familyCountValid}
               onClick={save}
             >
               {saving ? <LoadingIndicator label="正在儲存" compact /> : !votingOpen ? "投票已截止" : "確定送出 ✓"}

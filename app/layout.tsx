@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { OutingProvider } from "@/components/outing-provider";
 import "./globals.css";
 export const metadata: Metadata = {
-  title: "秋季員旅｜雙方案對決",
+  title: "揪是要對決｜秋遊投票",
   description:
     "10/29 秋季員工旅遊：走讀大稻埕，還是按摩下午茶？登入投票，即時看戰況。",
 };

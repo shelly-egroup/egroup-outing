@@ -1,5 +1,8 @@
 "use client";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createOpeningAudio, type OpeningAudioState } from "@/lib/opening-audio";
+import OpeningSplash from "./opening-splash";
+import LoadingIndicator from "./loading-indicator";
 
 // Source video is 60 fps. These cuts are seconds on the extracted audio timeline.
 const CUES = [0, 0.183333, 1, 2.116667, 2.983333, 6.133333, 8.616667];
@@ -17,11 +20,11 @@ function HostShot({side, plans}: {side: "chill" | "walk"; plans: Plans}) {
 }
 export default function OpeningAnimation({onFinish, plans}: {onFinish: () => void; plans: Plans}) {
   const [step, setStep] = useState(0), [started, setStarted] = useState(false);
-  const [audioUnavailable, setAudioUnavailable] = useState(false);
+  const [audioState, setAudioState] = useState<OpeningAudioState>("idle");
   const audioRef = useRef<HTMLAudioElement>(null), stageRef = useRef<HTMLDivElement>(null), progressRef = useRef<HTMLDivElement>(null);
   const finishRef = useRef(onFinish), sceneRef = useRef(-1);
   const mounted = useRef(false), startedAt = useRef<number | null>(null);
-  const needsSoundGesture = useRef(false), audioAttempt = useRef(0);
+  const sound = useRef<ReturnType<typeof createOpeningAudio> | null>(null);
   // Keep both portraits and the plan shot mounted across their shared turn.
   const shotGroup = step <= 4 ? 1 : step;
   finishRef.current = onFinish;
@@ -30,41 +33,17 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
     return startedAt.current === null ? 0 : Math.max(0, (performance.now() - startedAt.current) / 1000);
   }
 
-  async function playScore(muted: boolean) {
-    const audio = audioRef.current;
-    if (!audio || !mounted.current || startedAt.current === null || elapsed() >= DURATION) return;
-    const attempt = ++audioAttempt.current;
-    audio.muted = muted;
-    audio.volume = .55;
-    try {
-      audio.currentTime = Math.min(elapsed(), DURATION);
-      await audio.play();
-      if (!mounted.current) { audio.pause(); return; }
-      if (attempt !== audioAttempt.current) return;
-      const time = elapsed();
-      if (time >= DURATION) { audio.pause(); return; }
-      // Joining after a gesture must continue at the current shot, never restart the score.
-      if (Math.abs(audio.currentTime - time) > .03) audio.currentTime = time;
-      needsSoundGesture.current = muted;
-      setAudioUnavailable(false);
-    } catch (error) {
-      if (!mounted.current || attempt !== audioAttempt.current) return;
-      if ((error as DOMException).name === "NotAllowedError") {
-        needsSoundGesture.current = true;
-        // Audio restrictions never hold up the animation.
-        if (!muted) void playScore(true);
-      } else {
-        needsSoundGesture.current = false;
-        setAudioUnavailable(true);
-      }
-    }
-  }
-
   useEffect(() => {
     mounted.current = true;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const audio = audioRef.current;
+    if (!audio) return;
+    const controller = createOpeningAudio(audio, {
+      getTime: () => startedAt.current === null ? null : elapsed(),
+      duration: DURATION, onState: setAudioState,
+    });
+    sound.current = controller;
     // Decode and prepaint under the title card during the 800 ms entrance hold.
     for (const src of ["/assets/intro-hosts.png", "/assets/intro-outing-props-v2.png", "/assets/intro-ganbanyoku-v3.png"]) {
       const img = new Image();
@@ -76,24 +55,28 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
       startedAt.current = performance.now();
       sceneRef.current = -1;
       setStarted(true);
-      void playScore(false);
+      controller.start();
     }, START_DELAY_MS);
     const unlockSound = (event: Event) => {
-      if (!needsSoundGesture.current || startedAt.current === null) return;
       if (event.target instanceof Element && event.target.closest(".film-controls")) return;
-      void playScore(false);
+      controller.interact();
     };
     const key = (event: KeyboardEvent) => {
       if (event.key === "Escape") finishRef.current();
-      else if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.length === 1) unlockSound(event);
+      else if (!event.ctrlKey && !event.metaKey && !event.altKey && (event.key.length === 1 || event.key === "Enter")) unlockSound(event);
     };
+    const resume = () => { if (document.visibilityState === "visible") controller.resume(); };
+    document.addEventListener("visibilitychange", resume);
+    window.addEventListener("pageshow", resume);
     window.addEventListener("click", unlockSound);
     window.addEventListener("keydown", key);
     return () => {
       mounted.current = false;
-      ++audioAttempt.current;
       clearTimeout(timer);
-      audio?.pause();
+      controller.dispose();
+      if (sound.current === controller) sound.current = null;
+      document.removeEventListener("visibilitychange", resume);
+      window.removeEventListener("pageshow", resume);
       window.removeEventListener("click", unlockSound);
       window.removeEventListener("keydown", key);
       document.body.style.overflow = previous;
@@ -125,20 +108,17 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
     for (const animation of stage.getAnimations({ subtree: true })) animation.currentTime = offset;
   }, [shotGroup, started]);
 
-  function audioFailed() {
-    if (!mounted.current) return;
-    needsSoundGesture.current = false;
-    setAudioUnavailable(true);
-  }
-  return <section className="film-opening" role="dialog" aria-modal="true" aria-label="秋遊要對決開場動畫">
-    <audio ref={audioRef} src="/assets/autumn-opening-score.m4a" preload="auto" onError={audioFailed} />
+  return <section className="film-opening" data-audio-state={audioState} role="dialog" aria-modal="true" aria-label="揪是要對決開場動畫">
+    <audio ref={audioRef} src="/assets/autumn-opening-score.m4a" preload="auto" />
     <div className="film-controls">
       <button type="button" onClick={onFinish} autoFocus>跳過動畫 ↗</button>
     </div>
-    {audioUnavailable && <p className="film-audio-note" role="status">音效載入失敗，先欣賞動畫。</p>}
-    {!started && <div className="film-start"><span className="film-start-eyebrow">THE AUTUMN SHOWDOWN</span><h1>秋遊<span>要對決</span></h1><p role="status">精彩即將登場</p></div>}
+    {audioState === "blocked" && <button className="film-audio-note film-sound-prompt" onClick={(event) => { event.stopPropagation(); sound.current?.interact(); }}>音樂自動重試中，也可點一下接上</button>}
+    {audioState === "error" && <button className="film-audio-note film-sound-prompt" onClick={(event) => { event.stopPropagation(); sound.current?.interact(); }}>音樂自動重試中，也可點一下重試</button>}
+    {started && audioState === "loading" && <div className="film-audio-note"><LoadingIndicator label="音樂載入中" compact /></div>}
+    {!started && <OpeningSplash />}
       <div ref={stageRef} className={"film-stage film-step-" + shotGroup} key={shotGroup} data-scene={step} data-playing={started} aria-hidden="true">
-        {step === 0 && <div className="film-type-flash"><span>秋遊</span><strong>要對決</strong></div>}
+        {step === 0 && <div className="film-type-flash"><span>揪是</span><strong>要對決</strong></div>}
         {shotGroup === 1 && <div className="film-host-sequence">
           <div className="film-plan-shot">
             <div className="film-diagonal" />
@@ -163,7 +143,7 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
         </div>}
         {step === 6 && <div className="film-ending">
           <span className="ending-eyebrow">THE AUTUMN SHOWDOWN</span>
-          <h2 className="ending-logo"><span>秋遊</span><strong>要對決</strong></h2>
+          <h2 className="ending-logo"><span>揪是</span><strong>要對決</strong></h2>
           <p className="ending-message">你的一票，<strong>決定秋遊去哪！</strong></p>
           <div className="ending-partnership" aria-label="馴錢師與 Egroup 聯名"><span className="partner-name partner-trainer">馴錢師</span><b className="partner-cross" aria-hidden="true">×</b><span className="partner-name partner-egroup">Egroup</span></div>
         </div>}

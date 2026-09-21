@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.audio.json",
+  "include": [
+    "../lib/trips.ts"
+  ],
+  "compilerOptions": {
+    "outDir": "../.tools/vote-tests"
+  }
+}

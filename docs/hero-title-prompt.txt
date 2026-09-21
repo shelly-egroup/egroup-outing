@@ -1,0 +1,5 @@
+Method: built-in image_gen, edit via conversation image.
+Input: public/assets/autumn-showdown-hero-v2.png
+Output: public/assets/jo-showdown-hero-v3.png
+
+Use case: text-localization. Asset type: website hero banner. Input image: Image 1 is the edit target. Change ONLY the large Traditional Chinese title in the bottom neon banner from「秋遊要對決」to EXACTLY「揪是要對決」. The five characters must be 揪 是 要 對 決, in this exact order, no punctuation. Keep the existing bold white 3D italic typography, black extrusion, cyan left and magenta right outlines, and centered fit inside the same bottom strip. Preserve the upper photographic montage exactly: central man with glasses in yellow tuxedo, heritage street and tour guide on left, massage and afternoon tea on right, all faces, hands, bodies, lighting, props and framing unchanged. Keep the 16:9 landscape composition. No other new text. Do not change any other part of the image.
