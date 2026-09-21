@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import OutingHeader from "./outing-header";
 import { votingAccessMessage } from "@/lib/voting-access";
 import { voteReminder } from "@/lib/vote-reminder";
@@ -315,29 +315,31 @@ export default function TripShowdown() {
                     <h3>{selected.title}</h3>
                   </div>
                   {Object.entries(selected.groups || {}).map(([groupId, group]) => (
-                    <PreferenceGroup key={draft.planId + ":" + groupId} groupId={groupId} group={group} individual={choiceGroupMode(draft.planId, groupId, group) === "individual"}
-                      selectedId={preferences[groupId] || ""} disabled={saving || !selected.active || !votingOpen || intro}
-                      onChoose={choiceId => {
-                        const next = { ...draft.preferences };
-                        if (choiceId) next[groupId] = choiceId; else delete next[groupId];
-                        edit({ preferences: next });
-                      }} />
+                    <Fragment key={draft.planId + ":" + groupId}>
+                      <PreferenceGroup groupId={groupId} group={group} individual={choiceGroupMode(draft.planId, groupId, group) === "individual"}
+                        selectedId={preferences[groupId] || ""} disabled={saving || !selected.active || !votingOpen || intro}
+                        onChoose={choiceId => {
+                          const next = { ...draft.preferences };
+                          if (choiceId) next[groupId] = choiceId; else delete next[groupId];
+                          edit({ preferences: next });
+                        }} />
+                      {draft.planId === "B" && groupId === "g0" && (
+                        <details className="menu-details">
+                          <summary>看完整店家價目表（點圖可放大）</summary>
+                          <div className="menu-images">
+                            <ImageLightbox
+                              src="/assets/massage-menu-1.jpg"
+                              alt="不老松腳底按摩與全身指壓價目表"
+                            />
+                            <ImageLightbox
+                              src="/assets/massage-menu-2.jpg"
+                              alt="不老松筋膜刀與養身套餐價目表"
+                            />
+                          </div>
+                        </details>
+                      )}
+                    </Fragment>
                   ))}
-                  {draft.planId === "B" && (
-                    <details className="menu-details">
-                      <summary>看完整店家價目表（點圖可放大）</summary>
-                      <div className="menu-images">
-                        <ImageLightbox
-                          src="/assets/massage-menu-1.jpg"
-                          alt="不老松腳底按摩與全身指壓價目表"
-                        />
-                        <ImageLightbox
-                          src="/assets/massage-menu-2.jpg"
-                          alt="不老松筋膜刀與養身套餐價目表"
-                        />
-                      </div>
-                    </details>
-                  )}
                   <label className="note-field">
                     {planNoteLabel}（選填）
                     <small>沒有特別需求可以留白，只有你與主辦人看得到。</small>
