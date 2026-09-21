@@ -42,16 +42,30 @@ button {
   border-bottom: 4px solid var(--yellow);
   white-space: nowrap;
 }
-.ticker span {
-  display: inline-block;
-  padding: 0.55rem 0;
+.ticker-track {
+  display: flex;
+  width: max-content;
   font-weight: 800;
   letter-spacing: 0.12em;
-  animation: tick 44s linear infinite;
+  animation: tick 60s linear infinite;
 }
-.ticker-flag { display: inline-block; width: 13px; height: 14px; margin-right: 10px; color: var(--yellow); opacity: .72; vertical-align: -1px; }
+.ticker-cycle { display: flex; flex: 0 0 auto; }
+.ticker-message {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 50vw;
+  padding: 0.55rem clamp(20px, 3vw, 48px);
+}
+.ticker-flag { flex: 0 0 13px; width: 13px; height: 14px; color: var(--yellow); opacity: .72; }
+.ticker-message[data-topic="travel"] .ticker-flag { color: #9dcfff; }
 @keyframes tick { to { transform: translateX(-50%); } }
-@media (prefers-reduced-motion: reduce) { .ticker span { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .ticker { overflow-x: auto; scrollbar-width: none; }
+  .ticker-track { animation: none; }
+  .ticker-cycle + .ticker-cycle { display: none; }
+}
 header {
   padding: 34px 0 24px;
   background: radial-gradient(

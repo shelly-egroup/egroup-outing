@@ -1,10 +1,40 @@
 "use client";
 import Link from "next/link";
-import { Fragment, useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import AccountMenu from "./account-menu";
 import type { VoteReminder } from "@/lib/vote-reminder";
+
+function OutingTicker({ announcement }: { announcement: string }) {
+  const messages = ["10/29 秋季員旅・雙方案對決・你的一票決定全員行程", announcement];
+  const cycle = useRef<HTMLDivElement>(null);
+  const [duration, setDuration] = useState(60);
+
+  useEffect(() => {
+    const element = cycle.current;
+    if (!element) return;
+    const sync = () => {
+      const width = element.getBoundingClientRect().width;
+      if (width > 0) setDuration(width / 28);
+    };
+    const observer = new ResizeObserver(sync);
+    observer.observe(element);
+    sync();
+    return () => observer.disconnect();
+  }, []);
+
+  return <div className="ticker">
+    <p className="sr-only">{messages.join("　　")}</p>
+    <div className="ticker-track" aria-hidden="true" style={{ animationDuration: duration + "s" }}>
+      {[0, 1].map(repeat => <div className="ticker-cycle" ref={repeat === 0 ? cycle : undefined} key={repeat}>
+        {messages.map((message, index) => <span className="ticker-message" data-topic={index === 1 ? "travel" : "vote"} key={index}>
+          <svg className="ticker-flag" width="15" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 18V3h12l-3 4 3 4H4" /></svg>
+          <span>{message}</span>
+        </span>)}
+      </div>)}
+    </div>
+  </div>;
+}
 export default function OutingHeader({ active, heroActions, vote, announcement }: { active: boolean; heroActions: RefObject<HTMLDivElement | null>; vote?: VoteReminder; announcement: string }) {
-  const tickerMessages = ["10/29 秋季員旅・雙方案對決・你的一票決定全員行程", announcement];
   const [compact, setCompact] = useState(false);
   const bar = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -34,12 +64,7 @@ export default function OutingHeader({ active, heroActions, vote, announcement }
     return () => { observer.disconnect();window.removeEventListener("resize",sync);document.documentElement.style.removeProperty("--outing-header-offset"); };
   }, [active, compact]);
   return <div className={"outing-header" + (compact ? " is-compact" : "")} ref={bar}>
-    <div className="ticker">
-      <p className="sr-only">{tickerMessages.join("　　")}</p>
-      <span aria-hidden="true">{[...tickerMessages, ...tickerMessages].map((message, index) => <Fragment key={index}>
-        <svg className="ticker-flag" width="15" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 18V3h12l-3 4 3 4H4" /></svg>{message}{"　　"}
-      </Fragment>)}</span>
-    </div>
+    <OutingTicker announcement={announcement} />
     <div className="topbar wrap">
       <Link href="/" className="brand">揪是要對決<span>2026</span></Link>
       <div className="header-actions">
