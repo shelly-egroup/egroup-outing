@@ -253,7 +253,7 @@ export default function AdminDashboard() {
             )}
             <div className="organizer-view-tabs" role="group" aria-label="主辦功能">
               <button type="button" aria-pressed={view === "overview"} onClick={() => setView("overview")}>戰況與明細</button>
-              <button type="button" aria-pressed={view === "members"} onClick={() => setView("members")}>帳號與審核{membersReady && <span>{pendingMembers ? pendingMembers + " 待審" : Object.keys(members).length + " 人"}</span>}</button>
+              <button type="button" className="member-review-tab" aria-pressed={view === "members"} onClick={() => setView("members")} title={membersReady && pendingMembers > 0 ? pendingMembers + " 個帳號待審核" : undefined}>帳號與審核{membersReady && <span>{pendingMembers ? pendingMembers + " 待審" : Object.keys(members).length + " 人"}</span>}{membersReady && pendingMembers > 0 && <i className="pending-review-dot" aria-hidden="true" />}</button>
               <button type="button" aria-pressed={view === "editor"} onClick={() => setView("editor")}>編輯方案{dirty && <span>未儲存</span>}</button>
             </div>
             {catalog && <div hidden={view !== "overview"}><AdminVoteOverview catalog={catalog} votes={votes} details={details} emails={emails} ready={votesReady && detailsReady && membersReady} error={votesError || detailsError || membersError} /></div>}

@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import OutingHeader from "./outing-header";
+import HeroStamp from "./hero-stamp";
+import VoteCountdown from "./vote-countdown";
 import { votingAccessMessage } from "@/lib/voting-access";
 import { voteReminder } from "@/lib/vote-reminder";
 import ImageLightbox from "./image-lightbox";
@@ -215,17 +217,10 @@ export default function TripShowdown() {
           </div>
           <div className="hero-art">
             <img
-              src="/assets/jo-showdown-hero-v3.png"
-              alt="揪是要對決：大稻埕走讀與按摩下午茶"
+              src="/assets/jo-showdown-hero-bosses-v5.png"
+              alt="揪是要對決：男老闆領軍藍色走讀派，女老闆領軍粉色放鬆派"
             />
-            <div className="hero-art-badge">
-              秋遊
-              <br />
-              <b>對決中</b>
-            </div>
-            <div className="hero-art-caption">
-              {plans.map(([, plan]) => plan.shortName).join("  VS  ")}
-            </div>
+            <HeroStamp active={introReady && !intro} />
           </div>
         </header>
         <main className="wrap">
@@ -264,7 +259,7 @@ export default function TripShowdown() {
               </div>
               <p>
                 {catalog.settings.closesAt
-                  ? deadlineLabel(catalog.settings.closesAt) + " 截止"
+                  ? deadlineLabel(catalog.settings.closesAt) + " 投票截止"
                   : "每人一票，截止前都能改票"}
               </p>
             </div>
@@ -283,23 +278,13 @@ export default function TripShowdown() {
             )}
           </section>
           <section id="selection" className="selection-section">
-            <div className="section-heading">
-              <div>
+            <div className="section-heading selection-heading">
+              <div className="selection-heading-copy">
                 <span className="eyebrow">MAKE IT YOUR TRIP</span>
-                <h2>{success ? "你的一票，已收到！" : "選好偏好，再投一票"}</h2>
+                <h2>{success ? <>你的一票，<span>已收到！</span></> : <>選好偏好，<span>再投一票</span></>}</h2>
               </div>
-              {selected && (
-                <button
-                  className="button button-white"
-                  onClick={() =>
-                    document
-                      .getElementById("plans")
-                      ?.scrollIntoView({ behavior: "smooth" })
-                  }
-                >
-                  比較完整行程
-                </button>
-              )}
+              {ready && <VoteCountdown closesAt={catalog.settings.closesAt} now={now} votingEnabled={catalog.settings.votingOpen} />}
+              <a className="button button-white selection-compare-button" href="#plans">比較完整行程</a>
             </div>
             <PlanPicker plans={plans} selectedId={draft.planId} disabled={saving || intro || catalogStatus === "loading"} onChoose={id => choose(id, false)} />
             <div id="selection-content">

@@ -3,7 +3,8 @@
   "include": [
     "../lib/trips.ts",
     "../lib/vote-summary.ts",
-    "../lib/calendar.ts"
+    "../lib/calendar.ts",
+    "../lib/vote-countdown.ts"
   ],
   "compilerOptions": {
     "outDir": "../.tools/summary-tests"
