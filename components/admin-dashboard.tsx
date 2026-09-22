@@ -183,10 +183,10 @@ export default function AdminDashboard() {
     }
   }
   const access = !authReady || (user && !profileReady) ? (
-    <LoadingPanel label="主辦控制室準備中" description="正在確認登入身分。" />
+    <LoadingPanel label="主辦專區準備中" description="正在確認登入身分。" />
   ) : !user ? (
     <div className="access-card">
-      <h1>主辦人的控制室</h1>
+      <h1>主辦專區</h1>
       <p>使用指定的 Google 管理員帳號登入。</p>
       <button
         className="button button-yellow"
@@ -221,9 +221,10 @@ export default function AdminDashboard() {
             <div className="section-heading">
               <div>
                 <span className="eyebrow">ORGANIZER DESK</span>
-                <h1>主辦控制室</h1>
+                <h1>主辦專區</h1>
               </div>
-              <span className="live-state">
+              <span className={"live-state connection-state" + (connected ? " is-live" : "")} role="status">
+                <i aria-hidden="true" />
                 {connected ? "已連線" : "連線中斷"}
               </span>
             </div>

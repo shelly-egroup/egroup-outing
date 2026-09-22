@@ -1137,6 +1137,8 @@ summary {
 .live-state i { width: 7px; height: 7px; background: #b3bccc; }
 .arcade-section .live-state.is-live { color: #98f7c9; border-color: #3e8d70; }
 .live-state.is-live i { background: #88f8be; box-shadow: 0 0 8px #88f8be77; animation: live-pulse 2.4s ease-in-out infinite; }
+.connection-state i { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; }
+.connection-state.is-live i { background: #13aa63; box-shadow: 0 0 0 2px #13aa631c, 0 0 8px #13aa6380; }
 @keyframes live-pulse { 50% { opacity: .5; } }
 .battle-summary { display: flex; align-items: center; gap: 32px; justify-content: space-between; margin: 24px 0 28px; padding: 20px 0; border-top: 1px solid #ffffff24; border-bottom: 1px solid #ffffff24; }
 .vote-total { display: flex; align-items: center; gap: 14px; }
