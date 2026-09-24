@@ -20,14 +20,14 @@ export default function AdminChoiceList({ groupId, group, edit, saving, selected
         <div className="visual-choice-copy">
           {!choicesReady ? <span className="choice-edit-usage">正在確認已選人數…</span> : !!selectedChoices[choiceId] && <span className="choice-edit-usage">{selectedChoices[choiceId]} 人已選 · 修改前請留意</span>}
           <InlineEditField label="選項名稱" value={choice.label} maxLength={100} multiline onChange={value => edit(p => { p.groups![groupId].choices[choiceId].label = value; })} />
-          {choice.subtitle !== undefined && <InlineEditField label="選項小標" value={choice.subtitle} required={false} maxLength={100} onChange={value => edit(p => { p.groups![groupId].choices[choiceId].subtitle = value; })} />}
-          {choice.ingredients !== undefined && <InlineEditField label="湯底材料" value={choice.ingredients} required={false} maxLength={250} multiline onChange={value => edit(p => { p.groups![groupId].choices[choiceId].ingredients = value; })} />}
+          {choice.subtitle !== undefined && <InlineEditField className="choice-subtitle-editor" label="選項小標" value={choice.subtitle} required={false} maxLength={100} onChange={value => edit(p => { p.groups![groupId].choices[choiceId].subtitle = value; })} />}
           <HighlightEditField value={choice.description} highlights={choice.descriptionHighlights} onChange={(value, highlights) => edit(p => {
             const option = p.groups![groupId].choices[choiceId];
             option.description = value;
             if (highlights.length) option.descriptionHighlights = highlights;
             else delete option.descriptionHighlights;
           })} />
+          {choice.ingredients !== undefined && <InlineEditField className="choice-ingredients-editor" label="湯底材料" value={choice.ingredients} required={false} maxLength={250} multiline onChange={value => edit(p => { p.groups![groupId].choices[choiceId].ingredients = value; })} />}
         </div>
         <div className="visual-choice-price"><InlineEditField label="選項價格" value={choice.price} placeholder="價格（選填）" required={false} maxLength={50} onChange={value => edit(p => { p.groups![groupId].choices[choiceId].price = value; })} /></div>
         <div className="inline-row-tools visual-choice-tools" aria-label={"調整選項「" + choice.label + "」"}>
