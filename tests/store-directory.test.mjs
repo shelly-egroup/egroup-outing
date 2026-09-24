@@ -99,6 +99,18 @@ test("a complete newer capture replaces reviews without changing edited links", 
   assert.deepEqual(current, before);
 });
 
+test("full review text survives validation and storage, including paragraphs and emoji", () => {
+  const current = record(), candidate = newer(current.reviews);
+  const fullText = "完整評論🙂\n".repeat(200) + "這是全文最後一行。";
+  candidate.reviews[0].text = fullText;
+  delete candidate.reviews[0].excerpt;
+  const parsed = parseReviewSnapshot(candidate);
+  assert.equal(parsed.reviews[0].text, fullText);
+  assert.equal(nextReviewRecord(current, parsed).reviews.reviews[0].text, fullText);
+  candidate.reviews[0].text = "字".repeat(20001);
+  assert.equal(parseReviewSnapshot(candidate), undefined);
+});
+
 test("a slow older response cannot overwrite another admin's newer snapshot", () => {
   const current = record(), latest = nextReviewRecord(current, newer(current.reviews));
   assert.equal(nextReviewRecord(latest, current.reviews), latest);

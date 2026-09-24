@@ -1112,6 +1112,9 @@ summary {
 .store-review-stars .empty-stars { color: #65707a; }
 .store-review-time, .store-review-attribution { display: block; color: #65707a; font-size: 11px; line-height: 1.7; }
 .store-review-list blockquote { margin: 8px 0; color: #34404a; font-size: 14px; line-height: 1.8; white-space: pre-line; overflow-wrap: anywhere; }
+.store-review-list blockquote.store-review-collapsed { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden; }
+.store-review-expand { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 4px 0; border: 0; background: transparent; color: var(--team-ink); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
+.store-review-expand:hover { color: var(--ink); }
 .store-review-empty { font-size: 13px; color: #65707a; margin: 8px 0; }
 .store-review-attribution a, .store-reviews-footer a { color: var(--ink); text-underline-offset: 3px; }
 .store-reviews-footer { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; border-top: 1px solid #dddcd7; padding: 12px 24px; color: #65707a; background: #fffdf7; font-size: 11px; line-height: 1.7; text-align: left; }

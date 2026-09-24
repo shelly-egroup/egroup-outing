@@ -1,13 +1,11 @@
-name: 每日更新 Google 評論
+name: 更新 Google 評論
 
 on:
-  schedule:
-    # Daily at 09:00 Asia/Taipei. GitHub may delay a scheduled run during high load.
-    - cron: '0 1 * * *'
+  # Automatic refresh is paused; retain manual dispatch for a future restart.
   workflow_dispatch:
     inputs:
       store_id:
-        description: '擷取範圍（每日排程仍會更新全部店家）'
+        description: '選擇要擷取的店家'
         type: choice
         default: all
         options:

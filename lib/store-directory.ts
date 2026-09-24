@@ -39,7 +39,7 @@ export function parseReviewSnapshot(value: unknown): StoreReviewSnapshot | undef
   if (!object(value) || !text(value.storeName, 160) || typeof value.rating !== "number" || !Number.isFinite(value.rating) || value.rating < 1 || value.rating > 5 || !Number.isSafeInteger(value.reviewCount) || (value.reviewCount as number) < 5 || !text(value.capturedAt, 40) || !Number.isFinite(Date.parse(value.capturedAt)) || !googleUrl(value.sourceUrl) || !Array.isArray(value.reviews) || value.reviews.length !== 5) return;
   const reviews: StoreReviewSnapshot["reviews"] = [];
   for (const row of value.reviews) {
-    if (!object(row) || !text(row.author, 160) || !googleUrl(row.authorUrl, true) || !Number.isInteger(row.rating) || (row.rating as number) < 1 || (row.rating as number) > 5 || !text(row.relativeTimeAtCapture, 80) || !text(row.text, 1000, true)) return;
+    if (!object(row) || !text(row.author, 160) || !googleUrl(row.authorUrl, true) || !Number.isInteger(row.rating) || (row.rating as number) < 1 || (row.rating as number) > 5 || !text(row.relativeTimeAtCapture, 80) || !text(row.text, 20000, true)) return;
     reviews.push({ author: row.author, authorUrl: row.authorUrl, rating: row.rating as number, relativeTimeAtCapture: row.relativeTimeAtCapture, text: row.text, ...(row.translated === true ? { translated: true } : {}), ...(row.excerpt === true ? { excerpt: true } : {}) });
   }
   if (new Set(reviews.map(row => row.authorUrl)).size !== 5) return;

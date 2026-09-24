@@ -3,12 +3,14 @@ import { parseReviewSnapshot } from "./store-directory";
 import type { StoreReviewSnapshot } from "./store-reviews";
 
 // Run only on the server after authenticating an administrator. Never solve a challenge.
-export async function scrapeStoreReviews(previous: StoreReviewSnapshot): Promise<StoreReviewSnapshot> {
-  let browser: Browser | undefined;
+export async function scrapeStoreReviews(previous: StoreReviewSnapshot, options: { browser?: Browser } = {}): Promise<StoreReviewSnapshot> {
+  let browser = options.browser;
   let timedOut = false;
   const deadline = setTimeout(() => { timedOut = true; void browser?.close().catch(() => {}); }, 45000);
   try {
-    if (process.env.PLAYWRIGHT_BROWSER_MODE === "installed") {
+    if (browser) {
+      // A diagnostic caller can own a visible browser and keep it open for inspection.
+    } else if (process.env.PLAYWRIGHT_BROWSER_MODE === "installed") {
       browser = await playwright.launch({ headless: true, timeout: 10000 });
     } else if (process.platform === "linux") {
       const chromium = (await import("@sparticuz/chromium")).default;
@@ -52,28 +54,30 @@ export async function scrapeStoreReviews(previous: StoreReviewSnapshot): Promise
     }
     if (await latest.getAttribute("aria-checked") !== "true") throw new Error("無法確認最新排序，已保留上一版。");
     const panel = page.getByRole("dialog").filter({ has: latest });
-    const headingText = await panel.innerText();
     const ratingLabel = await panel.getByRole("img", { name: /^評等/ }).first().getAttribute("aria-label");
     const rating = Number(ratingLabel?.match(/評等[：:]\s*([\d.]+)/)?.[1]);
-    const reviewCount = Number(headingText.match(/([\d,]+)\s*則評論/)?.[1].replaceAll(",", ""));
+    // The panel's innerText can join the score and count (e.g. "4.414,725 則評論").
+    const countLabel = await panel.locator("*").evaluateAll(nodes => nodes.map(node => node.textContent?.trim()).find(label => /^[\d,]+\s*則評論$/.test(label || "")));
+    const reviewCount = Number(countLabel?.match(/^([\d,]+)/)?.[1].replaceAll(",", ""));
     const rows = page.locator(".bwb7ce:visible");
     if (await rows.count() < 5) throw new Error("這次未取得完整五則評論，已保留上一版。");
     for (let index = 0; index < 5; index++) {
       const more = rows.nth(index).getByRole("button", { name: /^查看.+的其他評論$/ });
-      if (await more.count() && await more.first().isVisible()) await more.first().click();
+      if (await more.count() && await more.first().isVisible()) {
+        await more.first().click();
+        try { await more.first().waitFor({ state: "hidden", timeout: 5000 }); }
+        catch { throw new Error("評論全文尚未展開完成，已保留上一版。"); }
+      }
     }
     const reviews = await rows.evaluateAll(elements => elements.slice(0, 5).map(el => {
       const stars = Array.from(el.querySelectorAll(".h3PQJ svg path")).map(node => node.getAttribute("fill"));
       const fullText = Array.from(el.querySelectorAll(".d83Iyc")).filter(node => node.getClientRects().length && !node.closest(".PdaDLc")).map(node => Array.from(node.childNodes).map(child => child.nodeType === 3 ? child.textContent : child.nodeName === "BR" ? "\n" : "").join("")).join("\n").trim();
-      const characters = Array.from(fullText);
-      const text = characters.slice(0, 50).join("");
       return {
         author: el.querySelector(".rhtdWc")?.textContent,
         authorUrl: el.querySelector("a.yC3ZMb")?.getAttribute("href"),
         rating: stars.length === 5 && stars.every(fill => fill === "#fabb05" || fill === "#dadce0") ? stars.filter(fill => fill === "#fabb05").length : 0,
         relativeTimeAtCapture: el.querySelector(".m6Mr5d")?.textContent,
-        text,
-        ...(characters.length > 50 ? { excerpt: true } : {}),
+        text: fullText,
         ...(Array.from(el.querySelectorAll("button")).some(node => !node.closest(".PdaDLc") && node.innerText.includes("由 Google 提供翻譯")) ? { translated: true } : {}),
       };
     }));
@@ -86,6 +90,6 @@ export async function scrapeStoreReviews(previous: StoreReviewSnapshot): Promise
     throw new Error("這次無法完成 Google 評論擷取，已保留上一版。請稍後再試。", { cause: error });
   } finally {
     clearTimeout(deadline);
-    await browser?.close().catch(() => {});
+    if (!options.browser) await browser?.close().catch(() => {});
   }
 }
