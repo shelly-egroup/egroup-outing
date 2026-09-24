@@ -17,6 +17,8 @@ import PlanSwitchDock from "./plan-switch-dock";
 import PlanCard from "./plan-card";
 import SavedVoteCard from "./saved-vote-card";
 import PreferenceGroup from "./preference-group";
+import StoreLinks from "./store-links";
+import { massageStore } from "@/lib/store-references";
 import OpeningAnimation from "./opening-animation";
 import OutingLoading from "./outing-loading";
 import { openingHistory } from "@/lib/opening-history";
@@ -311,6 +313,8 @@ export default function TripShowdown() {
                           edit({ preferences: next });
                         }}>
                       {draft.planId === "B" && groupId === "g0" && (
+                        <>
+                        <div className="massage-store-links"><span>{massageStore.name}</span><StoreLinks store={massageStore} /></div>
                         <details className="menu-details" onToggle={event => {
                           const details = event.currentTarget;
                           if (details.open) requestAnimationFrame(() => {
@@ -328,6 +332,7 @@ export default function TripShowdown() {
                             { src: "/assets/massage-acupressure.jpg", alt: "不老松全身指壓環境", title: "全身指壓" },
                           ]} />
                         </details>
+                        </>
                       )}
                       </PreferenceGroup>
                     </Fragment>

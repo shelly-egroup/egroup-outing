@@ -3,6 +3,8 @@ import HighlightedText from "./highlighted-text";
 import { useRef, type ReactNode } from "react";
 import { sortedChoices, type ChoiceGroup } from "@/lib/trips";
 import { useLightDraw } from "./use-light-draw";
+import StoreLinks from "./store-links";
+import { choiceStore } from "@/lib/store-references";
 
 type Props = {
   children?: ReactNode;
@@ -29,13 +31,15 @@ export default function PreferenceGroup({ groupId, group, selectedId, disabled, 
   const result = resultId === selectedId ? group.choices?.[resultId] : undefined;
   return <fieldset className={"preference-group" + (choices.some(([, choice]) => choice.ingredients) ? " recipe-preferences" : "")}>
     <legend>{group.label}<small>{individual ? "每人各選一種；也可留白交給主辦安排" : "可先留白，交給主辦安排"}</small></legend>
+    {children}
     {choices.length > 1 && <div className="preference-draw">
       <div><b>選擇困難？</b><p role="status" aria-live="polite">{rolling ? "跑燈中…快要選好了！" : result ? "幫你選到：" + result.label : "讓跑燈幫你選一個。"}</p>{soundUnavailable && <small className="draw-sound-note">音效暫時無法播放，抽選結果不受影響。</small>}</div>
       <button type="button" className="button button-white" disabled={disabled || rolling} onClick={draw}>{rolling ? "抽選中…" : result ? "再選一次" : "幫我選"}</button>
     </div>}
-    {children}
     <div className="preference-choices">
-      {choices.map(([id, choice]) => <div key={id} className="preference-choice-card"><label
+      {choices.map(([id, choice]) => {
+        const store = choiceStore(choice.label);
+        return <div key={id} className={"preference-choice-card" + (store ? " has-store-links" : "")}><label
         ref={node => { rows.current[id] = node; }}
         className={"preference-choice" + (choice.ingredients ? " recipe-choice" : "") + (selectedId === id ? " checked" : "") + (rolling && litId === id ? " is-drawing" : "") + (!rolling && resultId === id && selectedId === id ? " is-draw-winner" : "")}>
         <span className="plan-draw-lights" aria-hidden="true"><i /><i /><i /><i /></span>
@@ -47,7 +51,8 @@ export default function PreferenceGroup({ groupId, group, selectedId, disabled, 
           )}</small>}
         </span>
         {choice.price && <strong>{choice.price}</strong>}
-      </label></div>)}
+      </label>{store && <StoreLinks store={store} compact />}</div>;
+      })}
       <label className={"preference-choice arrange-choice" + (!selectedId ? " checked" : "")}>
         <input type="radio" disabled={disabled} name={groupId} checked={!selectedId} onChange={() => choose("")} />
         <span>請主辦安排</span>

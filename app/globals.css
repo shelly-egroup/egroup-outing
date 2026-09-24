@@ -1055,6 +1055,29 @@ summary {
 .preference-choice > span { flex: 1; min-width: 0; }
 .preference-choice small { display: block; color: #65707a; font-size: 13px; margin-top: 5px; }
 .preference-choice > strong { white-space: nowrap; font-size: 14px; }
+.preference-choice-card.has-store-links { position: relative; border: 2px solid #dddcd7; }
+.preference-choice-card.has-store-links > .preference-choice { display: grid; grid-template-columns: 18px minmax(0,1fr); gap: 8px 10px; align-items: start; padding: 12px; border: 0; }
+.has-store-links > .preference-choice > input { margin: 11px 0 0; }
+.has-store-links > .preference-choice > strong { grid-column: 2; margin-left: 0; }
+.has-store-links .choice-title-line { min-height: 40px; padding-right: 88px; align-items: center; line-height: 1.5; }
+.has-store-links .choice-title-line > b { overflow-wrap: anywhere; }
+.preference-choice-card.has-store-links:has(> .checked) { border-color: var(--ink); background: var(--team-tint, #fff7da); box-shadow: 2px 2px 0 var(--ink); }
+.preference-choice-card.has-store-links > .checked { background: none; box-shadow: none; }
+.store-links { display: flex; flex-wrap: wrap; gap: 4px; align-items: flex-start; }
+.preference-choice-card > .store-links { position: absolute; top: 10px; right: 8px; }
+.store-link { display: grid; place-items: center; min-width: 44px; min-height: 44px; color: var(--ink); text-decoration: none; border-radius: 4px; }
+.store-link-circle { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #10182070; border-radius: 50%; background: #fffdf7; transition: background .15s, border-color .15s; }
+.store-link-circle svg { width: 21px; height: 21px; }
+.store-links-compact { gap: 0; flex-wrap: nowrap; }
+.store-links-compact .store-link { justify-content: center; width: 44px; height: 44px; min-width: 44px; padding: 0; }
+.store-links-compact .store-link-circle { width: 32px; height: 32px; border-color: #10182035; background: transparent; }
+.store-links-compact .store-link-circle svg { width: 17px; height: 17px; }
+.store-link:hover .store-link-circle, .store-link:focus-visible .store-link-circle { border-color: var(--ink); background: var(--team-soft, #fff1b6); }
+.store-link:focus-visible { outline: 2px solid var(--team-ink, var(--ink)); outline-offset: 2px; }
+.massage-store-links { clear: both; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin: 16px 0 0; padding: 14px 0; border-block: 1px solid #dddcd7; }
+.massage-store-links > span { flex: 1 1 150px; font-size: 13px; font-weight: 700; }
+.massage-store-links .store-links { flex: 0 1 auto; }
+@media (prefers-reduced-motion: reduce) { .store-link-circle { transition: none; } }
 .arrange-choice { border-style: dashed; color: #56616b; }
 .note-field { display: block; padding: 24px; font-size: 16px; font-weight: 700; }
 .note-field > small { display: block; font-size: 13px; color: #636c74; font-weight: 400; margin: 4px 0 12px; }
