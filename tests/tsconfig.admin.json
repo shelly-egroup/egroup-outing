@@ -3,7 +3,8 @@
   "include": [
     "../lib/voting-access.ts",
     "../lib/catalog-impact.ts",
-    "../lib/trips.ts"
+    "../lib/trips.ts",
+    "../lib/catalog-upgrade.ts"
   ],
   "compilerOptions": {
     "outDir": "../.tools/admin-tests"

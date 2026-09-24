@@ -1,5 +1,5 @@
 "use client";
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, type RefObject } from "react";
 
 type Props = {
   label: string;
@@ -10,10 +10,13 @@ type Props = {
   required?: boolean;
   placeholder?: string;
   className?: string;
+  textareaRef?: RefObject<HTMLTextAreaElement | null>;
+  onSelectionChange?: (selection: { start: number; end: number }) => void;
 };
 /** Native form fields keep keyboard, IME and validation behavior inside the real layout. */
-export default function InlineEditField({ label, value, onChange, maxLength, multiline, required = true, placeholder, className = "" }: Props) {
-  const area = useRef<HTMLTextAreaElement>(null);
+export default function InlineEditField({ label, value, onChange, maxLength, multiline, required = true, placeholder, className = "", textareaRef, onSelectionChange }: Props) {
+  const internalArea = useRef<HTMLTextAreaElement>(null);
+  const area = textareaRef || internalArea;
   useLayoutEffect(() => {
     const node = area.current;
     if (!node) return;
@@ -25,11 +28,12 @@ export default function InlineEditField({ label, value, onChange, maxLength, mul
     });
     observer.observe(node);
     return () => observer.disconnect();
-  }, [value]);
+  }, [value, area]);
   const props = {
     className: "inline-edit-field " + className,
     "aria-label": label, title: label, value, required, maxLength,
     placeholder: placeholder || label,
+    onSelect: (event: React.SyntheticEvent<HTMLInputElement | HTMLTextAreaElement>) => onSelectionChange?.({ start: event.currentTarget.selectionStart || 0, end: event.currentTarget.selectionEnd || 0 }),
     onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange(event.target.value),
   };
   return multiline ? <textarea {...props} ref={area} rows={1} /> : <input {...props} type="text" onKeyDown={event => {

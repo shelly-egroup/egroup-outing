@@ -20,12 +20,12 @@ function ChoiceRow({ choice, rank, active, individual, supporters, showNames }: 
     </div>
   </li>;
 }
-export default function ChoiceRankings({ group, active = true, supporters, arrangedSupporters, showNames = false }: { showNames?: boolean; arrangedSupporters?: ChoiceSupporter[]; group: GroupTally; active?: boolean; supporters?: Record<string, ChoiceSupporter[]> }) {
+export default function ChoiceRankings({ group, active = true, supporters, arrangedSupporters, showNames = false, inviteToVote = false }: { inviteToVote?: boolean; showNames?: boolean; arrangedSupporters?: ChoiceSupporter[]; group: GroupTally; active?: boolean; supporters?: Record<string, ChoiceSupporter[]> }) {
   const individual = group.mode === "individual";
   const shown = group.choices;
   return <section className="choice-ranking" aria-label={group.label + "票數"}>
     <div className="choice-ranking-heading"><h4>{group.label}</h4><span>{group.selected} 人已選</span></div>
-    {individual ? <p className="choice-individual"><span>各自選擇</span>大家都能按自己選的，依人數安排。</p> : group.high > 0 ? <p className="choice-winner"><span>{group.leaders.length > 1 ? "並列第一" : "目前最多"}</span><b>{group.leaders.join("、")}</b></p> : <p className="choice-ranking-empty">{group.total ? "等大家選出心頭好。" : "還沒有偏好票，等第一位隊友！"}</p>}
+    {individual ? <p className="choice-individual"><span>各自選擇</span>依每個人的選擇，分別安排。</p> : group.high > 0 ? <p className="choice-winner"><span>{group.leaders.length > 1 ? "並列第一" : "目前最多"}</span><b>{group.leaders.join("、")}</b></p> : <p className="choice-ranking-empty">{inviteToVote ? "還沒有人選，快投下你的偏好，搶當第一票！" : "目前尚無偏好票。"}</p>}
     <ol className="choice-rank-list">{shown.map((choice, index) => <ChoiceRow key={choice.id} choice={choice} rank={index + 1} active={active} individual={individual} supporters={supporters?.[choice.id]} showNames={showNames} />)}</ol>
     <div className="choice-ranking-foot"><div className={"choice-arranged" + (showNames ? " with-member-names" : "")}><span>主辦安排</span><span className="choice-arranged-meta">{!showNames && arrangedSupporters?.length ? <ChoiceAvatarPile people={arrangedSupporters} total={group.arranged} label="交給主辦安排的隊友" /> : null}<span><b>{group.arranged}</b> 人</span></span>{showNames && arrangedSupporters?.length ? <SupporterNames people={arrangedSupporters} label="交給主辦安排的參加者" /> : null}</div>{group.unknown > 0 && <span>偏好待同步 <b>{group.unknown}</b> 人</span>}{group.removed > 0 && <span>原選項已移除 <b>{group.removed}</b> 人</span>}</div>
   </section>;

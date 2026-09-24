@@ -1,6 +1,7 @@
 "use client";
-import type { TripPlan } from "@/lib/trips";
+import { moveItem, type TripPlan } from "@/lib/trips";
 import InlineEditField from "./inline-edit-field";
+import { ReorderGrip, useReorder } from "./use-reorder";
 
 export type EditPlan = (change: (plan: TripPlan) => void) => void;
 type Props = {
@@ -18,6 +19,8 @@ function titleLines(title: string) {
   return plus < 0 ? [title] : [title.slice(0, plus), title.slice(plus)];
 }
 export default function PlanCard({ plan, selected = false, hasVoted = false, disabled = false, onChoose, edit }: Props) {
+  const reorder = useReorder((plan.schedule || []).map((stop, index) => ({ id: String(index), label: stop.title })),
+    (from, to) => edit?.(p => { p.schedule = moveItem(p.schedule, from, to); }), !edit || disabled);
   function field(key: "category" | "title" | "description" | "priceNote" | "shortName", label: string, maxLength: number, multiline = false) {
     return <InlineEditField label={label} value={key === "title" ? titleLines(plan.title).join("\n") : plan[key]} maxLength={maxLength} multiline={multiline}
       onChange={value => edit?.(p => { p[key] = value; })} />;
@@ -38,14 +41,15 @@ export default function PlanCard({ plan, selected = false, hasVoted = false, dis
       {edit && plan.tags.length < 10 && <button className="editor-add-tag" type="button" onClick={() => edit(p => { p.tags.push("新特色"); })}>＋ 特色</button>}
     </div>
     <div className="plan-itinerary" aria-label={plan.shortName + "完整行程"}>
-      <ol>{(plan.schedule || []).map((stop, index) => <li key={index}>
-        <time>{edit ? <InlineEditField label={"行程 " + (index + 1) + " 時間"} value={stop.time} maxLength={30} onChange={value => edit(p => { p.schedule[index].time = value; })} /> : stop.time}</time>
+      {edit && <><p className="editor-sort-hint">拖曳時間下方的把手調整行程順序。</p>{reorder.feedback}</>}
+      <ol ref={reorder.listRef} className={edit ? "reorder-list" : undefined}>{(plan.schedule || []).map((stop, index) => <li key={index} {...(edit ? reorder.rowProps(index) : {})}>
+        <time>{edit ? <InlineEditField label={"行程 " + (index + 1) + " 時間"} value={stop.time} maxLength={30} onChange={value => edit(p => { p.schedule[index].time = value; })} /> : stop.time}{edit && <button {...reorder.handleProps(index)}><ReorderGrip /></button>}</time>
         <div>
           <strong>{edit ? <InlineEditField label={"行程 " + (index + 1) + " 名稱"} value={stop.title} maxLength={100} multiline onChange={value => edit(p => { p.schedule[index].title = value; })} /> : stop.title}</strong>
           <div className="itinerary-description">{edit ? <InlineEditField label={"行程 " + (index + 1) + " 說明"} value={stop.description} required={false} maxLength={500} multiline onChange={value => edit(p => { p.schedule[index].description = value; })} /> : stop.description}</div>
           {edit && <div className="inline-row-tools" aria-label={"調整行程 " + (index + 1)}>
-            <button type="button" disabled={index === 0} onClick={() => edit(p => { [p.schedule[index - 1], p.schedule[index]] = [p.schedule[index], p.schedule[index - 1]]; })}>上移</button>
-            <button type="button" disabled={index === plan.schedule.length - 1} onClick={() => edit(p => { [p.schedule[index + 1], p.schedule[index]] = [p.schedule[index], p.schedule[index + 1]]; })}>下移</button>
+            <button type="button" disabled={disabled || index === 0} onClick={() => reorder.move(index, index - 1)}>上移</button>
+            <button type="button" disabled={disabled || index === plan.schedule.length - 1} onClick={() => reorder.move(index, index + 1)}>下移</button>
             <button type="button" disabled={plan.schedule.length <= 1} onClick={() => edit(p => { p.schedule.splice(index, 1); })}>移除</button>
           </div>}
         </div>

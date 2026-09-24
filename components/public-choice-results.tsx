@@ -4,7 +4,7 @@ import { sortedPlans, type Catalog, type PublicVote } from "@/lib/trips";
 import { choiceSourceVersion, type PublicChoiceSummary } from "@/lib/vote-summary";
 import ChoiceRankings from "./choice-rankings";
 import LoadingIndicator from "./loading-indicator";
-export default function PublicChoiceResults({ catalog, votes, ready, connected, motionEnabled }: { catalog: Catalog; votes: Record<string, PublicVote>; ready: boolean; connected: boolean; motionEnabled: boolean }) {
+export default function PublicChoiceResults({ catalog, votes, ready, connected, motionEnabled, votingOpen }: { votingOpen: boolean; catalog: Catalog; votes: Record<string, PublicVote>; ready: boolean; connected: boolean; motionEnabled: boolean }) {
   const [selectedId, setSelectedId] = useState("");
   const [active, setActive] = useState(false);
   const [data, setData] = useState<PublicChoiceSummary | null>(null);
@@ -46,12 +46,12 @@ export default function PublicChoiceResults({ catalog, votes, ready, connected, 
   const current = plans.find(([id]) => id === selectedId) || plans[0];
   const synced = ready && data?.version === version;
   return <section className="public-choice-results" ref={container} aria-label="餐廳與體驗人氣榜">
-    <div className="preference-results-heading"><div><span className="eyebrow">NEXT ROUND / 細項人氣榜</span><h3>這一派，都想選什麼？</h3></div><p>餐廳看人氣，按摩各自選。</p></div>
+    <div className="preference-results-heading"><div><span className="eyebrow">NEXT ROUND / 細項人氣榜</span><h3>這一派，都想選什麼？</h3></div><p>餐廳看人氣，按摩與足湯各自選。</p></div>
     <div className="preference-plan-tabs" role="group" aria-label="查看哪一派的偏好">{plans.map(([id, plan]) => <button key={id} type="button" className={"preference-plan-tab score-" + plan.color} aria-pressed={current?.[0] === id} onClick={() => setSelectedId(id)}><b>{plan.code}</b><span>{plan.shortName}</span><small>{ready ? Object.values(votes).filter(vote => vote.planId === id).length + " 票" : "—"}</small></button>)}</div>
     {error ? <p className="battle-notice" role="status">{error} <button className="rank-retry" type="button" onClick={() => setRetry(n => n + 1)}>重新整理</button></p> : !synced ? <LoadingIndicator label={connected ? "正在統計各選項" : "等待連線恢復"} /> : current ? <div className={"preference-rankings-grid score-" + current[1].color}>
-      {(data.plans[current[0]] || []).map(group => <ChoiceRankings key={current[0] + group.id} group={group} active={active} supporters={data.supporters?.[current[0]]?.[group.id]} arrangedSupporters={data.arrangedSupporters?.[current[0]]?.[group.id]} />)}
+      {(data.plans[current[0]] || []).map(group => <ChoiceRankings key={current[0] + group.id} group={group} active={active} inviteToVote={votingOpen && current[1].active} supporters={data.supporters?.[current[0]]?.[group.id]} arrangedSupporters={data.arrangedSupporters?.[current[0]]?.[group.id]} />)}
       {!Object.keys(current[1].groups || {}).length && <p className="battle-notice">這一派沒有另外的選配項目。</p>}
     </div> : <p className="battle-notice">方案準備好後，就能在這裡看細項票數。</p>}
-    <p className="preference-results-note">餐廳偏好供主辦參考；按摩依每個人的選擇安排。家眷不額外計票。</p>
+    <p className="preference-results-note">餐廳偏好供主辦參考；按摩與足湯依每個人的選擇安排。家眷不額外計票。</p>
   </section>;
 }

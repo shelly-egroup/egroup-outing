@@ -1,4 +1,4 @@
-import { choiceGroupMode, sortedPlans, type Catalog, type PublicVote, type TripPlan, type VoteDetails } from "./trips";
+import { choiceGroupMode, sortedChoices, sortedGroups, sortedPlans, type Catalog, type PublicVote, type TripPlan, type VoteDetails } from "./trips";
 export function currentVoteDetails(vote: PublicVote, detail?: VoteDetails) {
   return detail && detail.planId === vote.planId && detail.updatedAt === vote.updatedAt ? detail : undefined;
 }
@@ -13,7 +13,7 @@ export type GroupTally = { mode: "group" | "individual"; id: string; label: stri
 /** One matching voter per question; family members never multiply preference votes. */
 export function preferenceTallies(planId: string, plan: TripPlan, votes: Record<string, PublicVote>, details: Record<string, VoteDetails>): GroupTally[] {
   const voters = Object.entries(votes).filter(([, vote]) => vote.planId === planId);
-  return Object.entries(plan.groups || {}).map(([id, group]) => {
+  return sortedGroups(plan).map(([id, group]) => {
     const counts = Object.fromEntries(Object.keys(group.choices || {}).map(id => [id, 0]));
     let arranged = 0, unknown = 0, removed = 0;
     for (const [uid, vote] of voters) {
@@ -25,7 +25,7 @@ export function preferenceTallies(planId: string, plan: TripPlan, votes: Record<
       else removed++;
     }
     const high = Math.max(0, ...Object.values(counts));
-    const choices = Object.entries(group.choices || {}).map(([choiceId, choice]) => ({ id: choiceId, label: choice.label, count: counts[choiceId], percent: voters.length ? Math.round(counts[choiceId] / voters.length * 100) : 0, leading: high > 0 && counts[choiceId] === high })).sort((a, b) => b.count - a.count);
+    const choices = sortedChoices(group).map(([choiceId, choice]) => ({ id: choiceId, label: choice.label, count: counts[choiceId], percent: voters.length ? Math.round(counts[choiceId] / voters.length * 100) : 0, leading: high > 0 && counts[choiceId] === high }));
     return { mode: choiceGroupMode(planId, id, group), id, label: group.label, choices, total: voters.length, selected: Object.values(counts).reduce((a, b) => a + b, 0), arranged, unknown, removed, high, leaders: choices.filter(c => c.leading).map(c => c.label) };
   });
 }
@@ -34,7 +34,7 @@ export function choiceSourceVersion(catalog: Catalog, votes: Record<string, Publ
   const source = JSON.stringify([catalog.updatedAt, Object.entries(votes).sort(([a], [b]) => a.localeCompare(b)).map(([uid, v]) => [uid, v.planId, v.updatedAt])]);
   let hash = 2166136261;
   for (let i = 0; i < source.length; i++) hash = Math.imul(hash ^ source.charCodeAt(i), 16777619);
-  return "portraits-v3:" + catalog.updatedAt + ":" + Object.keys(votes).length + ":" + (hash >>> 0).toString(16);
+  return "portraits-v5:" + catalog.updatedAt + ":" + Object.keys(votes).length + ":" + (hash >>> 0).toString(16);
 }
 export type ChoiceSupporter = { displayName: string; photoURL: string };
 export type ChoiceSupporters = Record<string, Record<string, Record<string, ChoiceSupporter[]>>>;
@@ -72,7 +72,7 @@ export function organizerSummaryText(catalog: Catalog, votes: Record<string, Pub
     "", "備註（" + s.notes.length + " 人）",
     ...s.notes.map(r=>r.vote.displayName + "：" + [r.detail?.note?.trim(), (r.family || 0) > 0 && r.detail?.familyNote?.trim() ? "家眷：" + r.detail.familyNote.trim() : ""].filter(Boolean).join("；")),
     ...(s.incomplete ? ["", "待確認資料：" + s.rows.filter(r=>r.pendingReason).map(r=>r.vote.displayName + "（" + r.pendingReason + "）").join("、")] : []),
-    "", "按摩依各人選擇安排；餐廳偏好供主辦參考。家眷不額外計票。"
+    "", "按摩與足湯依各人選擇安排；餐廳偏好供主辦參考。家眷不額外計票。"
   ].join("\n");
 }
 
@@ -84,7 +84,7 @@ export function choiceSupporterLists(catalog: Catalog, votes: Record<string, Pub
   for (const [planId, plan] of sortedPlans(catalog)) {
     supporters[planId] = {};
     arrangedSupporters[planId] = {};
-    for (const [groupId, group] of Object.entries(plan.groups || {})) {
+    for (const [groupId, group] of sortedGroups(plan)) {
       const perChoice: Record<string, ChoiceSupporter[]> = {};
       arrangedSupporters[planId][groupId] = [];
       for (const [uid, vote] of ordered) {

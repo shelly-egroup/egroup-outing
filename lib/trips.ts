@@ -1,5 +1,30 @@
-export type Choice = { label: string; description: string; price: string };
-export type ChoiceGroup = { label: string; choices: Record<string, Choice>; selectionMode?: "group" | "individual" };
+import type { HighlightRange } from "./text-highlights";
+export type Choice = { label: string; description: string; price: string; descriptionHighlights?: HighlightRange[]; subtitle?: string; ingredients?: string; order?: number };
+export type ChoiceGroup = { order?: number; collapsibleDescriptions?: boolean; label: string; choices: Record<string, Choice>; selectionMode?: "group" | "individual" };
+/** Legacy choices keep their current order until the organizer rearranges them. */
+export function sortedChoices(group: ChoiceGroup) {
+  return Object.entries(group.choices || {}).sort(([, a], [, b]) =>
+    (Number.isFinite(a.order) ? a.order! : Number.MAX_SAFE_INTEGER) -
+    (Number.isFinite(b.order) ? b.order! : Number.MAX_SAFE_INTEGER));
+}
+export function moveItem<T>(items: T[], from: number, to: number): T[] {
+  if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < 0 || from >= items.length || to >= items.length || from === to) return items;
+  const next = [...items];
+  next.splice(to, 0, next.splice(from, 1)[0]);
+  return next;
+}
+/** Persist positions, never change IDs referenced by existing votes. */
+export function moveChoice(group: ChoiceGroup, from: number, to: number) {
+  const choices = sortedChoices(group);
+  const reordered = moveItem(choices, from, to);
+  if (reordered === choices) return;
+  reordered.forEach(([, choice], index) => { choice.order = index; });
+}
+export function appendChoice(group: ChoiceGroup, id: string, choice: Choice) {
+  const choices = sortedChoices(group);
+  choices.forEach(([, current], index) => { current.order = index; });
+  group.choices[id] = { ...choice, order: choices.length };
+}
 export function choiceGroupMode(planId: string, groupId: string, group: ChoiceGroup) {
   // Existing catalogs predate this setting; B/g0 is the original massage question.
   return group.selectionMode || (planId === "B" && groupId === "g0" ? "individual" : "group");
@@ -19,6 +44,7 @@ export type TripPlan = {
   active: boolean;
 };
 export type Catalog = {
+  schemaVersion?: number;
   settings: {
     title: string;
     eventDate: string;
@@ -67,6 +93,11 @@ export function prepareVoteDetails(plan: TripPlan, draft: VoteDraft): Omit<VoteD
     familyCount: draft.bringingFamily ? draft.familyCount : 0,
     familyNote: draft.bringingFamily ? draft.familyNote.trim() : "",
   };
+}
+export function sortedGroups(plan: TripPlan) {
+  return Object.entries(plan.groups || {}).sort(([, a], [, b]) =>
+    (Number.isFinite(a.order) ? a.order! : Number.MAX_SAFE_INTEGER) -
+    (Number.isFinite(b.order) ? b.order! : Number.MAX_SAFE_INTEGER));
 }
 export function sortedPlans(catalog: Catalog) {
   return Object.entries(catalog.plans || {}).sort(

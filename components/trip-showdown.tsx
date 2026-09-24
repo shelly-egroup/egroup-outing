@@ -1,4 +1,5 @@
 "use client";
+import { sortedGroups } from "@/lib/trips";
 import Link from "next/link";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import OutingHeader from "./outing-header";
@@ -12,6 +13,7 @@ import LoadingIndicator from "./loading-indicator";
 import LoadingPanel from "./loading-panel";
 import VersusBadge from "./versus-badge";
 import PlanPicker from "./plan-picker";
+import PlanSwitchDock from "./plan-switch-dock";
 import PlanCard from "./plan-card";
 import SavedVoteCard from "./saved-vote-card";
 import PreferenceGroup from "./preference-group";
@@ -123,7 +125,7 @@ export default function TripShowdown() {
     ? cleanPreferences(selected, draft.preferences)
     : {};
   const preferenceSummary = selected
-    ? Object.entries(selected.groups || {}).map(([id, group]) => ({
+    ? sortedGroups(selected).map(([id, group]) => ({
         label: group.label,
         value: group.choices[preferences[id]]?.label || "請主辦安排",
       }))
@@ -277,7 +279,7 @@ export default function TripShowdown() {
               <p className="state-box">目前沒有開放中的方案。</p>
             )}
           </section>
-          <section id="selection" className="selection-section">
+          <section id="selection" className="selection-section" data-plan-switch={!!selected && plans.length > 1 || undefined}>
             <div className="section-heading selection-heading">
               <div className="selection-heading-copy">
                 <span className="eyebrow">MAKE IT YOUR TRIP</span>
@@ -297,9 +299,9 @@ export default function TripShowdown() {
                     <span>
                       {selected.code} · {selected.shortName}
                     </span>
-                    <h3>{selected.title}</h3>
+                    <h3 id="selected-plan-title" tabIndex={-1}>{selected.title}</h3>
                   </div>
-                  {Object.entries(selected.groups || {}).map(([groupId, group]) => (
+                  {sortedGroups(selected).map(([groupId, group]) => (
                     <Fragment key={draft.planId + ":" + groupId}>
                       <PreferenceGroup groupId={groupId} group={group} individual={choiceGroupMode(draft.planId, groupId, group) === "individual"}
                         selectedId={preferences[groupId] || ""} disabled={saving || !selected.active || !votingOpen || intro}
@@ -307,22 +309,27 @@ export default function TripShowdown() {
                           const next = { ...draft.preferences };
                           if (choiceId) next[groupId] = choiceId; else delete next[groupId];
                           edit({ preferences: next });
-                        }} />
+                        }}>
                       {draft.planId === "B" && groupId === "g0" && (
-                        <details className="menu-details">
-                          <summary>看完整店家價目表（點圖可放大）</summary>
-                          <div className="menu-images">
-                            <ImageLightbox
-                              src="/assets/massage-menu-1.jpg"
-                              alt="不老松腳底按摩與全身指壓價目表"
-                            />
-                            <ImageLightbox
-                              src="/assets/massage-menu-2.jpg"
-                              alt="不老松筋膜刀與養身套餐價目表"
-                            />
-                          </div>
+                        <details className="menu-details" onToggle={event => {
+                          const details = event.currentTarget;
+                          if (details.open) requestAnimationFrame(() => {
+                            if (details.open && details.isConnected) details.querySelector(".menu-book")?.scrollIntoView({
+                              block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+                            });
+                          });
+                        }}>
+                          <summary>看店家價目表與環境（點圖可放大）</summary>
+                          <ImageLightbox pages={[
+                            { src: "/assets/massage-menu-1.jpg", alt: "不老松腳底按摩與全身指壓價目表", title: "腳底按摩・全身指壓" },
+                            { src: "/assets/massage-menu-2.jpg", alt: "不老松筋膜刀與養身套餐價目表", title: "筋膜刀・養身套餐" },
+                            { src: "/assets/massage-foot-bath.jpeg", alt: "不老松足湯配方與店家介紹", title: "足湯の底・四種配方" },
+                            { src: "/assets/massage-foot-treatment.jpg", alt: "不老松腳底按摩環境", title: "腳底按摩" },
+                            { src: "/assets/massage-acupressure.jpg", alt: "不老松全身指壓環境", title: "全身指壓" },
+                          ]} />
                         </details>
                       )}
+                      </PreferenceGroup>
                     </Fragment>
                   ))}
                   <label className="note-field">
@@ -448,6 +455,7 @@ export default function TripShowdown() {
               </div>
             )}
             </div>
+            <PlanSwitchDock plans={plans} selectedId={draft.planId} active={!!selected && plans.length > 1 && !intro && !review && catalogStatus !== "loading"} disabled={saving} onChoose={id => choose(id, false)} />
           </section>
           <LiveResults catalog={catalog} motionEnabled={!intro} />
         </main>

@@ -1,9 +1,11 @@
 "use client";
-import { useRef } from "react";
-import type { ChoiceGroup } from "@/lib/trips";
+import HighlightedText from "./highlighted-text";
+import { useRef, type ReactNode } from "react";
+import { sortedChoices, type ChoiceGroup } from "@/lib/trips";
 import { useLightDraw } from "./use-light-draw";
 
 type Props = {
+  children?: ReactNode;
   groupId: string;
   individual?: boolean;
   group: ChoiceGroup;
@@ -11,8 +13,8 @@ type Props = {
   disabled: boolean;
   onChoose: (id: string) => void;
 };
-export default function PreferenceGroup({ groupId, group, selectedId, disabled, onChoose, individual = false }: Props) {
-  const choices = Object.entries(group.choices || {});
+export default function PreferenceGroup({ groupId, group, selectedId, disabled, onChoose, individual = false, children }: Props) {
+  const choices = sortedChoices(group);
   const rows = useRef<Record<string, HTMLLabelElement | null>>({});
   const { rolling, litId, resultId, soundUnavailable, choose, draw } = useLightDraw(
     choices.map(([id]) => id), selectedId, disabled,
@@ -25,23 +27,27 @@ export default function PreferenceGroup({ groupId, group, selectedId, disabled, 
     },
   );
   const result = resultId === selectedId ? group.choices?.[resultId] : undefined;
-  return <fieldset className="preference-group" disabled={disabled}>
-    <legend>{group.label}<small>{individual ? "每個人都能按自己選的；也可留白交給主辦安排" : "可先留白，交給主辦安排"}</small></legend>
+  return <fieldset className="preference-group">
+    <legend>{group.label}<small>{individual ? "每人各選一種；也可留白交給主辦安排" : "可先留白，交給主辦安排"}</small></legend>
     {choices.length > 1 && <div className="preference-draw">
       <div><b>選擇困難？</b><p role="status" aria-live="polite">{rolling ? "跑燈中…快要選好了！" : result ? "幫你選到：" + result.label : "讓跑燈幫你選一個。"}</p>{soundUnavailable && <small className="draw-sound-note">音效暫時無法播放，抽選結果不受影響。</small>}</div>
-      <button type="button" className="button button-white" disabled={rolling} onClick={draw}>{rolling ? "抽選中…" : result ? "再選一次" : "幫我選"}</button>
+      <button type="button" className="button button-white" disabled={disabled || rolling} onClick={draw}>{rolling ? "抽選中…" : result ? "再選一次" : "幫我選"}</button>
     </div>}
+    {children}
     <div className="preference-choices">
-      {choices.map(([id, choice]) => <label
-        key={id} ref={node => { rows.current[id] = node; }}
+      {choices.map(([id, choice]) => <div key={id} className="preference-choice-card"><label
+        ref={node => { rows.current[id] = node; }}
         className={"preference-choice" + (selectedId === id ? " checked" : "") + (rolling && litId === id ? " is-drawing" : "") + (!rolling && resultId === id && selectedId === id ? " is-draw-winner" : "")}>
         <span className="plan-draw-lights" aria-hidden="true"><i /><i /><i /><i /></span>
-        <input type="radio" name={groupId} value={id} checked={selectedId === id} onChange={() => choose(id)} />
-        <span><b>{choice.label}</b>{choice.description && <small>{choice.description}</small>}</span>
+        <input type="radio" disabled={disabled} name={groupId} value={id} checked={selectedId === id} onChange={() => choose(id)} />
+        <span className="preference-choice-copy"><span className="choice-title-line"><b>{choice.label}</b>{choice.subtitle && <span className="choice-subtitle">{choice.subtitle}</span>}</span>
+          {choice.ingredients && <small className="choice-ingredients">湯底｜{choice.ingredients}</small>}
+          {choice.description && <small className="choice-description"><HighlightedText text={choice.description} highlights={choice.descriptionHighlights} /></small>}
+        </span>
         {choice.price && <strong>{choice.price}</strong>}
-      </label>)}
+      </label></div>)}
       <label className={"preference-choice arrange-choice" + (!selectedId ? " checked" : "")}>
-        <input type="radio" name={groupId} checked={!selectedId} onChange={() => choose("")} />
+        <input type="radio" disabled={disabled} name={groupId} checked={!selectedId} onChange={() => choose("")} />
         <span>請主辦安排</span>
       </label>
     </div>

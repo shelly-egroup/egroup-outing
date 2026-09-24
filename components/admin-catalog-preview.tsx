@@ -1,4 +1,5 @@
 "use client";
+import { sortedGroups } from "@/lib/trips";
 import { useState } from "react";
 import { choiceGroupMode, sortedPlans, type Catalog } from "../lib/trips";
 import PlanCard from "./plan-card";
@@ -35,13 +36,13 @@ export default function AdminCatalogPreview({ catalog }: { catalog: Catalog }) {
         <div className="selection-layout">
           <div className="preference-panel">
             <div className={"selected-banner tone-" + selected.color}><span>{selected.code} · {selected.shortName}</span><h3>{selected.title}</h3></div>
-            {Object.entries(selected.groups || {}).map(([groupId, group]) => <PreferenceGroup key={selectedId + groupId} groupId={"preview-" + selectedId + "-" + groupId} group={group} individual={choiceGroupMode(selectedId, groupId, group) === "individual"}
+            {sortedGroups(selected).map(([groupId, group]) => <PreferenceGroup key={selectedId + groupId} groupId={"preview-" + selectedId + "-" + groupId} group={group} individual={choiceGroupMode(selectedId, groupId, group) === "individual"}
               selectedId={preferences[selectedId]?.[groupId] || ""} disabled={false} onChoose={id => setPreferences(current => ({ ...current, [selectedId]: { ...current[selectedId], [groupId]: id } }))} />)}
             {!Object.keys(selected.groups || {}).length && <p className="state-box">這個方案沒有選配問題。</p>}
           </div>
           <aside className="vote-review"><span className="eyebrow">YOUR VOTE</span><h3>準備好站這一邊？</h3>
             <div className="review-plan"><span className="team-label">{selected.code} · {selected.shortName}</span><strong>{selected.title}</strong></div>
-            <dl>{Object.entries(selected.groups || {}).map(([id, group]) => <div key={id}><dt>{group.label}</dt><dd>{group.choices[preferences[selectedId]?.[id]]?.label || "請主辦安排"}</dd></div>)}</dl>
+            <dl>{sortedGroups(selected).map(([id, group]) => <div key={id}><dt>{group.label}</dt><dd>{group.choices[preferences[selectedId]?.[id]]?.label || "請主辦安排"}</dd></div>)}</dl>
             <p className="preview-only-note">預覽模式 · 選擇只留在這裡</p>
           </aside>
         </div>

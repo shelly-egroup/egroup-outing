@@ -1,5 +1,7 @@
+import { footBathGroup } from "./foot-bath";
 import type { Catalog } from "./trips";
 export const defaultCatalog: Catalog = {
+  schemaVersion: 2,
   settings: {
     title: "10/29 秋季員工旅遊",
     eventDate: "2026-10-29",
@@ -100,6 +102,7 @@ export const defaultCatalog: Catalog = {
       groups: {
         g0: {
           label: "按摩想選哪一種？",
+          order: 0,
           selectionMode: "individual",
           choices: {
             c0: {
@@ -144,7 +147,9 @@ export const defaultCatalog: Catalog = {
             },
           },
         },
+        footBath: footBathGroup,
         g1: {
+          order: 2,
           label: "下午茶 Buffet 想吃哪一間？",
           choices: {
             c0: {

@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.audio.json",
+  "compilerOptions": {
+    "outDir": "../.tools/image-tests"
+  },
+  "include": [
+    "../lib/image-viewport.ts"
+  ]
+}

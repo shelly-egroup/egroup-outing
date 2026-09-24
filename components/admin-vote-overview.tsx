@@ -1,4 +1,5 @@
 "use client";
+import { sortedGroups } from "@/lib/trips";
 import { useRef, useState } from "react";
 import type { Catalog, PublicVote, VoteDetails } from "@/lib/trips";
 import { choiceSupporterLists, matchesRosterSearch, organizerSnapshot, organizerSummaryText } from "@/lib/vote-summary";
@@ -54,7 +55,7 @@ export default function AdminVoteOverview({ catalog, votes, details, emails, rea
       <div className="table-scroll"><table className="organizer-roster-table"><thead><tr><th>同事</th><th>陣營</th><th>餐廳／體驗偏好</th><th>備註</th><th>同行安排</th></tr></thead><tbody>{rows.map(row => <tr key={row.uid}>
         <td><div className="roster-person"><Avatar name={row.vote.displayName} src={row.vote.photoURL} /><div><b>{row.vote.displayName}</b>{emails[row.uid] ? <a className="roster-email" title={emails[row.uid] || ""} href={"mailto:" + emails[row.uid]}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><rect x="2.5" y="4.5" width="15" height="11" rx="1"/><path d="m3 5 7 5 7-5"/></svg><span>{emails[row.uid]}</span></a> : <small className="roster-email">{emails[row.uid] === undefined ? "Email 讀取中…" : emails[row.uid] === null ? "Email 暫時無法讀取" : "未提供 Email"}</small>}</div></div></td>
         <td><span className="roster-team" data-team-tone={row.plan?.color || "yellow"}>{row.plan?.code || row.vote.planId} · {row.plan?.shortName || "已移除方案"}</span></td>
-        <td>{!row.detail ? <span className="roster-pending">偏好尚未同步</span> : Object.entries(row.plan?.groups || {}).map(([id, group]) => <div className="roster-preference" key={id}><small>{group.label}</small><span>{row.detail!.preferences?.[id] ? group.choices[row.detail!.preferences![id]]?.label || "原選項已移除" : "請主辦安排"}</span></div>)}</td>
+        <td>{!row.detail ? <span className="roster-pending">偏好尚未同步</span> : (row.plan ? sortedGroups(row.plan) : []).map(([id, group]) => <div className="roster-preference" key={id}><small>{group.label}</small><span>{row.detail!.preferences?.[id] ? group.choices[row.detail!.preferences![id]]?.label || "原選項已移除" : "請主辦安排"}</span></div>)}</td>
         <td className="private-note-text">{row.detail?.note?.trim() || "—"}</td>
         <td>{row.family === undefined ? <span className="roster-pending">{row.pendingReason}</span> : row.family > 0 ? <><b>＋{row.family} 位家眷</b><small>共 {row.family + 1} 人同行</small>{row.detail?.familyNote?.trim() && <p className="private-note-text">{row.detail.familyNote}</p>}</> : "自己參加"}</td>
       </tr>)}</tbody></table>{!rows.length && <p className="state-box">{snapshot.total ? "沒有符合條件的同事，試試其他篩選。" : "還沒有人投票。"}</p>}</div>

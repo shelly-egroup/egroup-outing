@@ -120,6 +120,6 @@ export default function LiveResults({ catalog, motionEnabled = true }: { catalog
       })}
     </div>
     <p className="battle-footnote">票數即時同步 · 每人一票 · 截止前可改票</p>
-    <PublicChoiceResults catalog={catalog} votes={votes} ready={available} connected={connected} motionEnabled={motionEnabled} />
+    <PublicChoiceResults votingOpen={open} catalog={catalog} votes={votes} ready={available} connected={connected} motionEnabled={motionEnabled} />
   </section>;
 }

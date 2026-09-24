@@ -28,7 +28,7 @@ test("switching camps removes the previous choice and ignores stale details",()=
  assert.equal(preferenceTallies("A",catalog.plans.A,votes,stale)[0].total,0);
  assert.equal(preferenceTallies("B",catalog.plans.B,votes,stale)[0].unknown,1);
  const current={a:detail("B",{g0:"c1"},{updatedAt:101})};
- assert.equal(preferenceTallies("B",catalog.plans.B,votes,current)[0].choices[0].id,"c1");
+ assert.equal(preferenceTallies("B",catalog.plans.B,votes,current)[0].choices.find(c=>c.count===1).id,"c1");
 });
 test("zero votes do not invent a leader",()=>{
  const [g]=preferenceTallies("A",catalog.plans.A,{},{});assert.equal(g.high,0);assert.deepEqual(g.leaders,[]);assert.ok(g.choices.every(c=>!c.leading));
@@ -108,4 +108,38 @@ test("organizer lists and copied selections retain every participant above five"
  const line = organizerSummaryText(catalog, votes, details).split("\n").find(line => line.includes("各自選擇："));
  for (const person of members) assert.ok(line.includes(person.displayName));
  assert.match(line, /7 人/);
+});
+
+test("public and organizer results retain configured order as vote counts change", () => {
+ const p = plan("B");
+ p.groups = structuredClone(groups);
+ p.groups.g0.choices.c0.order = 2;
+ p.groups.g0.choices.c1.order = 0;
+ p.groups.g0.choices.c2.order = 1;
+ const votes = {a:vote("B"),b:vote("B")};
+ const details = {a:detail("B",{g0:"c0"}),b:detail("B",{g0:"c1"})};
+ const configured = {...catalog, plans:{B:p}};
+ for (const snapshot of [details, {...details, b:detail("B",{g0:"c0"})}]) {
+  const publicGroup = publicChoiceResults(configured,votes,snapshot).plans.B[0];
+  const adminGroup = organizerSnapshot(configured,votes,snapshot).plans[0].groups[0];
+  assert.deepEqual(publicGroup.choices.map(c=>c.id), ["c1","c2","c0"]);
+  assert.deepEqual(adminGroup.choices, publicGroup.choices);
+  assert.equal(publicGroup.choices.reduce((sum,c)=>sum+c.count,0),2);
+ }
+ const final = publicChoiceResults(configured,votes,{...details,b:detail("B",{g0:"c0"})}).plans.B[0];
+ assert.deepEqual(final.leaders,["餐廳甲"]);
+ assert.deepEqual(final.choices.map(c=>[c.id,c.count,c.leading]),[["c1",0,false],["c2",0,false],["c0",2,true]]);
+});
+test("foot-bath choices appear in public totals and organizer participant lists", () => {
+ const bath={label:"足湯の底四選一",selectionMode:"individual",choices:{energy:choice("元氣十足"),flowers:choice("捻花惹草")}};
+ const configured={...catalog,plans:{B:plan("B",{g0:groups.g0,footBath:bath})}};
+ const votes={a:{...vote("B"),displayName:"小安"},b:{...vote("B"),displayName:"小柏"},legacy:vote("B")};
+ const details={a:detail("B",{g0:"c0",footBath:"energy"},{familyCount:2}),b:detail("B",{g0:"c1",footBath:"flowers"}),legacy:detail("B",{g0:"c0"})};
+ const result=publicChoiceResults(configured,votes,details);
+ const group=result.plans.B.find(g=>g.id==="footBath");
+ assert.equal(group.mode,"individual");assert.equal(group.selected,2);assert.equal(group.arranged,1);
+ assert.deepEqual(group.choices.map(c=>c.count),[1,1]);
+ assert.deepEqual(result.supporters.B.footBath.energy.map(p=>p.displayName),["小安"]);
+ assert.deepEqual(result.supporters.B.footBath.flowers.map(p=>p.displayName),["小柏"]);
+ assert.match(organizerSummaryText(configured,votes,details),/足湯の底四選一｜各自選擇：元氣十足 1 人（小安）/);
 });

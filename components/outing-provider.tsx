@@ -1,4 +1,5 @@
 "use client";
+import { upgradeCatalog } from "@/lib/catalog-upgrade";
 import { useRouter } from "next/navigation";
 import {
   createContext,
@@ -128,7 +129,7 @@ export function OutingProvider({ children }: { children: ReactNode }) {
         onValue(
           ref(database, "outing/catalog"),
           (snap) => {
-            setCatalog(snap.val());
+            setCatalog(snap.exists() ? upgradeCatalog(snap.val()) : null);
             setCatalogStatus(snap.exists() ? "ready" : "empty");
           },
           () => setCatalogStatus("error"),
@@ -271,12 +272,13 @@ export function OutingProvider({ children }: { children: ReactNode }) {
     }
   }
   async function saveCatalog(next: Catalog, version: number | null, acceptedImpacts?: string) {
+    next = upgradeCatalog(next);
     if (!isAdmin) throw new Error("只有主辦人可以管理方案。");
     if (!connected) throw new Error("連線中斷，尚未儲存。");
     if (version !== null) {
       const latest = (await get(ref(getFirebase().database, "outing"))).val();
       if (!latest?.catalog || latest.catalog.updatedAt !== version) throw new Error("方案已被其他管理員更新，請重新載入後再編輯。");
-      const impacts = catalogImpacts(latest.catalog, next, latest.votes || {}, latest.voteDetails || {});
+      const impacts = catalogImpacts(upgradeCatalog(latest.catalog), next, latest.votes || {}, latest.voteDetails || {});
       if (impacts.some(item => item.removed)) throw new Error("有隊友已選擇你要移除的項目，請保留原選項後再儲存。");
       if (impacts.length && acceptedImpacts !== catalogImpactKey(impacts)) throw new Error("受影響的投票已更新，請重新確認變更內容與名單後再儲存。");
     }
