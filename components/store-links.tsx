@@ -9,7 +9,7 @@ function StoreIcon({ kind }: { kind: "map" | "website" | "facebook" | "line" }) 
 
 export default function StoreLinks({ store, compact = false }: { store: StoreInfo; compact?: boolean }) {
   const links = [
-    { kind: "map" as const, label: "地圖", href: "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(store.mapsQuery) },
+    { kind: "map" as const, label: "地圖", href: store.mapsUrl || "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(store.mapsQuery) },
     ...(store.website ? [{ kind: "website" as const, label: "官網", href: store.website }] : []),
     ...(store.facebook ? [{ kind: "facebook" as const, label: "Facebook", href: store.facebook }] : []),
     ...(store.line ? [{ kind: "line" as const, label: "官方 LINE", href: store.line }] : []),

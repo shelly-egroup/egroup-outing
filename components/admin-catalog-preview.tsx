@@ -36,7 +36,7 @@ export default function AdminCatalogPreview({ catalog }: { catalog: Catalog }) {
         <div className="selection-layout">
           <div className="preference-panel">
             <div className={"selected-banner tone-" + selected.color}><span>{selected.code} · {selected.shortName}</span><h3>{selected.title}</h3></div>
-            {sortedGroups(selected).map(([groupId, group]) => <PreferenceGroup key={selectedId + groupId} groupId={"preview-" + selectedId + "-" + groupId} group={group} individual={choiceGroupMode(selectedId, groupId, group) === "individual"}
+            {sortedGroups(selected).map(([groupId, group]) => <PreferenceGroup key={selectedId + groupId} groupId={"preview-" + selectedId + "-" + groupId} group={group} tone={selected.color} individual={choiceGroupMode(selectedId, groupId, group) === "individual"}
               selectedId={preferences[selectedId]?.[groupId] || ""} disabled={false} onChoose={id => setPreferences(current => ({ ...current, [selectedId]: { ...current[selectedId], [groupId]: id } }))} />)}
             {!Object.keys(selected.groups || {}).length && <p className="state-box">這個方案沒有選配問題。</p>}
           </div>

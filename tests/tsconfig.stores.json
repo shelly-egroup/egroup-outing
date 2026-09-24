@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.audio.json",
+  "include": ["../lib/store-directory.ts", "../lib/store-refresh.ts", "../lib/review-time.ts", "../lib/restaurant-review-snapshots.json"],
+  "compilerOptions": {
+    "outDir": "../.tools/store-tests",
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true
+  }
+}

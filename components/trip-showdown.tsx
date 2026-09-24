@@ -18,6 +18,7 @@ import PlanCard from "./plan-card";
 import SavedVoteCard from "./saved-vote-card";
 import PreferenceGroup from "./preference-group";
 import StoreLinks from "./store-links";
+import StoreReviews from "./store-reviews";
 import { massageStore } from "@/lib/store-references";
 import OpeningAnimation from "./opening-animation";
 import OutingLoading from "./outing-loading";
@@ -38,6 +39,7 @@ import {
 
 export default function TripShowdown() {
   const context = useOuting();
+  const massageRecord = context.stores[massageStore.id];
   const {
     catalog: remoteCatalog,
     catalogStatus,
@@ -305,7 +307,7 @@ export default function TripShowdown() {
                   </div>
                   {sortedGroups(selected).map(([groupId, group]) => (
                     <Fragment key={draft.planId + ":" + groupId}>
-                      <PreferenceGroup groupId={groupId} group={group} individual={choiceGroupMode(draft.planId, groupId, group) === "individual"}
+                      <PreferenceGroup groupId={groupId} group={group} tone={selected.color} individual={choiceGroupMode(draft.planId, groupId, group) === "individual"}
                         selectedId={preferences[groupId] || ""} disabled={saving || !selected.active || !votingOpen || intro}
                         onChoose={choiceId => {
                           const next = { ...draft.preferences };
@@ -314,7 +316,8 @@ export default function TripShowdown() {
                         }}>
                       {draft.planId === "B" && groupId === "g0" && (
                         <>
-                        <div className="massage-store-links"><span>{massageStore.name}</span><StoreLinks store={massageStore} /></div>
+                        <div className="massage-store-links"><span>{massageRecord.info.name}</span><StoreLinks store={massageRecord.info} /></div>
+                        {massageRecord.reviews && <StoreReviews snapshot={massageRecord.reviews} tone={selected.color} />}
                         <details className="menu-details" onToggle={event => {
                           const details = event.currentTarget;
                           if (details.open) requestAnimationFrame(() => {

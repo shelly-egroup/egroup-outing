@@ -4,10 +4,13 @@ import { useRef, type ReactNode } from "react";
 import { sortedChoices, type ChoiceGroup } from "@/lib/trips";
 import { useLightDraw } from "./use-light-draw";
 import StoreLinks from "./store-links";
+import StoreReviews from "./store-reviews";
+import { useOuting } from "./outing-provider";
 import { choiceStore } from "@/lib/store-references";
 
 type Props = {
   children?: ReactNode;
+  tone?: "yellow" | "coral";
   groupId: string;
   individual?: boolean;
   group: ChoiceGroup;
@@ -15,7 +18,8 @@ type Props = {
   disabled: boolean;
   onChoose: (id: string) => void;
 };
-export default function PreferenceGroup({ groupId, group, selectedId, disabled, onChoose, individual = false, children }: Props) {
+export default function PreferenceGroup({ groupId, group, selectedId, disabled, onChoose, individual = false, children, tone }: Props) {
+  const { stores } = useOuting();
   const choices = sortedChoices(group);
   const rows = useRef<Record<string, HTMLLabelElement | null>>({});
   const { rolling, litId, resultId, soundUnavailable, choose, draw } = useLightDraw(
@@ -38,7 +42,9 @@ export default function PreferenceGroup({ groupId, group, selectedId, disabled, 
     </div>}
     <div className="preference-choices">
       {choices.map(([id, choice]) => {
-        const store = choiceStore(choice.label);
+        const reference = choiceStore(choice.label);
+        const record = reference ? stores[reference.id] : undefined;
+        const store = record?.info || reference;
         return <div key={id} className={"preference-choice-card" + (store ? " has-store-links" : "")}><label
         ref={node => { rows.current[id] = node; }}
         className={"preference-choice" + (choice.ingredients ? " recipe-choice" : "") + (selectedId === id ? " checked" : "") + (rolling && litId === id ? " is-drawing" : "") + (!rolling && resultId === id && selectedId === id ? " is-draw-winner" : "")}>
@@ -51,7 +57,7 @@ export default function PreferenceGroup({ groupId, group, selectedId, disabled, 
           )}</small>}
         </span>
         {choice.price && <strong>{choice.price}</strong>}
-      </label>{store && <StoreLinks store={store} compact />}</div>;
+      </label>{store && <StoreLinks store={store} compact />}{record?.reviews && <StoreReviews snapshot={record.reviews} tone={tone} compact />}</div>;
       })}
       <label className={"preference-choice arrange-choice" + (!selectedId ? " checked" : "")}>
         <input type="radio" disabled={disabled} name={groupId} checked={!selectedId} onChange={() => choose("")} />

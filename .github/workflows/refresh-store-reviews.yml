@@ -1,0 +1,46 @@
+name: 每日更新 Google 評論
+
+on:
+  schedule:
+    # Daily at 09:00 Asia/Taipei. GitHub may delay a scheduled run during high load.
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: refresh-store-reviews
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+      - name: 確認 Firebase 憑證已設定
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo '::error::請在 Repository Settings → Secrets and variables → Actions 新增 FIREBASE_SERVICE_ACCOUNT。'
+            exit 1
+          fi
+      - run: npm ci
+      - name: 安裝擷取使用的 Chromium
+        run: npx playwright-core install --with-deps --only-shell chromium
+      - name: 驗證資料保護與批次流程
+        run: npm run test:stores
+      - name: 擷取最新五則並自動存入 Firebase
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          PLAYWRIGHT_BROWSER_MODE: installed
+        run: npm run reviews:refresh

@@ -13,14 +13,18 @@
     "test:summary": "tsc -p tests/tsconfig.summary.json && node --test tests/vote-summary.test.mjs tests/calendar.test.mjs tests/vote-countdown.test.mjs",
     "test:score": "tsc -p tests/tsconfig.score.json && node --test tests/score-motion.test.mjs",
     "test:admin": "tsc -p tests/tsconfig.admin.json && node --test tests/voting-access.test.mjs tests/catalog-impact.test.mjs tests/catalog-order.test.mjs tests/text-highlights.test.mjs tests/catalog-upgrade.test.mjs",
-    "test:images": "tsc -p tests/tsconfig.images.json && node --test tests/image-viewport.test.mjs"
+    "test:images": "tsc -p tests/tsconfig.images.json && node --test tests/image-viewport.test.mjs",
+    "test:stores": "tsc -p tests/tsconfig.stores.json && node --test tests/store-directory.test.mjs",
+    "reviews:refresh": "tsc -p scripts/tsconfig.reviews.json && node .tools/review-job/scripts/refresh-store-reviews.js"
   },
   "engines": {
-    "node": ">=20.9.0"
+    "node": "24.x"
   },
   "dependencies": {
+    "@sparticuz/chromium": "153.0.0",
     "firebase": "12.19.0",
     "next": "16.3.5",
+    "playwright-core": "1.63.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
@@ -28,6 +32,7 @@
     "@types/node": "20.19.43",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "firebase-admin": "14.5.0",
     "typescript": "7.0.2"
   }
 }

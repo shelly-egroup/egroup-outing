@@ -5,6 +5,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -24,6 +25,9 @@ import {
   runTransaction,
 } from "firebase/database";
 import { adminEmails, getFirebase } from "@/lib/firebase";
+import { defaultStoreDirectory, mergeStoreDirectory, nextReviewRecord, parseStoreDirectory, parseStoreInfo, seedMissingStores, type StoreDirectory } from "@/lib/store-directory";
+import type { StoreInfo } from "@/lib/store-references";
+import { parseReviewSnapshot } from "@/lib/store-directory";
 import { catalogImpacts, catalogImpactKey } from "@/lib/catalog-impact";
 import LoginDialog from "./login-dialog";
 import { getVotingAccess, isVotingAllowed, normalizedEmail, votingAccessMessage, type RegisteredUser, type VotingAccess } from "@/lib/voting-access";
@@ -57,6 +61,13 @@ type ContextValue = {
   logout: () => Promise<void>;
   submitVote: (draft: VoteDraft) => Promise<void>;
   saveCatalog: (catalog: Catalog, version: number | null, acceptedImpacts?: string) => Promise<void>;
+  stores: StoreDirectory;
+  storedStores: StoreDirectory;
+  storesError: string;
+  storesReady: boolean;
+  saveStore: (info: StoreInfo) => Promise<void>;
+  seedStores: () => Promise<void>;
+  refreshStoreReviews: (id: string) => Promise<void>;
 };
 const OutingContext = createContext<ContextValue | null>(null);
 export function useOuting() {
@@ -97,9 +108,56 @@ export function OutingProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<(RegisteredUser & { uid: string }) | null>(null);
   const [loginOpen, setLoginOpen] = useState(false);
   const [profileReady, setProfileReady] = useState(false);
+  const [storedStores, setStoredStores] = useState<StoreDirectory>({});
+  const [storesError, setStoresError] = useState("");
+  const [storesReady, setStoresReady] = useState(false);
+  const stores = useMemo(() => mergeStoreDirectory(storedStores), [storedStores]);
   const isAdmin = !!user && profile?.uid === user.uid && profile.role === "admin";
   const votingAccess = user && profileReady && profile?.uid === user.uid ? getVotingAccess(user.email, profile.voteReview) : null;
   const canVote = votingAccess !== null && isVotingAllowed(votingAccess);
+  useEffect(() => {
+    if (!authReady) return;
+    setStoresReady(false);
+    try {
+      return onValue(ref(getFirebase().database, "outing/stores"), snapshot => {
+        setStoredStores(parseStoreDirectory(snapshot.val())); setStoresError(""); setStoresReady(true);
+      }, () => setStoresError("店家資料讀取失敗，目前保留已載入的版本。"));
+    } catch { setStoresError("店家資料連線尚未完成。"); }
+  }, [authReady, user?.uid]);
+  function requireStoreAdmin() {
+    if (!user || !isAdmin) throw new Error("只有主辦人可以管理店家資料。");
+    if (getFirebase().auth.currentUser?.uid !== user.uid) throw new Error("登入帳號已變更，請重新登入。");
+    if (!connected) throw new Error("連線中斷，資料尚未儲存。");
+  }
+  async function saveStore(next: StoreInfo) {
+    requireStoreAdmin();
+    const info = parseStoreInfo(next.id, next);
+    if (!info) throw new Error("請填寫店名、地圖搜尋名稱，連結須使用完整的 HTTPS 網址。");
+    await update(ref(getFirebase().database, "outing/stores/" + info.id), { info, updatedAt: serverTimestamp() });
+  }
+  async function seedStores() {
+    requireStoreAdmin();
+    await runTransaction(ref(getFirebase().database, "outing/stores"), seedMissingStores, { applyLocally: false });
+  }
+  async function refreshStoreReviews(id: string) {
+    requireStoreAdmin();
+    if (!Object.hasOwn(defaultStoreDirectory, id)) throw new Error("找不到這家店。");
+    const token = await user!.getIdToken();
+    const response = await fetch("/api/stores/" + encodeURIComponent(id) + "/reviews", {
+      method: "POST", headers: { Authorization: "Bearer " + token }, signal: AbortSignal.timeout(65000),
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(result?.error || "擷取失敗，已保留上一版評論。");
+    const reviews = parseReviewSnapshot(result?.snapshot);
+    if (!reviews) throw new Error("評論資料不完整，已保留上一版。");
+    requireStoreAdmin();
+    const transaction = await runTransaction(ref(getFirebase().database, "outing/stores/" + id), current => {
+      const previous = { ...defaultStoreDirectory[id], ...(current || {}) };
+      const next = nextReviewRecord(previous, reviews);
+      return next === previous ? undefined : { ...next, updatedAt: serverTimestamp() };
+    }, { applyLocally: false });
+    if (!transaction.committed) throw new Error("資料庫已有較新的評論，已保留較新版本。");
+  }
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now() + offset), 1000);
     return () => clearInterval(timer);
@@ -320,6 +378,13 @@ export function OutingProvider({ children }: { children: ReactNode }) {
         logout,
         submitVote,
         saveCatalog,
+        stores,
+        storedStores,
+        storesError,
+        storesReady,
+        saveStore,
+        seedStores,
+        refreshStoreReviews,
       }}
     >
       {children}
