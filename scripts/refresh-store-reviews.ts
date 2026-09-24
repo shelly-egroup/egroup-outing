@@ -28,6 +28,8 @@ async function writeSummary(results: Result[]) {
 }
 
 async function main() {
+  const target = process.env.REVIEW_STORE_ID || "all";
+  if (target !== "all" && !Object.hasOwn(defaultStoreDirectory, target)) throw new Error("指定的店家不存在，未開始擷取或寫入資料。");
   const app = initializeApp({ credential: credential(), projectId, databaseURL }, "daily-store-reviews");
   const database = getDatabase(app);
   const results: Result[] = [];
@@ -39,12 +41,13 @@ async function main() {
         await stores.transaction(seedMissingStores);
         console.log("Firebase 連線成功；先前已取得的店家資料已自動補存，既有資料保持不變。");
       } else {
-        console.log("Firebase 連線成功；七家店已有資料，開始擷取最新評論。");
+        console.log("Firebase 連線成功；七家店已有資料。");
       }
     } catch {
       throw new Error("Firebase 連線或資料同步未完成，請檢查 FIREBASE_SERVICE_ACCOUNT 是否有 autumn-outing 的 Realtime Database 存取權限。");
     }
     for (const [id, seed] of Object.entries(defaultStoreDirectory)) {
+      if (target !== "all" && id !== target) continue;
       if (!seed.reviews) continue;
       console.log(`正在擷取：${seed.info.name}`);
       let phase: "capture" | "save" = "capture";

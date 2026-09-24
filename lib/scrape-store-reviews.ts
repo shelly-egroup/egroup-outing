@@ -22,7 +22,26 @@ export async function scrapeStoreReviews(previous: StoreReviewSnapshot): Promise
     await page.goto(previous.sourceUrl, { waitUntil: "domcontentloaded", timeout: 15000 });
     const latest = page.getByRole("radio", { name: "最新", exact: true });
     try { await latest.waitFor({ state: "visible" }); }
-    catch { throw new Error("Google 暫時未提供評論列表或要求驗證，已保留上一版。請稍後再試。"); }
+    catch {
+      const state = await page.evaluate(() => {
+        const text = document.body.innerText;
+        return {
+          host: location.hostname,
+          path: location.pathname,
+          challenge: location.pathname.startsWith("/sorry/") || Boolean(document.querySelector('iframe[src*="recaptcha"], #captcha-form')),
+          consent: location.hostname === "consent.google.com",
+          partial: /目前只顯示部分內容|目前僅顯示部分內容|Only showing some content/i.test(text),
+          reviewRows: document.querySelectorAll(".bwb7ce").length,
+          sortOptions: Array.from(document.querySelectorAll('[role="radio"]')).slice(0, 8).map(el => (el.textContent || "").slice(0, 40)),
+        };
+      });
+      // Log only public page structure; never log cookies, response bodies, or credentials.
+      console.warn("Google review page unavailable:", JSON.stringify(state));
+      if (state.challenge) throw new Error("Google 要求驗證，暫時阻擋自動擷取；已保留上一版評論。");
+      if (state.consent) throw new Error("Google 顯示同意設定頁，未提供評論列表；已保留上一版評論。");
+      if (state.partial) throw new Error("Google 在此環境僅提供部分內容，未提供評論列表；已保留上一版評論。");
+      throw new Error("Google 未提供可讀取的最新評論列表，已保留上一版。請稍後再試。");
+    }
     const before = await page.locator(".bwb7ce:visible").evaluateAll(rows => rows.slice(0, 5).map(row => row.getAttribute("data-id")).join("|"));
     if (await latest.getAttribute("aria-checked") !== "true") {
       await latest.click();

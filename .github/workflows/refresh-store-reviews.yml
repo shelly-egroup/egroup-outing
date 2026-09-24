@@ -5,6 +5,20 @@ on:
     # Daily at 09:00 Asia/Taipei. GitHub may delay a scheduled run during high load.
     - cron: '0 1 * * *'
   workflow_dispatch:
+    inputs:
+      store_id:
+        description: '擷取範圍（每日排程仍會更新全部店家）'
+        type: choice
+        default: all
+        options:
+          - all
+          - hpw-changan
+          - malaya
+          - rice-dihua
+          - le-cafe
+          - brasserie
+          - kitchen12
+          - youngsong-xinsheng
 
 permissions:
   contents: read
@@ -43,4 +57,5 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           PLAYWRIGHT_BROWSER_MODE: installed
+          REVIEW_STORE_ID: ${{ inputs.store_id || 'all' }}
         run: npm run reviews:refresh
