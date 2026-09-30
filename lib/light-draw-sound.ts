@@ -2,6 +2,10 @@ import type { DrawBeat } from "./light-draw";
 
 export type DrawSound = { elapsed: () => number; stop: () => void };
 
+// Some mobile browsers need more than a few hundred milliseconds to activate audio.
+// Keep the wait bounded so the draw can still run silently if playback never starts.
+const AUDIO_ACTIVATION_TIMEOUT_MS = 1200;
+
 /** Create/resume directly from the draw button's click, before waiting on any timers. */
 export async function startDrawSound(beats: DrawBeat[], signal: AbortSignal): Promise<DrawSound | null> {
   let context: AudioContext;
@@ -24,7 +28,7 @@ export async function startDrawSound(beats: DrawBeat[], signal: AbortSignal): Pr
   try {
     const ready = await Promise.race([
       context.resume().then(() => true),
-      new Promise<false>(resolve => { cancelReady = () => resolve(false); timeout = setTimeout(cancelReady, 450); }),
+      new Promise<false>(resolve => { cancelReady = () => resolve(false); timeout = setTimeout(cancelReady, AUDIO_ACTIVATION_TIMEOUT_MS); }),
     ]);
     clearTimeout(timeout);
     cancelReady = undefined;

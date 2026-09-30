@@ -193,7 +193,7 @@ export default function TripShowdown() {
       <div hidden={intro} className="outing-page">
         <OutingHeader announcement={eventAnnouncement} active={!intro} heroActions={heroActionsRef} vote={authReady && votesReady && actualVote ? headerVote : undefined} />
         <header className="outing-hero wrap">
-          <div className="hero-copy">
+          <div className="hero-lead">
             <span className="eyebrow">THE AUTUMN OUTING</span>
             <p className="event-meta">
               {catalog.settings.eventDate.replaceAll("-", ".")} · 預計{" "}
@@ -204,22 +204,14 @@ export default function TripShowdown() {
               <br />
               <em>揪 差你一票</em>
             </h1>
+          </div>
+          <div className="hero-body">
             <p>
               走讀老街，還是好好放鬆？
               <br />
               看完行程，選一個你最想去的方案。
             </p>
             <p className="hero-joke"><span>這次不吃</span> 牛肉麵！</p>
-            <div className="hero-actions" ref={heroActionsRef}>
-              <a href="#plans" className="button button-dark">
-                看方案，選陣營
-              </a>
-              <a href="#results" className="button button-white">看即時戰況</a>
-              <button type="button" className="button button-white hero-replay" onClick={() => setIntro(true)}>
-                <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10a9 9 0 1 1 2.6 8.4" /><path d="M3 4v6h6" /></svg>
-                重播開場
-              </button>
-            </div>
           </div>
           <div className="hero-art">
             <img
@@ -228,17 +220,27 @@ export default function TripShowdown() {
             />
             <HeroStamp active={introReady && !intro} />
           </div>
+          <div className="hero-actions" ref={heroActionsRef}>
+            <a href="#plans" className="button button-dark">
+              看方案，選陣營
+            </a>
+            <a href="#results" className="button button-white">看即時戰況</a>
+            <button type="button" className="button button-white hero-replay" onClick={() => setIntro(true)}>
+              <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10a9 9 0 1 1 2.6 8.4" /><path d="M3 4v6h6" /></svg>
+              重播開場
+            </button>
+          </div>
         </header>
         <main className="wrap">
           <ol className="journey" aria-label="投票步驟">
             <li className="current">
-              <b>01</b> 看方案
+              <a href="#plans"><b>01</b><span>看方案</span></a>
             </li>
             <li className={draft.planId ? "current" : ""}>
-              <b>02</b> 選陣營
+              <a href="#selection"><b>02</b><span>選陣營</span></a>
             </li>
             <li className={actualVote ? "current" : ""}>
-              <b>03</b> 登入投票
+              <a href={selected ? "#vote-review" : "#selection"} aria-label={selected ? "前往登入投票" : "先選陣營，再前往登入投票"}><b>03</b><span>登入投票</span></a>
             </li>
           </ol>
           {error && (
@@ -367,7 +369,7 @@ export default function TripShowdown() {
                     </div>}
                   </fieldset>
                 </div>
-                <aside className="vote-review" aria-label="投票摘要">
+                <aside id="vote-review" className="vote-review" aria-label="投票摘要">
                   <span className="eyebrow">YOUR VOTE</span>
                   <h3>{actualVote ? "你的選擇" : "準備好站這一邊？"}</h3>
                   <div className="review-plan"><span className="team-label">{selected.code} · {selected.shortName}</span><strong>{selected.title}</strong></div>

@@ -77,6 +77,37 @@ test("ticks and landing chord are scheduled on the visual timeline's exact beats
   sound.stop();
   assert.equal(context.closeCalls, 1);
 });
+test("audio activation delayed past 450ms still produces the draw sound", { timeout: 3000 }, async t => {
+  const original = globalThis.AudioContext;
+  class SlowAudio extends FakeAudioContext {
+    state = "suspended";
+    resume() {
+      return new Promise(resolve => setTimeout(() => { this.state = "running"; resolve(); }, 650));
+    }
+  }
+  globalThis.AudioContext = SlowAudio;
+  t.after(() => { globalThis.AudioContext = original; });
+  const abort = new AbortController();
+  t.after(() => abort.abort());
+  const sound = await startDrawSound([{ id: "A", at: 0 }], abort.signal);
+  assert.ok(sound);
+  assert.equal(FakeAudioContext.last.sources.length, 3);
+  sound.stop();
+  assert.equal(FakeAudioContext.last.closeCalls, 1);
+});
+test("audio activation that never completes falls back without scheduling sound", { timeout: 3000 }, async t => {
+  const original = globalThis.AudioContext;
+  class PendingAudio extends FakeAudioContext {
+    state = "suspended";
+    resume() { return new Promise(() => {}); }
+  }
+  globalThis.AudioContext = PendingAudio;
+  t.after(() => { globalThis.AudioContext = original; });
+  const sound = await startDrawSound([{ id: "A", at: 0 }], new AbortController().signal);
+  assert.equal(sound, null);
+  assert.equal(FakeAudioContext.last.sources.length, 0);
+  assert.equal(FakeAudioContext.last.closeCalls, 1);
+});
 test("canceling during audio activation resolves promptly and schedules no stale sounds", async t => {
   const original = globalThis.AudioContext;
   class PendingAudio extends FakeAudioContext { resume() { return new Promise(() => {}); } }
