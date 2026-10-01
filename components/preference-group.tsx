@@ -34,7 +34,11 @@ export default function PreferenceGroup({ groupId, group, selectedId, disabled, 
   );
   const result = resultId === selectedId ? group.choices?.[resultId] : undefined;
   return <fieldset className={"preference-group" + (choices.some(([, choice]) => choice.ingredients) ? " recipe-preferences" : "")}>
-    <legend>{group.label}<small>{individual ? "每人各選一種；也可留白交給主辦安排" : "可先留白，交給主辦安排"}</small></legend>
+    <legend><span className="preference-group-title">{group.label}{individual && <em>各自選擇</em>}</span><small>{individual
+      ? "每人各選一種；選擇只套用在自己，也可留白交給主辦安排。"
+      : choices.length > 1
+        ? "這 " + choices.length + " 個都是候選；選一個你比較想要的，也可以留白請主辦安排。"
+        : "可以直接選擇，也可以留白請主辦安排。"}</small></legend>
     {children}
     {choices.length > 1 && <div className="preference-draw">
       <div><b>選擇困難？</b><p role="status" aria-live="polite">{rolling ? "跑燈中…快要選好了！" : result ? "幫你選到：" + result.label : "讓跑燈幫你選一個。"}</p>{soundUnavailable && <small className="draw-sound-note">音效暫時無法播放，抽選結果不受影響。</small>}</div>

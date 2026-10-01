@@ -1,6 +1,6 @@
 import type { Catalog } from "./trips";
 export const defaultCatalog: Catalog = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   settings: {
     title: "10/29 秋季員工旅遊",
     eventDate: "2026-10-29",
@@ -16,7 +16,7 @@ export const defaultCatalog: Catalog = {
       category: "釣趣派",
       description:
         "先在室內輕鬆釣蝦、比比誰的收穫最好，再一起前往附近的村民食堂享用平日港點午餐。",
-      priceNote: "釣蝦與餐費待確認",
+      priceNote: "釣蝦 1 小時 $400 起・村民食堂 $720＋10%",
       color: "yellow",
       tags: ["室內行程", "輕鬆釣蝦", "港式點心", "聚餐聊天"],
       schedule: [

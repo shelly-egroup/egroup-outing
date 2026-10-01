@@ -76,6 +76,12 @@ export default function TripShowdown() {
     previousUid = useRef<string | null>(null);
   const planDrafts = useRef<Record<string, Pick<VoteDraft, "preferences" | "note">>>({});
   const selected = catalog.plans[draft.planId];
+  const [menuOpen, setMenuOpen] = useState(true);
+
+  useEffect(() => {
+    if (selected?.code === "A") setMenuOpen(true);
+  }, [selected?.code]);
+
   const venues = selected?.code === "A"
     ? [zhishanFishingStore, villagerStore]
     : selected?.code === "B" ? [lazerTreksStore] : [];
@@ -218,7 +224,7 @@ export default function TripShowdown() {
             <p className="hero-joke"><span>這次不吃</span> 牛肉麵！</p>
           </div>
           <div className="hero-art">
-            <img className="hero-art-scene" src="/assets/jo-showdown-hero-bosses-v7.png" alt="釣蝦與港點對決雷射槍戰與下午茶" />
+            <img className="hero-art-scene" src="/assets/jo-showdown-hero-bosses-v9.png" alt="釣蝦與港點對決雷射槍戰與下午茶" />
             <img className="hero-art-type" src="/assets/hero-title-comic-v1.png" alt="揪是要對決" />
             <div className="hero-art-plans">
               <span><strong>{plans[0]?.[1].shortName || "釣趣派"}</strong><small>釣蝦＋港點午餐</small></span>
@@ -283,7 +289,6 @@ export default function TripShowdown() {
               {plans.length === 2 && <VersusBadge />}
               {plans.map(([id, plan]) => (
                 <PlanCard key={id} plan={plan} selected={draft.planId === id}
-                  venueLabel={id === "A" && plan.title.includes("釣蝦") ? "地點｜至善釣蝦場・村民食堂廚窗港點 士林官邸店" : id === "B" && plan.title.includes("雷射") ? "場地｜六度空間 LazerTreks・民權西路站附近" : undefined}
                   hasVoted={actualVote?.planId === id} disabled={saving} onChoose={() => choose(id)} />
               ))}
             </div>
@@ -316,17 +321,14 @@ export default function TripShowdown() {
                     </span>
                     <h3 id="selected-plan-title" tabIndex={-1}>{selected.title}</h3>
                   </div>
+                  <div className="selected-plan-purpose">
+                    <strong>選這派會怎麼玩</strong>
+                    <p>{selected.description}</p>
+                  </div>
                   {venues.length > 0 && <div className="outing-venue-links" aria-label="行程場地連結">
                     {venues.map(venue => <div key={venue.id}><span>{venue.name}</span><StoreLinks store={venue} compact /><VenueReviews id={venue.id} tone={selected.color} /></div>)}
                   </div>}
-                  {selected.code === "A" && <details className="menu-details" onToggle={event => {
-                    const details = event.currentTarget;
-                    if (details.open) requestAnimationFrame(() => {
-                      if (details.open && details.isConnected) details.querySelector(".menu-book")?.scrollIntoView({
-                        block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
-                      });
-                    });
-                  }}>
+                  {selected.code === "A" && <details className="menu-details" open={menuOpen} onToggle={event => setMenuOpen(event.currentTarget.open)}>
                     <summary>翻看村民食堂菜色與平日午餐（點圖可放大）</summary>
                     <VillagerBook />
                   </details>}

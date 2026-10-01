@@ -8,7 +8,6 @@ type Props = {
   plan: TripPlan;
   selected?: boolean;
   hasVoted?: boolean;
-  venueLabel?: string;
   disabled?: boolean;
   onChoose?: () => void;
   edit?: EditPlan;
@@ -19,7 +18,7 @@ function titleLines(title: string) {
   const plus = title.indexOf("＋");
   return plus < 0 ? [title] : [title.slice(0, plus), title.slice(plus)];
 }
-export default function PlanCard({ plan, selected = false, hasVoted = false, venueLabel, disabled = false, onChoose, edit }: Props) {
+export default function PlanCard({ plan, selected = false, hasVoted = false, disabled = false, onChoose, edit }: Props) {
   const reorder = useReorder((plan.schedule || []).map((stop, index) => ({ id: String(index), label: stop.title })),
     (from, to) => edit?.(p => { p.schedule = moveItem(p.schedule, from, to); }), !edit || disabled);
   function field(key: "category" | "title" | "description" | "priceNote" | "shortName", label: string, maxLength: number, multiline = false) {
@@ -57,8 +56,7 @@ export default function PlanCard({ plan, selected = false, hasVoted = false, ven
       </li>)}</ol>
       {edit && <button className="editor-add-row" type="button" disabled={plan.schedule.length >= 12} onClick={() => edit(p => { p.schedule.push({ time: "午後", title: "新行程", description: "" }); })}>＋ 加一段行程</button>}
     </div>
-    {edit && <div className="compare-price">{field("priceNote", "費用說明", 150, true)}</div>}
-    {venueLabel && <p className="plan-card-venue">{venueLabel}</p>}
+    {(edit || plan.priceNote) && <div className="compare-price">{edit ? field("priceNote", "費用說明", 150, true) : plan.priceNote}</div>}
     {edit ? <div className={"button choose-button editable-choose " + (plan.color === "yellow" ? "button-dark" : "button-white")}>
       <span>我偏好</span>{field("shortName", "陣營名稱", 150)}
     </div> : <button type="button" className={"button choose-button " + (plan.color === "yellow" || selected ? "button-dark" : "button-white")} disabled={disabled} aria-pressed={selected} onClick={onChoose}>

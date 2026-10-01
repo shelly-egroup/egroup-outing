@@ -13,7 +13,7 @@ test("legacy upgrade inserts four individual bath choices after massage without 
  const catalog=old(),before=structuredClone(catalog),next=upgradeCatalog(catalog);
  assert.deepEqual(catalog,before);
  assert.equal(next.updatedAt,100);
- assert.equal(next.schemaVersion,2);
+ assert.equal(next.schemaVersion,4);
  assert.deepEqual(sortedGroups(next.plans.B).map(([id])=>id),["g0","footBath","g1"]);
  assert.deepEqual(next.plans.B.groups.g0.choices,before.plans.B.groups.g0.choices);
  const bath=next.plans.B.groups.footBath;
@@ -21,6 +21,16 @@ test("legacy upgrade inserts four individual bath choices after massage without 
  assert.equal(bath.collapsibleDescriptions,undefined);
  assert.match(bath.choices.beauty.ingredients,/丹參、紅花/);
  assert.deepEqual(sortedChoices(bath).map(([,c])=>c.label),["返老還童","貴妃美人","元氣十足","捻花惹草"]);
+});
+
+test("current outing upgrades only the legacy fishing price note",()=>{
+ const legacy={schemaVersion:3,updatedAt:100,settings:{},plans:{A:{priceNote:"釣蝦與餐費待確認"}}};
+ const next=upgradeCatalog(legacy);
+ assert.equal(next.schemaVersion,4);
+ assert.equal(next.plans.A.priceNote,"釣蝦 1 小時 $400 起・村民食堂 $720＋10%");
+ assert.equal(legacy.plans.A.priceNote,"釣蝦與餐費待確認");
+ const custom={...legacy,plans:{A:{priceNote:"主辦自訂價格"}}};
+ assert.equal(upgradeCatalog(custom).plans.A.priceNote,"主辦自訂價格");
 });
 
 test("upgrade is idempotent and a later intentional removal stays removed",()=>{

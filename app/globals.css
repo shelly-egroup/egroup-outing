@@ -1033,8 +1033,7 @@ summary {
 .plan-card h3 > span { display: block; }
 .plan-description { color: var(--ink); font-weight: 600; line-height: 1.85; margin: 18px 0; }
 .plan-card .pill-row { margin: 0 0 22px; }
-.plan-card .compare-price { margin: auto 0 20px; padding-top: 18px; border-top: 2px dashed var(--ink); font-size: 16px; font-weight: 800; }
-.plan-card-venue { margin: auto 0 20px; min-height: 70px; padding-top: 15px; border-top: 2px dashed var(--ink); font-size: 14px; font-weight: 800; line-height: 1.6; }
+.plan-card .compare-price { min-height: 70px; margin: auto 0 20px; padding-top: 18px; border-top: 2px dashed var(--ink); font-size: 16px; font-weight: 800; }
 .choose-button { width: 100%; min-height: 54px; }
 .plan-itinerary { margin: 0 0 24px; }
 .plan-itinerary ol { padding: 0; list-style: none; margin: 0; }
@@ -1065,8 +1064,13 @@ summary {
 .selected-banner { padding: 22px; border-bottom: 2px solid var(--ink); }
 .selected-banner > span { font-size: 14px; font-weight: 800; }
 .selected-banner h3 { margin: 8px 0 0; font-size: 24px; }
+.selected-plan-purpose { padding: 16px 22px; border-bottom: 1px solid #d8d6cf; background: var(--team-tint, #fff7da); }
+.selected-plan-purpose strong { display: block; color: var(--team-ink, var(--ink)); font-size: 12px; }
+.selected-plan-purpose p { margin: 5px 0 0; color: #38444d; font-size: 14px; line-height: 1.75; }
 .preference-group { padding: 24px; margin: 0; border: 0; border-bottom: 1px solid #d8d6cf; }
 .preference-group legend { float: left; width: 100%; font-size: 18px; font-weight: 900; margin-bottom: 16px; }
+.preference-group-title { display: flex; align-items: center; flex-wrap: wrap; gap: 7px 10px; }
+.preference-group-title em { display: inline-flex; align-items: center; min-height: 25px; padding: 2px 7px; border: 1px solid var(--team-ink, var(--ink)); background: var(--team-tint, #fff7da); color: var(--team-ink, var(--ink)); font-size: 10px; font-style: normal; font-weight: 900; }
 .preference-group legend small { display: block; font-size: 13px; font-weight: 400; color: #636c74; margin-top: 4px; }
 .preference-choices { clear: both; display: grid; gap: 10px; }
 .preference-choice { display: flex; gap: 10px; align-items: center; padding: 14px; border: 2px solid #dddcd7; cursor: pointer; font-size: 15px; }
