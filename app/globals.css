@@ -1081,7 +1081,7 @@ summary {
 .preference-choice small { display: block; color: #65707a; font-size: 13px; margin-top: 5px; }
 .preference-choice > strong { white-space: nowrap; font-size: 14px; }
 .preference-choice-card.has-store-links { position: relative; border: 2px solid #dddcd7; }
-.preference-choice-card.has-store-links > .preference-choice { display: grid; grid-template-columns: 18px minmax(0,1fr); gap: 8px 10px; align-items: start; padding: 12px; border: 0; }
+.preference-choice-card.has-store-links > .preference-choice { position: static; display: grid; grid-template-columns: 18px minmax(0,1fr); gap: 8px 10px; align-items: start; padding: 12px; border: 0; }
 .has-store-links > .preference-choice > input { margin: 11px 0 0; }
 .has-store-links > .preference-choice > strong { grid-column: 2; margin-left: 0; }
 .has-store-links .choice-title-line { min-height: 40px; padding-right: 88px; align-items: center; line-height: 1.5; }
@@ -2390,8 +2390,11 @@ td {
 .preference-choice.is-drawing { border-color: var(--team-ink); outline: 2px solid var(--team); outline-offset: 2px; box-shadow: 3px 3px 0 var(--team); }
 .preference-choice.is-drawing .plan-draw-lights,.preference-choice.is-draw-winner .plan-draw-lights { opacity: 1; }
 .preference-choice.is-draw-winner { animation: draw-land .65s cubic-bezier(.2,1.2,.4,1) both; }
+.preference-choice-card.has-store-links.is-drawing { border-color: var(--team-ink); outline: 2px solid var(--team); outline-offset: 2px; box-shadow: 3px 3px 0 var(--team); }
+.preference-choice-card.has-store-links.is-drawing .plan-draw-lights,.preference-choice-card.has-store-links.is-draw-winner .plan-draw-lights { opacity: 1; }
+.preference-choice-card.has-store-links.is-draw-winner { animation: draw-land .65s cubic-bezier(.2,1.2,.4,1) both; }
 .draw-sound-note { display: block; font-size: 12px; color: #636c74; margin-top: 5px; }
-@media (prefers-reduced-motion: reduce) { .preference-choice.is-draw-winner { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .preference-choice.is-draw-winner,.preference-choice-card.has-store-links.is-draw-winner { animation: none; } }
 
 .score-aura > i { position: absolute; top: 0; height: 46%; width: 3px; background: linear-gradient(transparent 8%,var(--score-accent) 44%,var(--rail-light) 72%,transparent); box-shadow: 0 0 4px color-mix(in srgb,var(--score-accent) 38%,transparent); animation: battle-rail-vertical 3.2s linear infinite paused; }
 .score-aura .score-rail-right { right: 0; animation-delay: -1.6s; }
@@ -2736,7 +2739,7 @@ td {
 @media (prefers-reduced-motion: reduce) { .choice-rank-copy b { animation: none; } }
 
 /* The same header stays in place; quick links arrive after the hero actions. */
-.outing-header { position: sticky; top: 0; z-index: 60; background: var(--paper); }
+.outing-header { position: sticky; top: 0; z-index: 60; background: var(--paper); transition: transform .22s ease; }
 .outing-header .topbar { position: relative; display: flex; flex-wrap: nowrap; justify-content: space-between; gap: 16px; min-height: 82px; padding-top: 16px; padding-bottom: 16px; }
 .outing-header .brand { display: flex; white-space: nowrap; flex: none; }
 .header-actions { display: flex; flex-wrap: nowrap; align-items: center; gap: 12px; min-width: 0; margin-left: auto; }
@@ -2762,6 +2765,7 @@ td {
 }
 @media (max-width: 800px) { .outing-header .account-name { display: none; } }
 @media (max-width: 600px) {
+  .outing-header.is-compact.is-retracted { transform: translateY(calc(-100% - 64px)); }
   .outing-header .topbar { display: flex; flex-wrap: nowrap; justify-content: space-between; gap: 10px; min-height: 66px; padding: 12px 0; }
   .outing-header .brand { flex: none; font-size: 15px; gap: 5px; }
   .outing-header .brand > span { display: inline-block; font-size: 10px; padding: 2px 4px; }
@@ -2786,7 +2790,7 @@ td {
   .outing-header .organizer-button { padding: 7px 5px; font-size: 10px; }
   .outing-header .account-trigger { padding: 4px; }
 }
-@media (prefers-reduced-motion: reduce) { .outing-quick-nav,.header-vote { transition: none; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .outing-header,.outing-quick-nav,.header-vote { transition: none; } }
 
 /* Compact calendar in the site's paper / ink / yellow palette. */
 .calendar-field { position: relative; min-width: 0; }

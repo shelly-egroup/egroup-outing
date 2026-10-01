@@ -56,9 +56,12 @@ export default function PreferenceGroup({ groupId, group, selectedId, disabled, 
           ? { ...(record?.info || reference), ...choice.store, name: choice.label }
           : record?.info || reference;
         const linked = store && hasStoreLinks(store);
-        return <div key={id} className={"preference-choice-card" + (linked || reference ? " has-store-links" : "")}><label
+        const hasDetails = Boolean(linked || reference);
+        const drawState = (rolling && litId === id ? " is-drawing" : "")
+          + (!rolling && resultId === id && selectedId === id ? " is-draw-winner" : "");
+        return <div key={id} className={"preference-choice-card" + (hasDetails ? " has-store-links" + drawState : "")}><label
         ref={node => { rows.current[id] = node; }}
-        className={"preference-choice" + (choice.ingredients ? " recipe-choice" : "") + (selectedId === id ? " checked" : "") + (rolling && litId === id ? " is-drawing" : "") + (!rolling && resultId === id && selectedId === id ? " is-draw-winner" : "")}>
+        className={"preference-choice" + (choice.ingredients ? " recipe-choice" : "") + (selectedId === id ? " checked" : "") + (!hasDetails ? drawState : "")}>
         <span className="plan-draw-lights" aria-hidden="true"><i /><i /><i /><i /></span>
         <input type="radio" disabled={disabled} name={groupId} value={id} checked={selectedId === id} onChange={() => choose(id)} />
         <span className="preference-choice-copy"><span className="choice-title-line"><b>{choice.label}</b>{choice.subtitle && <span className="choice-subtitle">{choice.subtitle}</span>}</span>

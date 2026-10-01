@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import AccountMenu from "./account-menu";
 import type { VoteReminder } from "@/lib/vote-reminder";
 
+const MOBILE_RETRACT_DELAY_MS = 500;
+
 function OutingTicker({ announcement }: { announcement: string }) {
   const messages = ["10/29 秋季員旅・雙方案對決・你的一票決定全員行程", announcement];
   const cycle = useRef<HTMLDivElement>(null);
@@ -36,7 +38,9 @@ function OutingTicker({ announcement }: { announcement: string }) {
 }
 export default function OutingHeader({ active, heroActions, vote, announcement }: { active: boolean; heroActions: RefObject<HTMLDivElement | null>; vote?: VoteReminder; announcement: string }) {
   const [compact, setCompact] = useState(false);
+  const [retracted, setRetracted] = useState(false);
   const bar = useRef<HTMLDivElement>(null);
+  const retractTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!active) { setCompact(false); return; }
     const actions = heroActions.current;
@@ -54,6 +58,46 @@ export default function OutingHeader({ active, heroActions, vote, announcement }
   }, [active, heroActions]);
   useEffect(() => {
     const header = bar.current;
+    if (retractTimer.current) clearTimeout(retractTimer.current);
+    retractTimer.current = null;
+    if (!active || !compact || !header) {
+      setRetracted(false);
+      return;
+    }
+    const mobile = window.matchMedia("(max-width: 600px)");
+    const wake = () => {
+      if (retractTimer.current) clearTimeout(retractTimer.current);
+      retractTimer.current = null;
+      setRetracted(false);
+      if (!mobile.matches) return;
+      retractTimer.current = setTimeout(() => {
+        retractTimer.current = null;
+        if (!header.contains(document.activeElement)) setRetracted(true);
+      }, MOBILE_RETRACT_DELAY_MS);
+    };
+    const focus = () => {
+      if (header.contains(document.activeElement)) {
+        if (retractTimer.current) clearTimeout(retractTimer.current);
+        retractTimer.current = null;
+        setRetracted(false);
+      } else wake();
+    };
+    window.addEventListener("scroll", wake, { passive: true });
+    header.addEventListener("focusin", focus);
+    header.addEventListener("focusout", focus);
+    mobile.addEventListener("change", wake);
+    wake();
+    return () => {
+      window.removeEventListener("scroll", wake);
+      header.removeEventListener("focusin", focus);
+      header.removeEventListener("focusout", focus);
+      mobile.removeEventListener("change", wake);
+      if (retractTimer.current) clearTimeout(retractTimer.current);
+      retractTimer.current = null;
+    };
+  }, [active, compact]);
+  useEffect(() => {
+    const header = bar.current;
     if (!active || !header) return;
     const sync = () => {
       const extra = window.matchMedia("(max-width: 1100px)").matches ? 62 : 0;
@@ -63,7 +107,7 @@ export default function OutingHeader({ active, heroActions, vote, announcement }
     window.addEventListener("resize",sync); sync();
     return () => { observer.disconnect();window.removeEventListener("resize",sync);document.documentElement.style.removeProperty("--outing-header-offset"); };
   }, [active, compact]);
-  return <div className={"outing-header" + (compact ? " is-compact" : "")} ref={bar}>
+  return <div className={"outing-header" + (compact ? " is-compact" : "") + (retracted ? " is-retracted" : "")} ref={bar}>
     <OutingTicker announcement={announcement} />
     <div className="topbar wrap">
       <Link href="/" className="brand">揪是要對決<span>2026</span></Link>
