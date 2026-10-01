@@ -2932,6 +2932,8 @@ button.choice-supporters-more:focus-visible { outline: 2px solid var(--rank-acce
 
 /* Account access and organizer roster follow the existing paper-and-ink cards. */
 .login-dialog .confirm-content > p { line-height: 1.8; }
+.login-dialog:focus { outline: none; }
+.login-dialog .button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 .login-email-example { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: #fff3bd; border-left: 3px solid var(--yellow); padding: 14px 16px; margin: 20px 0; font-size: 15px; overflow-wrap: anywhere; }
 .login-email-example > span { color: #6c644a; font-size: 12px; }
 .login-dialog .confirm-actions { flex-wrap: wrap; }
