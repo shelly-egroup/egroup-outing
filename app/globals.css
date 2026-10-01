@@ -3163,7 +3163,8 @@ button.choice-supporters-more:focus-visible { outline: 2px solid var(--rank-acce
 
 /* Keep switching within thumb reach while the original picker is above the viewport. */
 .outing-page #selection-content, .outing-page .menu-book { scroll-margin-top: var(--outing-header-offset, 130px); }
-.plan-switch-dock { position: fixed; z-index: 55; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(440px, calc(100% - 32px)); padding: 8px; border: 2px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); }
+.plan-switch-dock { position: fixed; z-index: 55; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(440px, calc(100% - 32px)); padding: 8px; border: 2px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); transition: transform .22s ease, opacity .18s ease; }
+.plan-switch-dock.is-collapsed { transform: translate(-50%, calc(100% + 16px + env(safe-area-inset-bottom))); opacity: 0; pointer-events: none; }
 .plan-switch-caption { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 2px 6px; font-size: 11px; line-height: 1.4; }
 .plan-switch-caption > span { color: #65707a; font-size: 10px; }
 .plan-switch-options { display: flex; gap: 8px; }
