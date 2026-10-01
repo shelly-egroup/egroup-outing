@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { TripPlan } from "@/lib/trips";
 
-const COLLAPSE_DELAY_MS = 200;
+const COLLAPSE_DELAY_MS = 500;
 
 type Props = {
   plans: [string, TripPlan][];
