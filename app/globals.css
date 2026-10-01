@@ -2739,7 +2739,7 @@ td {
 @media (prefers-reduced-motion: reduce) { .choice-rank-copy b { animation: none; } }
 
 /* The same header stays in place; quick links arrive after the hero actions. */
-.outing-header { position: sticky; top: 0; z-index: 60; background: var(--paper); transition: transform .22s ease; }
+.outing-header { position: sticky; top: 0; z-index: 60; background: var(--paper); }
 .outing-header .topbar { position: relative; display: flex; flex-wrap: nowrap; justify-content: space-between; gap: 16px; min-height: 82px; padding-top: 16px; padding-bottom: 16px; }
 .outing-header .brand { display: flex; white-space: nowrap; flex: none; }
 .header-actions { display: flex; flex-wrap: nowrap; align-items: center; gap: 12px; min-width: 0; margin-left: auto; }
@@ -2765,7 +2765,7 @@ td {
 }
 @media (max-width: 800px) { .outing-header .account-name { display: none; } }
 @media (max-width: 600px) {
-  .outing-header.is-compact.is-retracted { transform: translateY(calc(-100% - 64px)); }
+  .outing-header.is-compact.is-nav-retracted .outing-quick-nav { visibility: hidden; opacity: 0; transform: translateY(-6px); pointer-events: none; }
   .outing-header .topbar { display: flex; flex-wrap: nowrap; justify-content: space-between; gap: 10px; min-height: 66px; padding: 12px 0; }
   .outing-header .brand { flex: none; font-size: 15px; gap: 5px; }
   .outing-header .brand > span { display: inline-block; font-size: 10px; padding: 2px 4px; }
@@ -2790,7 +2790,7 @@ td {
   .outing-header .organizer-button { padding: 7px 5px; font-size: 10px; }
   .outing-header .account-trigger { padding: 4px; }
 }
-@media (prefers-reduced-motion: reduce) { .outing-header,.outing-quick-nav,.header-vote { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .outing-quick-nav,.header-vote { transition: none; transform: none; } }
 
 /* Compact calendar in the site's paper / ink / yellow palette. */
 .calendar-field { position: relative; min-width: 0; }

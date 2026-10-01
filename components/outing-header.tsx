@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import AccountMenu from "./account-menu";
 import type { VoteReminder } from "@/lib/vote-reminder";
 
-const MOBILE_RETRACT_DELAY_MS = 500;
+const MOBILE_NAV_RETRACT_DELAY_MS = 500;
 
 function OutingTicker({ announcement }: { announcement: string }) {
   const messages = ["10/29 秋季員旅・雙方案對決・你的一票決定全員行程", announcement];
@@ -38,8 +38,9 @@ function OutingTicker({ announcement }: { announcement: string }) {
 }
 export default function OutingHeader({ active, heroActions, vote, announcement }: { active: boolean; heroActions: RefObject<HTMLDivElement | null>; vote?: VoteReminder; announcement: string }) {
   const [compact, setCompact] = useState(false);
-  const [retracted, setRetracted] = useState(false);
+  const [quickNavRetracted, setQuickNavRetracted] = useState(false);
   const bar = useRef<HTMLDivElement>(null);
+  const quickNav = useRef<HTMLElement>(null);
   const retractTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!active) { setCompact(false); return; }
@@ -57,40 +58,28 @@ export default function OutingHeader({ active, heroActions, vote, announcement }
     return () => { observer.disconnect();size.disconnect();cancelAnimationFrame(frame);window.removeEventListener("scroll",schedule); };
   }, [active, heroActions]);
   useEffect(() => {
-    const header = bar.current;
     if (retractTimer.current) clearTimeout(retractTimer.current);
     retractTimer.current = null;
-    if (!active || !compact || !header) {
-      setRetracted(false);
+    if (!active || !compact) {
+      setQuickNavRetracted(false);
       return;
     }
     const mobile = window.matchMedia("(max-width: 600px)");
     const wake = () => {
       if (retractTimer.current) clearTimeout(retractTimer.current);
       retractTimer.current = null;
-      setRetracted(false);
+      setQuickNavRetracted(false);
       if (!mobile.matches) return;
       retractTimer.current = setTimeout(() => {
         retractTimer.current = null;
-        if (!header.contains(document.activeElement)) setRetracted(true);
-      }, MOBILE_RETRACT_DELAY_MS);
-    };
-    const focus = () => {
-      if (header.contains(document.activeElement)) {
-        if (retractTimer.current) clearTimeout(retractTimer.current);
-        retractTimer.current = null;
-        setRetracted(false);
-      } else wake();
+        if (!quickNav.current?.contains(document.activeElement)) setQuickNavRetracted(true);
+      }, MOBILE_NAV_RETRACT_DELAY_MS);
     };
     window.addEventListener("scroll", wake, { passive: true });
-    header.addEventListener("focusin", focus);
-    header.addEventListener("focusout", focus);
     mobile.addEventListener("change", wake);
     wake();
     return () => {
       window.removeEventListener("scroll", wake);
-      header.removeEventListener("focusin", focus);
-      header.removeEventListener("focusout", focus);
       mobile.removeEventListener("change", wake);
       if (retractTimer.current) clearTimeout(retractTimer.current);
       retractTimer.current = null;
@@ -107,7 +96,8 @@ export default function OutingHeader({ active, heroActions, vote, announcement }
     window.addEventListener("resize",sync); sync();
     return () => { observer.disconnect();window.removeEventListener("resize",sync);document.documentElement.style.removeProperty("--outing-header-offset"); };
   }, [active, compact]);
-  return <div className={"outing-header" + (compact ? " is-compact" : "") + (retracted ? " is-retracted" : "")} ref={bar}>
+  const hideQuickNav = !compact || quickNavRetracted;
+  return <div className={"outing-header" + (compact ? " is-compact" : "") + (quickNavRetracted ? " is-nav-retracted" : "")} ref={bar}>
     <OutingTicker announcement={announcement} />
     <div className="topbar wrap">
       <Link href="/" className="brand">揪是要對決<span>2026</span></Link>
@@ -117,7 +107,7 @@ export default function OutingHeader({ active, heroActions, vote, announcement }
           <span className="header-vote-copy"><small>{vote.pending ? "變更未儲存" : "我的投票"}</small><strong>{vote.label}</strong></span>
           <span className="sr-only" role="status">{vote.status}</span>
         </a>}
-        <nav className="outing-quick-nav" aria-label="秋遊導覽" aria-hidden={!compact} inert={!compact}>
+        <nav ref={quickNav} className="outing-quick-nav" aria-label="秋遊導覽" aria-hidden={hideQuickNav} inert={hideQuickNav}>
           <a href="#plans" className="button button-dark">看方案，選陣營</a>
           <a href="#results" className="button button-white">看即時戰況</a>
         </nav>
