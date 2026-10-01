@@ -9,7 +9,9 @@ for (const name of ["store-references", "store-reviews"]) {
   source = source.replace(JSON.stringify("./" + name), JSON.stringify(uri(await compiled(name + ".js"))));
 }
 source = source.replace('"./restaurant-review-snapshots.json"', JSON.stringify(uri("export default " + await compiled("restaurant-review-snapshots.json"))));
-const { defaultStoreDirectory, parseStoreInfo, parseReviewSnapshot, parseStoreDirectory, mergeStoreDirectory, nextReviewRecord, seedMissingStores } = await import(uri(source));
+source = source.replace('"./itinerary-review-snapshots.json"', JSON.stringify(uri("export default " + await compiled("itinerary-review-snapshots.json"))));
+const { activeReviewStoreIds, defaultStoreDirectory, isCurrentItineraryReview, parseStoreInfo, parseReviewSnapshot, parseStoreDirectory, mergeStoreDirectory, nextReviewRecord, reviewRefreshTargetIds, seedMissingStores } = await import(uri(source));
+const { choiceStore } = await import(uri(await compiled("store-references.js")));
 const record = () => structuredClone(defaultStoreDirectory["hpw-changan"]);
 const newer = snapshot => ({ ...structuredClone(snapshot), capturedAt: new Date(Date.parse(snapshot.capturedAt) + 1000).toISOString() });
 const { refreshStoresSequentially } = await import(uri(await compiled("store-refresh.js")));
@@ -54,14 +56,56 @@ test("review ages advance from capture time to now and preserve edited versus pu
   assert.equal(reviewTimeFromNow("2 天前", "invalid", captured), "評論時間未提供");
 });
 
-test("all seven captured stores have five valid reviews, including rating-only and critical reviews", () => {
-  assert.equal(Object.keys(defaultStoreDirectory).length, 7);
+test("legacy captures remain valid and the current six venue IDs exclude unrelated stores", () => {
+  assert.equal(Object.keys(defaultStoreDirectory).length, 11);
+  assert.deepEqual(activeReviewStoreIds, ["zhishan-shrimp-fishing", "villager-shilin", "lazertreks-taipei", "le-cafe", "brasserie", "grand-hotel-garden"]);
+  assert.equal(Object.values(defaultStoreDirectory).filter(entry => entry.reviews).length, 11);
   for (const [id, entry] of Object.entries(defaultStoreDirectory)) {
     assert.deepEqual(parseStoreInfo(id, entry.info), entry.info);
-    assert.deepEqual(parseReviewSnapshot(entry.reviews), entry.reviews, id);
+    if (entry.reviews) assert.deepEqual(parseReviewSnapshot(entry.reviews), entry.reviews, id);
   }
   assert.equal(record().reviews.reviews.filter(row => !row.text).length, 4);
   assert.ok(defaultStoreDirectory.kitchen12.reviews.reviews.some(row => row.rating === 1));
+  for (const id of activeReviewStoreIds) assert.equal(isCurrentItineraryReview(defaultStoreDirectory[id].reviews), true, id);
+  const itineraryAuthors = activeReviewStoreIds.flatMap(id => defaultStoreDirectory[id].reviews.reviews.map(row => row.authorUrl));
+  assert.equal(itineraryAuthors.length, 30);
+  assert.equal(new Set(itineraryAuthors).size, 30);
+});
+
+test("manual review refresh cannot select replaced or unrelated venues", () => {
+  assert.deepEqual(reviewRefreshTargetIds("all"), activeReviewStoreIds);
+  assert.deepEqual(reviewRefreshTargetIds("grand-hotel-garden"), ["grand-hotel-garden"]);
+  for (const id of ["kitchen12", "hpw-changan", "youngsong-xinsheng", "unknown"]) {
+    assert.throws(() => reviewRefreshTargetIds(id), /不屬於目前行程/);
+  }
+});
+
+test("the three current buffet choices resolve to their review snapshots", () => {
+  for (const [label, id] of [
+    ["Le Café・台北老爺酒店", "le-cafe"],
+    ["栢麗廳・台北晶華酒店", "brasserie"],
+    ["圓山大飯店｜松鶴餐廳", "grand-hotel-garden"],
+  ]) {
+    assert.equal(choiceStore(label)?.id, id);
+    assert.equal(isCurrentItineraryReview(defaultStoreDirectory[id].reviews), true);
+  }
+});
+
+test("old reviews cannot appear as the newly requested itinerary refresh", () => {
+  const prior = { ...defaultStoreDirectory["le-cafe"].reviews, capturedAt: "2026-09-24T07:25:59.469Z" };
+  assert.equal(isCurrentItineraryReview(prior), false);
+  assert.equal(isCurrentItineraryReview(undefined), false);
+  assert.equal(isCurrentItineraryReview({ ...prior, capturedAt: "2026-10-01T01:00:00.000Z" }), true);
+});
+
+test("new itinerary captures display over older cloud reviews without replacing edited store info", () => {
+  const seed = defaultStoreDirectory["grand-hotel-garden"];
+  const old = { ...structuredClone(seed), info: { ...seed.info, website: "https://example.com/saved" }, reviews: { ...seed.reviews, capturedAt: "2026-09-24T07:25:59.469Z" } };
+  const merged = mergeStoreDirectory({ [seed.info.id]: old })[seed.info.id];
+  assert.equal(merged.info.website, "https://example.com/saved");
+  assert.deepEqual(merged.reviews, seed.reviews);
+  const newerSaved = { ...old, reviews: { ...seed.reviews, capturedAt: "2026-10-02T01:00:00.000Z" } };
+  assert.deepEqual(mergeStoreDirectory({ [seed.info.id]: newerSaved })[seed.info.id].reviews, newerSaved.reviews);
 });
 
 test("partial, duplicate, or malformed captures cannot replace the previous snapshot", () => {
@@ -132,6 +176,17 @@ test("import fills missing stores but retains existing links, reviews, and other
   assert.deepEqual(seedMissingStores(null), defaultStoreDirectory);
 });
 
+test("scoped seeding touches only the selected venue", () => {
+  const oldStore = record();
+  const current = { "hpw-changan": oldStore, unknown: { retained: true } };
+  const next = seedMissingStores(current, ["villager-shilin"]);
+  assert.deepEqual(Object.keys(next).sort(), ["hpw-changan", "unknown", "villager-shilin"].sort());
+  assert.deepEqual(next["hpw-changan"], oldStore);
+  assert.deepEqual(next.unknown, current.unknown);
+  assert.deepEqual(next["villager-shilin"], defaultStoreDirectory["villager-shilin"]);
+  assert.throws(() => seedMissingStores(current, ["not-in-directory"]), /店家不存在/);
+});
+
 test("store settings reject unsafe URLs and unknown IDs; blank optional links remain removed", () => {
   const info = record().info;
   for (const website of ["javascript:alert(1)", "http://example.com", "https://user:pass@example.com", "not a URL"]) {
@@ -148,6 +203,6 @@ test("database data wins over bundled defaults and missing/invalid reviews keep 
   const merged = mergeStoreDirectory(parsed);
   assert.deepEqual(merged["hpw-changan"], saved);
   assert.deepEqual(merged.malaya.reviews, defaultStoreDirectory.malaya.reviews);
-  assert.equal(Object.keys(merged).length, 7);
+  assert.equal(Object.keys(merged).length, 11);
   assert.deepEqual(parseStoreDirectory(null), {});
 });

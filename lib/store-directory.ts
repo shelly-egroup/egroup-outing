@@ -1,18 +1,33 @@
-import { massageStore, restaurantStores, type StoreInfo } from "./store-references";
+import { lazerTreksStore, massageStore, restaurantStores, villagerStore, zhishanFishingStore, type StoreInfo } from "./store-references";
 import { massageReviews, type StoreReviewSnapshot } from "./store-reviews";
 import restaurantReviews from "./restaurant-review-snapshots.json";
+import itineraryReviews from "./itinerary-review-snapshots.json";
 
 export type StoreRecord = { info: StoreInfo; reviews?: StoreReviewSnapshot; updatedAt?: number };
 export type StoreDirectory = Record<string, StoreRecord>;
-const seeds: Record<string, StoreReviewSnapshot> = { ...restaurantReviews, [massageStore.id]: massageReviews };
+export const activeReviewStoreIds = [
+  "zhishan-shrimp-fishing", "villager-shilin", "lazertreks-taipei",
+  "le-cafe", "brasserie", "grand-hotel-garden",
+] as const;
+const currentItineraryReviewCutoff = Date.parse("2026-09-30T16:00:00.000Z");
+export function isCurrentItineraryReview(snapshot: StoreReviewSnapshot | undefined): snapshot is StoreReviewSnapshot {
+  return !!snapshot && Date.parse(snapshot.capturedAt) >= currentItineraryReviewCutoff;
+}
+const seeds: Record<string, StoreReviewSnapshot> = { ...restaurantReviews, ...itineraryReviews, [massageStore.id]: massageReviews };
 export const defaultStoreDirectory: StoreDirectory = Object.fromEntries(
-  [...restaurantStores, massageStore].map(store => {
+  [...restaurantStores, zhishanFishingStore, villagerStore, lazerTreksStore, massageStore].map(store => {
     const { id, name, mapsQuery, branch, website, facebook, line } = store;
     const info: StoreInfo = { id, name, mapsQuery };
     for (const [key, value] of Object.entries({ branch, website, facebook, line })) if (value) Object.assign(info, { [key]: value });
     return [id, { info, ...(seeds[id] ? { reviews: seeds[id] } : {}) }];
   }),
 );
+export function reviewRefreshTargetIds(target: string): readonly string[] {
+  const ids: readonly string[] = target === "all" ? activeReviewStoreIds : [target];
+  if (ids.some(id => !activeReviewStoreIds.some(active => active === id))) throw new Error("指定的店家不屬於目前行程，未開始擷取或寫入資料。");
+  if (ids.some(id => !defaultStoreDirectory[id]?.reviews)) throw new Error("目前行程有店家尚未設定可核對的 Google 評論來源，未開始擷取或寫入資料。");
+  return ids;
+}
 function object(value: unknown): value is Record<string, unknown> { return !!value && typeof value === "object" && !Array.isArray(value); }
 function text(value: unknown, max: number, empty = false): value is string { return typeof value === "string" && value.length <= max && (empty || value.trim().length > 0); }
 export function isSafeStoreUrl(value: unknown): value is string {
@@ -56,12 +71,24 @@ export function parseStoreDirectory(value: unknown): StoreDirectory {
   }));
 }
 export function mergeStoreDirectory(stored: StoreDirectory): StoreDirectory {
-  return Object.fromEntries(Object.entries(defaultStoreDirectory).map(([id, seed]) => [id, { ...seed, ...stored[id], reviews: stored[id]?.reviews || seed.reviews }]));
+  return Object.fromEntries(Object.entries(defaultStoreDirectory).map(([id, seed]) => {
+    const saved = stored[id];
+    const savedReviews = saved?.reviews;
+    const seedReviews = seed.reviews;
+    // A freshly verified bundled capture can replace an older cloud snapshot in the UI.
+    // Preserve a newer cloud capture and every admin-edited store detail.
+    const reviews = activeReviewStoreIds.some(active => active === id) && savedReviews && seedReviews
+      ? Date.parse(savedReviews.capturedAt) >= Date.parse(seedReviews.capturedAt) ? savedReviews : seedReviews
+      : savedReviews || seedReviews;
+    return [id, { ...seed, ...saved, ...(reviews ? { reviews } : {}) }];
+  }));
 }
 /** Only fill missing data; importing the bundled snapshot must not undo admin edits. */
-export function seedMissingStores(current: unknown) {
+export function seedMissingStores(current: unknown, ids: readonly string[] = Object.keys(defaultStoreDirectory)) {
   const next: Record<string, unknown> = object(current) ? { ...current } : {};
-  for (const [id, seed] of Object.entries(defaultStoreDirectory)) {
+  for (const id of ids) {
+    const seed = defaultStoreDirectory[id];
+    if (!seed) throw new Error("指定的店家不存在，未開始同步資料。");
     const existing = object(next[id]) ? next[id] : {};
     next[id] = { ...seed, ...existing, info: existing.info || seed.info, ...(existing.reviews || seed.reviews ? { reviews: existing.reviews || seed.reviews } : {}) };
   }

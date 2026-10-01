@@ -12,5 +12,5 @@
     "outDir": "../.tools/review-job",
     "rootDir": ".."
   },
-  "include": ["./refresh-store-reviews.ts", "../lib/restaurant-review-snapshots.json"]
+  "include": ["./refresh-store-reviews.ts", "../lib/restaurant-review-snapshots.json", "../lib/itinerary-review-snapshots.json"]
 }

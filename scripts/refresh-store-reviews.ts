@@ -1,7 +1,7 @@
 import { appendFile } from "node:fs/promises";
 import { cert, deleteApp, initializeApp } from "firebase-admin/app";
 import { getDatabase, ServerValue } from "firebase-admin/database";
-import { defaultStoreDirectory, nextReviewRecord, seedMissingStores } from "../lib/store-directory";
+import { defaultStoreDirectory, nextReviewRecord, reviewRefreshTargetIds, seedMissingStores } from "../lib/store-directory";
 import { scrapeStoreReviews } from "../lib/scrape-store-reviews";
 
 type Result = { name: string; state: "成功" | "失敗" | "保留較新版"; message: string };
@@ -29,30 +29,31 @@ async function writeSummary(results: Result[]) {
 
 async function main() {
   const target = process.env.REVIEW_STORE_ID || "all";
-  if (target !== "all" && !Object.hasOwn(defaultStoreDirectory, target)) throw new Error("指定的店家不存在，未開始擷取或寫入資料。");
+  const ids = reviewRefreshTargetIds(target);
   const app = initializeApp({ credential: credential(), projectId, databaseURL }, "daily-store-reviews");
   const database = getDatabase(app);
   const results: Result[] = [];
   try {
     try {
-      const stores = database.ref("outing/stores");
-      const existing = await stores.get();
-      if (Object.keys(defaultStoreDirectory).some(id => !existing.child(id + "/info").exists() || !existing.child(id + "/reviews").exists())) {
-        await stores.transaction(seedMissingStores);
-        console.log("Firebase 連線成功；先前已取得的店家資料已自動補存，既有資料保持不變。");
-      } else {
-        console.log("Firebase 連線成功；七家店已有資料。");
+      for (const id of ids) {
+        const seed = defaultStoreDirectory[id];
+        const store = database.ref("outing/stores/" + id);
+        const existing = await store.get();
+        if (!existing.child("info").exists() || !existing.child("reviews").exists()) {
+          await store.transaction(current => seedMissingStores({ [id]: current }, [id])[id]);
+          console.log(`Firebase 已補存 ${seed.info.name} 的缺漏資料，既有資料保持不變。`);
+        }
       }
+      console.log(`Firebase 連線成功；只處理目前行程的 ${ids.length} 家指定店家。`);
     } catch {
       throw new Error("Firebase 連線或資料同步未完成，請檢查 FIREBASE_SERVICE_ACCOUNT 是否有 autumn-outing 的 Realtime Database 存取權限。");
     }
-    for (const [id, seed] of Object.entries(defaultStoreDirectory)) {
-      if (target !== "all" && id !== target) continue;
-      if (!seed.reviews) continue;
+    for (const id of ids) {
+      const seed = defaultStoreDirectory[id];
       console.log(`正在擷取：${seed.info.name}`);
       let phase: "capture" | "save" = "capture";
       try {
-        const reviews = await scrapeStoreReviews(seed.reviews);
+        const reviews = await scrapeStoreReviews(seed.reviews!);
         phase = "save";
         // The transaction retries against current data, preserving edited links and newer captures.
         const transaction = await database.ref("outing/stores/" + id).transaction(current => {

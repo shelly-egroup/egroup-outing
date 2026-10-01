@@ -3,10 +3,10 @@ import HighlightedText from "./highlighted-text";
 import { useRef, type ReactNode } from "react";
 import { sortedChoices, type ChoiceGroup } from "@/lib/trips";
 import { useLightDraw } from "./use-light-draw";
-import StoreLinks from "./store-links";
-import StoreReviews from "./store-reviews";
+import StoreLinks, { hasStoreLinks } from "./store-links";
+import VenueReviews from "./venue-reviews";
 import { useOuting } from "./outing-provider";
-import { choiceStore } from "@/lib/store-references";
+import { choiceStore, restaurantStores } from "@/lib/store-references";
 
 type Props = {
   children?: ReactNode;
@@ -42,10 +42,17 @@ export default function PreferenceGroup({ groupId, group, selectedId, disabled, 
     </div>}
     <div className="preference-choices">
       {choices.map(([id, choice]) => {
-        const reference = choiceStore(choice.label);
+        // The catalog's stable store ID keeps existing links and reviews when the organizer edits a choice label.
+        // Legacy choices without store metadata still use their original label mapping.
+        const reference = choice.store
+          ? restaurantStores.find(item => item.id === choice.store?.id)
+          : choiceStore(choice.label);
         const record = reference ? stores[reference.id] : undefined;
-        const store = record?.info || reference;
-        return <div key={id} className={"preference-choice-card" + (store ? " has-store-links" : "")}><label
+        const store = choice.store
+          ? { ...(record?.info || reference), ...choice.store, name: choice.label }
+          : record?.info || reference;
+        const linked = store && hasStoreLinks(store);
+        return <div key={id} className={"preference-choice-card" + (linked || reference ? " has-store-links" : "")}><label
         ref={node => { rows.current[id] = node; }}
         className={"preference-choice" + (choice.ingredients ? " recipe-choice" : "") + (selectedId === id ? " checked" : "") + (rolling && litId === id ? " is-drawing" : "") + (!rolling && resultId === id && selectedId === id ? " is-draw-winner" : "")}>
         <span className="plan-draw-lights" aria-hidden="true"><i /><i /><i /><i /></span>
@@ -57,7 +64,7 @@ export default function PreferenceGroup({ groupId, group, selectedId, disabled, 
           )}</small>}
         </span>
         {choice.price && <strong>{choice.price}</strong>}
-      </label>{store && <StoreLinks store={store} compact />}{record?.reviews && <StoreReviews snapshot={record.reviews} tone={tone} compact />}</div>;
+      </label>{linked && <StoreLinks store={store} compact />}{reference && <VenueReviews id={reference.id} tone={tone || "yellow"} compact />}</div>;
       })}
       <label className={"preference-choice arrange-choice" + (!selectedId ? " checked" : "")}>
         <input type="radio" disabled={disabled} name={groupId} checked={!selectedId} onChange={() => choose("")} />

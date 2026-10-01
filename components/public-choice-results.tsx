@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { sortedPlans, type Catalog, type PublicVote } from "@/lib/trips";
+import { sortedGroups, sortedPlans, type Catalog, type PublicVote } from "@/lib/trips";
 import { choiceSourceVersion, type PublicChoiceSummary } from "@/lib/vote-summary";
 import ChoiceRankings from "./choice-rankings";
 import LoadingIndicator from "./loading-indicator";
@@ -42,16 +42,23 @@ export default function PublicChoiceResults({ catalog, votes, ready, connected, 
     observer.observe(node);document.addEventListener("visibilitychange",sync);
     return () => { observer.disconnect();document.removeEventListener("visibilitychange",sync); };
   }, [motionEnabled]);
-  const plans = sortedPlans(catalog).filter(([id, plan]) => plan.active || Object.values(votes).some(vote => vote.planId === id));
+  const plans = sortedPlans(catalog).filter(([id, plan]) =>
+    (plan.active || Object.values(votes).some(vote => vote.planId === id)) &&
+    sortedGroups(plan).some(([, group]) => Object.keys(group.choices).length > 0));
   const current = plans.find(([id]) => id === selectedId) || plans[0];
   const synced = ready && data?.version === version;
-  return <section className="public-choice-results" ref={container} aria-label="餐廳與體驗人氣榜">
-    <div className="preference-results-heading"><div><span className="eyebrow">NEXT ROUND / 細項人氣榜</span><h3>這一派，都想選什麼？</h3></div><p>餐廳看人氣，按摩與足湯各自選。</p></div>
-    <div className="preference-plan-tabs" role="group" aria-label="查看哪一派的偏好">{plans.map(([id, plan]) => <button key={id} type="button" className={"preference-plan-tab score-" + plan.color} aria-pressed={current?.[0] === id} onClick={() => setSelectedId(id)}><b>{plan.code}</b><span>{plan.shortName}</span><small>{ready ? Object.values(votes).filter(vote => vote.planId === id).length + " 票" : "—"}</small></button>)}</div>
+  if (!plans.length) return null;
+  return <section className="public-choice-results" ref={container} aria-label="選配項目人氣榜">
+    <div className="preference-results-heading"><div><span className="eyebrow">NEXT ROUND / 細項人氣榜</span><h3>這一派，都想選什麼？</h3></div><p>{plans.length === 1 ? plans[0][1].shortName + "的選項與偏好。" : "看看大家的選項與偏好。"}</p></div>
+    <div className="preference-plan-tabs" role="group" aria-label="有細項選項的方案">{plans.map(([id, plan]) => {
+      const content = <><b>{plan.code}</b><span>{plan.shortName}</span><small>{ready ? Object.values(votes).filter(vote => vote.planId === id).length + " 票" : "—"}</small></>;
+      return plans.length === 1
+        ? <div key={id} className={"preference-plan-tab is-static score-" + plan.color} data-selected="true">{content}</div>
+        : <button key={id} type="button" className={"preference-plan-tab score-" + plan.color} aria-pressed={current?.[0] === id} onClick={() => setSelectedId(id)}>{content}</button>;
+    })}</div>
     {error ? <p className="battle-notice" role="status">{error} <button className="rank-retry" type="button" onClick={() => setRetry(n => n + 1)}>重新整理</button></p> : !synced ? <LoadingIndicator label={connected ? "正在統計各選項" : "等待連線恢復"} /> : current ? <div className={"preference-rankings-grid score-" + current[1].color}>
       {(data.plans[current[0]] || []).map(group => <ChoiceRankings key={current[0] + group.id} group={group} active={active} inviteToVote={votingOpen && current[1].active} supporters={data.supporters?.[current[0]]?.[group.id]} arrangedSupporters={data.arrangedSupporters?.[current[0]]?.[group.id]} />)}
-      {!Object.keys(current[1].groups || {}).length && <p className="battle-notice">這一派沒有另外的選配項目。</p>}
     </div> : <p className="battle-notice">方案準備好後，就能在這裡看細項票數。</p>}
-    <p className="preference-results-note">餐廳偏好供主辦參考；按摩與足湯依每個人的選擇安排。家眷不額外計票。</p>
+    <p className="preference-results-note">共同安排看偏好票數；各自選擇依個人選項安排。家眷不額外計票。</p>
   </section>;
 }

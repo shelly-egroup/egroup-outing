@@ -4,17 +4,23 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEve
 
 import { useImageViewport } from "./use-image-viewport";
 
-type MenuPage = { src: string; alt: string; title: string };
+export type MenuPage = { src: string; alt: string; title: string };
+type Props = {
+  pages: readonly [MenuPage, ...MenuPage[]];
+  bookLabel?: string;
+  heading?: string;
+  pageLabel?: string;
+};
 type Direction = -1 | 1;
 type PageView = { index: number; from: number | null; direction: Direction; revision: number };
 
-function PageControls({ index, count, title, onTurn, controls }: { index: number; count: number; title: string; onTurn: (direction: Direction) => void; controls: string }) {
-  return <div className="menu-page-controls" role="group" aria-label="價目表翻頁">
-    <button type="button" aria-label="上一頁價目表" aria-controls={controls} disabled={index === 0} onClick={() => onTurn(-1)}>
+function PageControls({ index, count, title, onTurn, controls, pageLabel }: { index: number; count: number; title: string; onTurn: (direction: Direction) => void; controls: string; pageLabel: string }) {
+  return <div className="menu-page-controls" role="group" aria-label={pageLabel + "翻頁"}>
+    <button type="button" aria-label={"上一頁" + pageLabel} aria-controls={controls} disabled={index === 0} onClick={() => onTurn(-1)}>
       <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m14 5-7 7 7 7" /></svg>
     </button>
     <span className="menu-page-number" aria-live="polite" aria-atomic="true"><b>{index + 1}<span> / {count}</span></b><small>{title}</small></span>
-    <button type="button" aria-label="下一頁價目表" aria-controls={controls} disabled={index === count - 1} onClick={() => onTurn(1)}>
+    <button type="button" aria-label={"下一頁" + pageLabel} aria-controls={controls} disabled={index === count - 1} onClick={() => onTurn(1)}>
       <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m10 5 7 7-7 7" /></svg>
     </button>
   </div>;
@@ -30,7 +36,7 @@ function MenuSheet({ pages, view, sheetRef }: { pages: readonly MenuPage[]; view
   </span>;
 }
 
-export default function ImageLightbox({ pages }: { pages: readonly [MenuPage, ...MenuPage[]] }) {
+export default function ImageLightbox({ pages, bookLabel = "不老松店家圖冊", heading = "店家圖冊", pageLabel = "價目表" }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [view, setView] = useState<PageView>({ index: 0, from: null, direction: 1, revision: 0 });
@@ -115,24 +121,24 @@ export default function ImageLightbox({ pages }: { pages: readonly [MenuPage, ..
   };
 
   return <>
-    <section className="menu-book" aria-label="不老松店家圖冊" onKeyDown={keyTurn}>
-      <div className="menu-book-heading"><span>店家圖冊</span>{pages.length > 1 && <small>左右滑動翻頁</small>}</div>
+    <section className="menu-book" aria-label={bookLabel} onKeyDown={keyTurn}>
+      <div className="menu-book-heading"><span>{heading}</span>{pages.length > 1 && <small>左右滑動翻頁</small>}</div>
       <div className="menu-book-stage" id={pageId} {...swipeHandlers}>
         <button className="menu-image-trigger" type="button" aria-label={"放大檢視：" + page.alt} aria-haspopup="dialog" onClick={() => { clearTurn(); setIsOpen(true); }}>
           <MenuSheet pages={pages} view={view} />
           <span className="menu-zoom-hint">點圖放大 ＋</span>
         </button>
       </div>
-      {pages.length > 1 && <PageControls index={view.index} count={pages.length} title={page.title} controls={pageId} onTurn={turn} />}
+      {pages.length > 1 && <PageControls index={view.index} count={pages.length} title={page.title} controls={pageId} onTurn={turn} pageLabel={pageLabel} />}
     </section>
-    <dialog ref={dialogRef} className="image-lightbox" aria-label="不老松店家圖冊，放大檢視" onClose={close} onCancel={close} onKeyDown={keyTurn}
+    <dialog ref={dialogRef} className="image-lightbox" aria-label={bookLabel + "，放大檢視"} onClose={close} onCancel={close} onKeyDown={keyTurn}
       onClick={event => {
         if (event.target !== event.currentTarget) return;
         const bounds = event.currentTarget.getBoundingClientRect();
         if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) close();
       }}>
       <div className="image-lightbox-toolbar">
-        <strong><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 3h13a3 3 0 0 1 3 3v15H7a3 3 0 0 1-3-3Zm0 14h16M8 3v14" /></svg>店家圖冊</strong>
+        <strong><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 3h13a3 3 0 0 1 3 3v15H7a3 3 0 0 1-3-3Zm0 14h16M8 3v14" /></svg>{heading}</strong>
         <div className="image-lightbox-actions">
           <button type="button" aria-pressed={isZoomed} onClick={viewport.toggle}>
             <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="10" cy="10" r="6.5" /><path d="m15 15 6 6M7 10h6" />{!isZoomed && <path d="M10 7v6" />}</svg>
@@ -148,7 +154,7 @@ export default function ImageLightbox({ pages }: { pages: readonly [MenuPage, ..
         <MenuSheet pages={pages} view={view} sheetRef={viewport.sheetRef} />
       </div>
       <p className="image-lightbox-help" id={pageId + "-help"}>{isZoomed ? Math.round(viewport.scale * 100) + "% · 滑動或拖曳查看" : <><span className="image-help-touch">雙指放大 · 左右滑動翻頁</span><span className="image-help-mouse">Ctrl＋滾輪／± 縮放 · 放大後拖曳</span></>}</p>
-      {pages.length > 1 && <PageControls index={view.index} count={pages.length} title={page.title} controls={pageId + "-zoom"} onTurn={turn} />}
+      {pages.length > 1 && <PageControls index={view.index} count={pages.length} title={page.title} controls={pageId + "-zoom"} onTurn={turn} pageLabel={pageLabel} />}
     </dialog>
   </>;
 }

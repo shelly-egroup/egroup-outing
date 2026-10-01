@@ -1,5 +1,6 @@
 import type { HighlightRange } from "./text-highlights";
-export type Choice = { label: string; description: string; price: string; descriptionHighlights?: HighlightRange[]; subtitle?: string; ingredients?: string; order?: number };
+export type ChoiceStore = { id?: string; mapsQuery?: string; mapsUrl?: string; website?: string };
+export type Choice = { label: string; description: string; price: string; descriptionHighlights?: HighlightRange[]; subtitle?: string; ingredients?: string; order?: number; store?: ChoiceStore };
 export type ChoiceGroup = { order?: number; collapsibleDescriptions?: boolean; label: string; choices: Record<string, Choice>; selectionMode?: "group" | "individual" };
 /** Legacy choices keep their current order until the organizer rearranges them. */
 export function sortedChoices(group: ChoiceGroup) {

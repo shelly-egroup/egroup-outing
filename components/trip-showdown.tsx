@@ -7,7 +7,6 @@ import HeroStamp from "./hero-stamp";
 import VoteCountdown from "./vote-countdown";
 import { votingAccessMessage } from "@/lib/voting-access";
 import { voteReminder } from "@/lib/vote-reminder";
-import ImageLightbox from "./image-lightbox";
 import LiveResults from "./live-results";
 import LoadingIndicator from "./loading-indicator";
 import LoadingPanel from "./loading-panel";
@@ -18,8 +17,9 @@ import PlanCard from "./plan-card";
 import SavedVoteCard from "./saved-vote-card";
 import PreferenceGroup from "./preference-group";
 import StoreLinks from "./store-links";
-import StoreReviews from "./store-reviews";
-import { massageStore } from "@/lib/store-references";
+import VenueReviews from "./venue-reviews";
+import VillagerBook from "./villager-book";
+import { lazerTreksStore, villagerStore, zhishanFishingStore } from "@/lib/store-references";
 import OpeningAnimation from "./opening-animation";
 import OutingLoading from "./outing-loading";
 import { openingHistory } from "@/lib/opening-history";
@@ -39,7 +39,6 @@ import {
 
 export default function TripShowdown() {
   const context = useOuting();
-  const massageRecord = context.stores[massageStore.id];
   const {
     catalog: remoteCatalog,
     catalogStatus,
@@ -77,6 +76,9 @@ export default function TripShowdown() {
     previousUid = useRef<string | null>(null);
   const planDrafts = useRef<Record<string, Pick<VoteDraft, "preferences" | "note">>>({});
   const selected = catalog.plans[draft.planId];
+  const venues = selected?.code === "A"
+    ? [zhishanFishingStore, villagerStore]
+    : selected?.code === "B" ? [lazerTreksStore] : [];
   const actualVote = user ? votes[user.uid] : null;
   const votingOpen = isVotingOpen(catalog, now);
   const ready = catalogStatus === "ready";
@@ -185,8 +187,8 @@ export default function TripShowdown() {
         <OpeningAnimation
           onFinish={finishIntro}
           plans={[
-            plans[0]?.[1].shortName || "走讀派",
-            plans[1]?.[1].shortName || "放鬆派",
+            plans[0]?.[1].shortName || "釣趣派",
+            plans[1]?.[1].shortName || "熱血對戰派",
           ]}
         />
       )}
@@ -207,17 +209,22 @@ export default function TripShowdown() {
           </div>
           <div className="hero-body">
             <p>
-              走讀老街，還是好好放鬆？
+              到底是釣蝦吃港點聚餐吸引人，
+              <br />
+              還是雷射團戰享用飯店 Buffet <span className="hero-nowrap">令人嚮往？</span>
               <br />
               看完行程，選一個你最想去的方案。
             </p>
             <p className="hero-joke"><span>這次不吃</span> 牛肉麵！</p>
           </div>
           <div className="hero-art">
-            <img
-              src="/assets/jo-showdown-hero-bosses-v5.png"
-              alt="揪是要對決：男老闆領軍藍色走讀派，女老闆領軍粉色放鬆派"
-            />
+            <img className="hero-art-scene" src="/assets/jo-showdown-hero-bosses-v7.png" alt="釣蝦與港點對決雷射槍戰與下午茶" />
+            <img className="hero-art-type" src="/assets/hero-title-comic-v1.png" alt="揪是要對決" />
+            <div className="hero-art-plans">
+              <span><strong>{plans[0]?.[1].shortName || "釣趣派"}</strong><small>釣蝦＋港點午餐</small></span>
+              <b aria-hidden="true">VS</b>
+              <span><strong>{plans[1]?.[1].shortName || "熱血對戰派"}</strong><small>雷射槍戰＋飯店下午茶</small></span>
+            </div>
             <HeroStamp active={introReady && !intro} />
           </div>
           <div className="hero-actions" ref={heroActionsRef}>
@@ -276,6 +283,7 @@ export default function TripShowdown() {
               {plans.length === 2 && <VersusBadge />}
               {plans.map(([id, plan]) => (
                 <PlanCard key={id} plan={plan} selected={draft.planId === id}
+                  venueLabel={id === "A" && plan.title.includes("釣蝦") ? "地點｜至善釣蝦場・村民食堂廚窗港點 士林官邸店" : id === "B" && plan.title.includes("雷射") ? "場地｜六度空間 LazerTreks・民權西路站附近" : undefined}
                   hasVoted={actualVote?.planId === id} disabled={saving} onChoose={() => choose(id)} />
               ))}
             </div>
@@ -289,7 +297,8 @@ export default function TripShowdown() {
             <div className="section-heading selection-heading">
               <div className="selection-heading-copy">
                 <span className="eyebrow">MAKE IT YOUR TRIP</span>
-                <h2>{success ? <>你的一票，<span>已收到！</span></> : <>選好偏好，<span>再投一票</span></>}</h2>
+                <h2>{success ? <>你的一票，<span>已收到！</span></> : <>選好陣營，<span>確認這一票</span></>}</h2>
+                {!success && <p className="quiet">票投給你想去的一派；有餐廳選項再填偏好，沒有就直接確認。</p>}
               </div>
               {ready && <VoteCountdown closesAt={catalog.settings.closesAt} now={now} votingEnabled={catalog.settings.votingOpen} />}
               <a className="button button-white selection-compare-button" href="#plans">比較完整行程</a>
@@ -297,7 +306,7 @@ export default function TripShowdown() {
             <PlanPicker plans={plans} selectedId={draft.planId} disabled={saving || intro || catalogStatus === "loading"} onChoose={id => choose(id, false)} />
             <div id="selection-content">
             {!selected ? (
-              <p className="selection-hint">選好陣營，就能接著挑午餐、按摩或下午茶。先選偏好，最後再登入投票。</p>
+              <p className="selection-hint">先選想去的一派，再依需要補充餐廳偏好與同行資訊；最後登入確認投票。</p>
             ) : (
               <div className="selection-layout" data-team-tone={selected.color}>
                 <div className="preference-panel">
@@ -307,6 +316,20 @@ export default function TripShowdown() {
                     </span>
                     <h3 id="selected-plan-title" tabIndex={-1}>{selected.title}</h3>
                   </div>
+                  {venues.length > 0 && <div className="outing-venue-links" aria-label="行程場地連結">
+                    {venues.map(venue => <div key={venue.id}><span>{venue.name}</span><StoreLinks store={venue} compact /><VenueReviews id={venue.id} tone={selected.color} /></div>)}
+                  </div>}
+                  {selected.code === "A" && <details className="menu-details" onToggle={event => {
+                    const details = event.currentTarget;
+                    if (details.open) requestAnimationFrame(() => {
+                      if (details.open && details.isConnected) details.querySelector(".menu-book")?.scrollIntoView({
+                        block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+                      });
+                    });
+                  }}>
+                    <summary>翻看村民食堂菜色與平日午餐（點圖可放大）</summary>
+                    <VillagerBook />
+                  </details>}
                   {sortedGroups(selected).map(([groupId, group]) => (
                     <Fragment key={draft.planId + ":" + groupId}>
                       <PreferenceGroup groupId={groupId} group={group} tone={selected.color} individual={choiceGroupMode(draft.planId, groupId, group) === "individual"}
@@ -316,29 +339,6 @@ export default function TripShowdown() {
                           if (choiceId) next[groupId] = choiceId; else delete next[groupId];
                           edit({ preferences: next });
                         }}>
-                      {draft.planId === "B" && groupId === "g0" && (
-                        <>
-                        <div className="massage-store-links"><span>{massageRecord.info.name}</span><StoreLinks store={massageRecord.info} /></div>
-                        {massageRecord.reviews && <StoreReviews snapshot={massageRecord.reviews} tone={selected.color} />}
-                        <details className="menu-details" onToggle={event => {
-                          const details = event.currentTarget;
-                          if (details.open) requestAnimationFrame(() => {
-                            if (details.open && details.isConnected) details.querySelector(".menu-book")?.scrollIntoView({
-                              block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
-                            });
-                          });
-                        }}>
-                          <summary>看店家價目表與環境（點圖可放大）</summary>
-                          <ImageLightbox pages={[
-                            { src: "/assets/massage-menu-1.jpg", alt: "不老松腳底按摩與全身指壓價目表", title: "腳底按摩・全身指壓" },
-                            { src: "/assets/massage-menu-2.jpg", alt: "不老松筋膜刀與養身套餐價目表", title: "筋膜刀・養身套餐" },
-                            { src: "/assets/massage-foot-bath.jpeg", alt: "不老松足湯配方與店家介紹", title: "足湯の底・四種配方" },
-                            { src: "/assets/massage-foot-treatment.jpg", alt: "不老松腳底按摩環境", title: "腳底按摩" },
-                            { src: "/assets/massage-acupressure.jpg", alt: "不老松全身指壓環境", title: "全身指壓" },
-                          ]} />
-                        </details>
-                        </>
-                      )}
                       </PreferenceGroup>
                     </Fragment>
                   ))}
@@ -350,7 +350,7 @@ export default function TripShowdown() {
                       rows={3}
                       value={draft.note}
                       disabled={saving || !votingOpen}
-                      placeholder={draft.planId === "B" ? "例如：按摩力道輕一點、需避開肩頸，或其他需要協助的事…" : "例如：素食、不吃牛肉、走路需要多休息、手作注意事項…"}
+                      placeholder={draft.planId === "B" ? "例如：團體活動需留意的狀況，或餐點需求…" : "例如：釣蝦需要協助，或有餐點需求…"}
                       onChange={(event) => edit({ note: event.target.value })}
                     />
                     <span>{draft.note.length} / 1000</span>

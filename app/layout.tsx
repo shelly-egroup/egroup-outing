@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "揪是要對決｜秋遊投票",
   description:
-    "10/29 秋季員工旅遊：走讀大稻埕，還是按摩下午茶？登入投票，即時看戰況。",
+    "秋季員工旅遊提案：瀏覽行程、登入投票，即時看戰況。",
 };
 export default function RootLayout({
   children,

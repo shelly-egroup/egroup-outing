@@ -32,7 +32,7 @@ export default function AdminCatalogPreview({ catalog }: { catalog: Catalog }) {
       </div>
       {!plans.length && <p className="state-box">目前沒有上架的方案，回到編輯開啟「上架中」就能預覽。</p>}
       {selected && <section className="preview-selection" data-team-tone={selected.color}>
-        <div className="section-heading"><h2>選好偏好，再投一票</h2></div>
+        <div className="section-heading"><h2>選好陣營，確認這一票</h2></div>
         <div className="selection-layout">
           <div className="preference-panel">
             <div className={"selected-banner tone-" + selected.color}><span>{selected.code} · {selected.shortName}</span><h3>{selected.title}</h3></div>

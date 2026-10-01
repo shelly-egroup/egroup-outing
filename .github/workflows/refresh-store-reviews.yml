@@ -10,13 +10,12 @@ on:
         default: all
         options:
           - all
-          - hpw-changan
-          - malaya
-          - rice-dihua
+          - zhishan-shrimp-fishing
+          - villager-shilin
+          - lazertreks-taipei
           - le-cafe
           - brasserie
-          - kitchen12
-          - youngsong-xinsheng
+          - grand-hotel-garden
 
 permissions:
   contents: read

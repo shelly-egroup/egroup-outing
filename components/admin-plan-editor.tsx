@@ -17,12 +17,12 @@ export default function AdminPlanEditor({ planId, plan, edit, saving, voteCount,
       <details className="plan-editor-settings"><summary>卡片設定</summary><div className="admin-fields">
         <label>方案代號<input required maxLength={8} value={plan.code} onChange={event => edit(p => { p.code = event.target.value; })} /></label>
         <label>排列順序<input type="number" required min={0} max={99} value={plan.order} onChange={event => edit(p => { p.order = Number(event.target.value); })} /></label>
-        <label>卡片配色<select value={plan.color} onChange={event => edit(p => { p.color = event.target.value as TripPlan["color"]; })}><option value="yellow">走讀黃</option><option value="coral">放鬆粉</option></select></label>
+        <label>卡片配色<select value={plan.color} onChange={event => edit(p => { p.color = event.target.value as TripPlan["color"]; })}><option value="yellow">亮黃</option><option value="coral">珊瑚粉</option></select></label>
       </div></details>
     </div>
     <PlanCard plan={plan} edit={edit} disabled={saving} />
     <div className="editor-preferences" data-team-tone={plan.color}>
-      <div className={"editor-preferences-heading tone-" + plan.color}><span className="eyebrow">接著選偏好</span><h3>{plan.shortName}的選項</h3><p>已有選擇的項目請保留。若換餐廳或按摩療程，請新增選項；修改原項目會同步影響既有投票。</p></div>
+      <div className={"editor-preferences-heading tone-" + plan.color}><span className="eyebrow">接著選偏好</span><h3>{plan.shortName}的選項</h3><p>已有選擇的項目請保留。若更換餐廳或體驗，請新增選項；修改原項目會同步影響既有投票。</p></div>
       {sortedGroups(plan).map(([groupId, group]) => <section key={groupId} className="visual-group-editor">
         <div className="visual-group-title"><h4><InlineEditField label="選配問題" value={group.label} maxLength={100} multiline onChange={value => edit(p => { p.groups![groupId].label = value; })} /></h4>
           <button className="editor-small-button" type="button" disabled={!choicesReady || Object.values(selectedChoices[groupId] || {}).some(count => count > 0)} title={!choicesReady ? "正在確認既有投票" : "有人選擇的題目需保留"} onClick={() => edit(p => { delete p.groups![groupId]; })}>移除此題</button>

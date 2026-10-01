@@ -36,6 +36,22 @@ function localDeadline(value: number) {
     ? new Date(value + 8 * 60 * 60 * 1000).toISOString().slice(0, 16)
     : "";
 }
+function isHttpsStoreUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !!url.hostname && !url.username && !url.password;
+  } catch {
+    return false;
+  }
+}
+function isGoogleMapsUrl(value: string) {
+  if (!isHttpsStoreUrl(value)) return false;
+  const url = new URL(value);
+  const host = url.hostname.toLowerCase();
+  return ((host === "google.com" || host === "www.google.com") && url.pathname.startsWith("/maps")) ||
+    host === "maps.google.com" || host === "maps.app.goo.gl" ||
+    (host === "goo.gl" && url.pathname.startsWith("/maps/"));
+}
 export default function AdminDashboard() {
   const {
     user,
@@ -153,12 +169,34 @@ export default function AdminDashboard() {
       for (const plan of Object.values(cleaned.plans)) {
         plan.tags = plan.tags.map((tag) => tag.trim()).filter(Boolean).slice(0, 10);
         if (!plan.tags.length) plan.tags = [plan.shortName];
+        for (const group of Object.values(plan.groups || {})) {
+          for (const choice of Object.values(group.choices || {})) {
+            const store = choice.store;
+            if (!store) continue;
+            for (const field of ["mapsQuery", "mapsUrl", "website"] as const) {
+              const value = store[field]?.trim();
+              if (value) store[field] = value;
+              else delete store[field];
+            }
+            if (store.mapsQuery && store.mapsQuery.length > 200) throw new Error("「" + choice.label + "」的地圖搜尋詞不可超過 200 字。");
+            for (const field of ["mapsUrl", "website"] as const) {
+              if (store[field] && (store[field].length > 2048 || !isHttpsStoreUrl(store[field]))) {
+                throw new Error("「" + choice.label + "」的" + (field === "mapsUrl" ? "地圖" : "官網") + "連結須使用完整 HTTPS 網址。");
+              }
+            }
+            if (store.mapsUrl && !isGoogleMapsUrl(store.mapsUrl)) {
+              throw new Error("「" + choice.label + "」的地圖連結需指向 Google 地圖。");
+            }
+            if (!Object.keys(store).length) delete choice.store;
+          }
+        }
       }
       await saveCatalog(cleaned, version, acceptedImpacts);
       setReviewChanges(false);
       setDirty(false);
       setMessage("已儲存，首頁已同步更新。");
     } catch (error) {
+      setEditorMode("edit");
       setFailed(
         error instanceof Error
           ? error.message
@@ -241,7 +279,7 @@ export default function AdminDashboard() {
               <div className="access-card">
                 <h2>建立這次的秋遊對決</h2>
                 <p>
-                  將現有的「大稻埕人文慢旅」與「按摩＋下午茶」放入資料庫，包含原本行程與選配項目。
+                  將目前預設的秋遊方案放入資料庫，包含行程與選配項目。
                 </p>
                 <button
                   className="button button-yellow"

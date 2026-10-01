@@ -11,6 +11,17 @@ export default function AdminChoiceList({ groupId, group, edit, saving, selected
   const choices = sortedChoices(group);
   const reorder = useReorder(choices.map(([id, choice]) => ({ id, label: choice.label })),
     (from, to) => edit(plan => moveChoice(plan.groups![groupId], from, to)), saving);
+  function editStore(choiceId: string, field: "mapsQuery" | "mapsUrl" | "website", value: string) {
+    edit(plan => {
+      const choice = plan.groups![groupId].choices[choiceId];
+      choice.store ||= {};
+      if (value) choice.store[field] = value;
+      else {
+        delete choice.store[field];
+        if (!Object.keys(choice.store).length) delete choice.store;
+      }
+    });
+  }
   return <>
     <p className="editor-sort-hint">拖曳左側把手調整順序，也可使用上移／下移。</p>
     {reorder.feedback}
@@ -28,6 +39,13 @@ export default function AdminChoiceList({ groupId, group, edit, saving, selected
             else delete option.descriptionHighlights;
           })} />
           {choice.ingredients !== undefined && <InlineEditField className="choice-ingredients-editor" label="湯底材料" value={choice.ingredients} required={false} maxLength={250} multiline onChange={value => edit(p => { p.groups![groupId].choices[choiceId].ingredients = value; })} />}
+          <details className="choice-store-editor">
+            <summary>店家地圖與官網連結（選填）</summary>
+            <label>地圖搜尋詞<input type="text" maxLength={200} placeholder="店名、分店與地址" value={choice.store?.mapsQuery || ""} onChange={event => editStore(choiceId, "mapsQuery", event.target.value)} /></label>
+            <label>精確 Google 地圖連結<input type="url" pattern="https://.*" maxLength={2048} placeholder="https://www.google.com/maps/..." value={choice.store?.mapsUrl || ""} onChange={event => editStore(choiceId, "mapsUrl", event.target.value)} /></label>
+            <label>店家官網<input type="url" pattern="https://.*" maxLength={2048} placeholder="https://..." value={choice.store?.website || ""} onChange={event => editStore(choiceId, "website", event.target.value)} /></label>
+            <small className="quiet">新店只會顯示有填寫的連結；既有店家留白會沿用原設定。</small>
+          </details>
         </div>
         <div className="visual-choice-price"><InlineEditField label="選項價格" value={choice.price} placeholder="價格（選填）" required={false} maxLength={50} onChange={value => edit(p => { p.groups![groupId].choices[choiceId].price = value; })} /></div>
         <div className="inline-row-tools visual-choice-tools" aria-label={"調整選項「" + choice.label + "」"}>

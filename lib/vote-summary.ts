@@ -72,7 +72,7 @@ export function organizerSummaryText(catalog: Catalog, votes: Record<string, Pub
     "", "備註（" + s.notes.length + " 人）",
     ...s.notes.map(r=>r.vote.displayName + "：" + [r.detail?.note?.trim(), (r.family || 0) > 0 && r.detail?.familyNote?.trim() ? "家眷：" + r.detail.familyNote.trim() : ""].filter(Boolean).join("；")),
     ...(s.incomplete ? ["", "待確認資料：" + s.rows.filter(r=>r.pendingReason).map(r=>r.vote.displayName + "（" + r.pendingReason + "）").join("、")] : []),
-    "", "按摩與足湯依各人選擇安排；餐廳偏好供主辦參考。家眷不額外計票。"
+    "", "共同安排看偏好票數；各自選擇依個人選項安排。家眷不額外計票。"
   ].join("\n");
 }
 

@@ -1,5 +1,48 @@
 import type { StoreInfo } from "@/lib/store-references";
 
+type LinkedStore = Pick<StoreInfo, "name"> & Partial<Pick<StoreInfo, "mapsQuery" | "mapsUrl" | "website" | "facebook" | "line">>;
+type LinkKind = "map" | "website" | "facebook" | "line";
+
+function httpsUrl(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || url.username || url.password) return undefined;
+    return url;
+  } catch {
+    return undefined;
+  }
+}
+
+function googleMapsUrl(value: unknown) {
+  const url = httpsUrl(value);
+  if (!url) return undefined;
+  const host = url.hostname.toLowerCase();
+  if ((host === "google.com" || host === "www.google.com") && url.pathname.startsWith("/maps")) return url.href;
+  if (host === "maps.google.com" || host === "maps.app.goo.gl") return url.href;
+  if (host === "goo.gl" && url.pathname.startsWith("/maps/")) return url.href;
+  return undefined;
+}
+
+function linksFor(store: LinkedStore): { kind: LinkKind; label: string; href: string }[] {
+  const mapsUrl = googleMapsUrl(store.mapsUrl);
+  const mapsQuery = typeof store.mapsQuery === "string" ? store.mapsQuery.trim() : "";
+  const map = mapsUrl || (mapsQuery ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(mapsQuery) : undefined);
+  const website = httpsUrl(store.website)?.href;
+  const facebook = httpsUrl(store.facebook)?.href;
+  const line = httpsUrl(store.line)?.href;
+  return [
+    ...(map ? [{ kind: "map" as const, label: "地圖", href: map }] : []),
+    ...(website ? [{ kind: "website" as const, label: "官網", href: website }] : []),
+    ...(facebook ? [{ kind: "facebook" as const, label: "Facebook", href: facebook }] : []),
+    ...(line ? [{ kind: "line" as const, label: "官方 LINE", href: line }] : []),
+  ];
+}
+
+export function hasStoreLinks(store: LinkedStore) {
+  return linksFor(store).length > 0;
+}
+
 function StoreIcon({ kind }: { kind: "map" | "website" | "facebook" | "line" }) {
   if (kind === "facebook") return <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14.2 21v-8.2H17l.4-3.2h-3.2V7.5c0-.9.3-1.6 1.6-1.6h1.7V3.1c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.3H8v3.2h2.8V21z" /></svg>;
   // LINE glyph from Simple Icons: https://github.com/simple-icons/simple-icons/blob/develop/icons/line.svg
@@ -7,13 +50,9 @@ function StoreIcon({ kind }: { kind: "map" | "website" | "facebook" | "line" }) 
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{kind === "map" ? <><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z" /><circle cx="12" cy="10" r="2.5" /></> : <><circle cx="12" cy="12" r="9" /><ellipse cx="12" cy="12" rx="4" ry="9" /><path d="M3 12h18M5 6.5h14M5 17.5h14" /></>}</svg>;
 }
 
-export default function StoreLinks({ store, compact = false }: { store: StoreInfo; compact?: boolean }) {
-  const links = [
-    { kind: "map" as const, label: "地圖", href: store.mapsUrl || "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(store.mapsQuery) },
-    ...(store.website ? [{ kind: "website" as const, label: "官網", href: store.website }] : []),
-    ...(store.facebook ? [{ kind: "facebook" as const, label: "Facebook", href: store.facebook }] : []),
-    ...(store.line ? [{ kind: "line" as const, label: "官方 LINE", href: store.line }] : []),
-  ];
+export default function StoreLinks({ store, compact = false }: { store: LinkedStore; compact?: boolean }) {
+  const links = linksFor(store);
+  if (!links.length) return null;
   return <nav className={"store-links" + (compact ? " store-links-compact" : "")} aria-label={store.name + "店家連結"}>
     {links.map(link => <a key={link.kind} className="store-link" title={link.label + "（另開分頁）"} href={link.href} target="_blank" rel="noopener noreferrer" aria-label={store.name + "・" + link.label + "（另開分頁）"}>
       <span className="store-link-circle"><StoreIcon kind={link.kind} /></span>
