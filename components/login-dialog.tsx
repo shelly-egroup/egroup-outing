@@ -9,7 +9,7 @@ export default function LoginDialog({ open, busy, error, onClose, onContinue }: 
     element.showModal();
     return () => element.close();
   }, [open]);
-  return <dialog ref={dialog} className="confirm-dialog login-dialog" aria-labelledby="login-title" onCancel={event => { event.preventDefault(); if (!busy) onClose(); }}>
+  return <dialog ref={dialog} className="confirm-dialog login-dialog" aria-labelledby="login-title" onCancel={event => { event.preventDefault(); if (!busy) onClose(); }} onClick={event => { if (!busy && event.target === event.currentTarget) onClose(); }}>
     <div className="confirm-content">
       <span className="eyebrow">JOIN THE OUTING</span>
       <h2 id="login-title">用公司 Google 帳號加入</h2>

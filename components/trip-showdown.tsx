@@ -16,6 +16,7 @@ import PlanSwitchDock from "./plan-switch-dock";
 import PlanCard from "./plan-card";
 import SavedVoteCard from "./saved-vote-card";
 import PreferenceGroup from "./preference-group";
+import VotePlanSummary from "./vote-plan-summary";
 import StoreLinks from "./store-links";
 import VenueReviews from "./venue-reviews";
 import VillagerBook from "./villager-book";
@@ -374,7 +375,7 @@ export default function TripShowdown() {
                 <aside id="vote-review" className="vote-review" aria-label="投票摘要">
                   <span className="eyebrow">YOUR VOTE</span>
                   <h3>{actualVote ? "你的選擇" : "準備好站這一邊？"}</h3>
-                  <div className="review-plan"><span className="team-label">{selected.code} · {selected.shortName}</span><strong>{selected.title}</strong></div>
+                  <VotePlanSummary plan={selected} />
                   <dl>
                     {preferenceSummary.map((item) => (
                       <div key={item.label}>

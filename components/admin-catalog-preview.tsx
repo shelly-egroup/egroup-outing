@@ -5,6 +5,7 @@ import { choiceGroupMode, sortedPlans, type Catalog } from "../lib/trips";
 import PlanCard from "./plan-card";
 import PreferenceGroup from "./preference-group";
 import VersusBadge from "./versus-badge";
+import VotePlanSummary from "./vote-plan-summary";
 
 /** A local draft preview. No auth, vote submission, or database writes. */
 export default function AdminCatalogPreview({ catalog }: { catalog: Catalog }) {
@@ -41,7 +42,7 @@ export default function AdminCatalogPreview({ catalog }: { catalog: Catalog }) {
             {!Object.keys(selected.groups || {}).length && <p className="state-box">這個方案沒有選配問題。</p>}
           </div>
           <aside className="vote-review"><span className="eyebrow">YOUR VOTE</span><h3>準備好站這一邊？</h3>
-            <div className="review-plan"><span className="team-label">{selected.code} · {selected.shortName}</span><strong>{selected.title}</strong></div>
+            <VotePlanSummary plan={selected} />
             <dl>{sortedGroups(selected).map(([id, group]) => <div key={id}><dt>{group.label}</dt><dd>{group.choices[preferences[selectedId]?.[id]]?.label || "請主辦安排"}</dd></div>)}</dl>
             <p className="preview-only-note">預覽模式 · 選擇只留在這裡</p>
           </aside>
