@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import AccountMenu from "./account-menu";
 import type { VoteReminder } from "@/lib/vote-reminder";
 
-const MOBILE_NAV_RETRACT_DELAY_MS = 500;
+const MOBILE_NAV_RETRACT_DELAY_MS = 200;
 
 function OutingTicker({ announcement }: { announcement: string }) {
   const messages = ["10/29 秋季員旅・雙方案對決・你的一票決定全員行程", announcement];
