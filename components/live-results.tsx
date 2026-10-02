@@ -103,7 +103,7 @@ export default function LiveResults({ catalog, motionEnabled = true }: { catalog
   return <section className={"live-section arcade-section" + (battleActive ? " battle-active" : "")} id="results" aria-labelledby="results-title" data-motion={battleActive ? "playing" : "paused"}>
     <div className="battle-fx" aria-hidden="true"><i className="battle-grid-flow" /><i className="battle-scan" /><i className="battle-pixel pixel-one" /><i className="battle-pixel pixel-two" /><i className="battle-pixel pixel-three" /></div>
     <div className="section-heading">
-      <div><span className="eyebrow">LIVE BATTLE / 即時對決</span><h2 id="results-title">目前戰況</h2></div>
+      <div><span className="round-chip">FINAL</span><span className="eyebrow">LIVE BATTLE / 即時對決</span><h2 id="results-title">目前戰況</h2></div>
       <span className={"live-state " + (connected && available ? "is-live" : "is-waiting")}><i aria-hidden="true" />{stateLabel}</span>
     </div>
     <div className="battle-summary">

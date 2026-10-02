@@ -2,6 +2,7 @@
 import { sortedGroups } from "@/lib/trips";
 import Link from "next/link";
 import { useSectionReveal } from "./use-section-reveal";
+import { OPENING_IMAGES } from "@/lib/opening-assets";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import OutingHeader from "./outing-header";
 import HeroStamp from "./hero-stamp";
@@ -69,6 +70,7 @@ export default function TripShowdown() {
   const [cueNext, setCueNext] = useState(false);
   const nextStepRef = useRef<HTMLAnchorElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
+  const planCovers = plans.length === 2 ? [OPENING_IMAGES.fishing, OPENING_IMAGES.laser] : [];
   useSectionReveal(pageRef, introReady && !intro);
   const finishIntro = useCallback(() => { openingHistory.markSeen(); setIntro(false); setCueNext(true); }, []);
   useEffect(() => {
@@ -89,6 +91,7 @@ export default function TripShowdown() {
     previousUid = useRef<string | null>(null);
   const planDrafts = useRef<Record<string, Pick<VoteDraft, "preferences" | "note">>>({});
   const selected = catalog.plans[draft.planId];
+  const selectedCover = planCovers[plans.findIndex(([id]) => id === draft.planId)];
   const [menuOpen, setMenuOpen] = useState(true);
 
   useEffect(() => {
@@ -288,7 +291,7 @@ export default function TripShowdown() {
           <section id="plans" className="plans-section">
             <div className="section-heading">
               <div>
-                <span className="eyebrow">CHOOSE YOUR SIDE</span>
+                <span className="round-chip">ROUND 1</span><span className="eyebrow">CHOOSE YOUR SIDE</span>
                 <h2>你是哪一派？</h2>
               </div>
               <p>
@@ -300,8 +303,9 @@ export default function TripShowdown() {
             <div className={"plan-grid-shell" + (catalogStatus === "loading" ? " is-loading" : "")}>
             <div className="plan-grid" data-duel={plans.length === 2} inert={catalogStatus === "loading"} aria-hidden={catalogStatus === "loading" || undefined}>
               {plans.length === 2 && <VersusBadge />}
-              {plans.map(([id, plan]) => (
+              {plans.map(([id, plan], index) => (
                 <PlanCard key={id} plan={plan} selected={draft.planId === id}
+                  cover={planCovers[index]}
                   hasVoted={actualVote?.planId === id} disabled={saving} onChoose={() => choose(id)} />
               ))}
             </div>
@@ -314,7 +318,7 @@ export default function TripShowdown() {
           <section id="selection" className="selection-section" data-plan-switch={!!selected && plans.length > 1 || undefined}>
             <div className="section-heading selection-heading">
               <div className="selection-heading-copy">
-                <span className="eyebrow">MAKE IT YOUR TRIP</span>
+                <span className="round-chip">ROUND 2</span><span className="eyebrow">MAKE IT YOUR TRIP</span>
                 <h2>{success ? <>你的一票，<span>已收到！</span></> : <>選好陣營，<span>確認這一票</span></>}</h2>
                 {!success && <p className="quiet">票投給你想去的一派；有餐廳選項再填偏好，沒有就直接確認。</p>}
               </div>
@@ -328,7 +332,7 @@ export default function TripShowdown() {
             ) : (
               <div className="selection-layout" data-team-tone={selected.color}>
                 <div className="preference-panel">
-                  <div className={"selected-banner tone-" + selected.color}>
+                  <div className={"selected-banner tone-" + selected.color + (selectedCover ? " has-cover" : "")} style={selectedCover ? { "--banner-cover": `url(${selectedCover})` } as React.CSSProperties : undefined}>
                     <span>
                       {selected.code} · {selected.shortName}
                     </span>
@@ -391,15 +395,15 @@ export default function TripShowdown() {
                     <PlanSwitchOptions plans={plans} selectedId={draft.planId} disabled={saving} onChoose={id => choose(id, false)} />
                   </div>}
                   <VotePlanSummary plan={selected} />
-                  <dl>
+                  <dl className="live-summary">
                     {preferenceSummary.map((item) => (
                       <div key={item.label}>
                         <dt>{item.label}</dt>
-                        <dd>{item.value}</dd>
+                        <dd key={item.value}>{item.value}</dd>
                       </div>
                     ))}
                     {draft.note.trim() && <div><dt>{planNoteLabel}</dt><dd className="private-note-text">{draft.note}</dd></div>}
-                    <div><dt>同行安排</dt><dd>{familySummary}</dd></div>
+                    <div><dt>同行安排</dt><dd key={familySummary}>{familySummary}</dd></div>
                     {draft.bringingFamily && draft.familyNote.trim() && <div><dt>家眷備註</dt><dd className="private-note-text">{draft.familyNote}</dd></div>}
                   </dl>
                   <div className="review-event-reminder">

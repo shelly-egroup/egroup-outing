@@ -1048,6 +1048,15 @@ summary {
 .your-vote { font-size: 12px; background: #fff; padding: 4px 7px; border: 1px solid var(--ink); font-weight: 800; }
 .plan-card h3 { font-size: clamp(2rem,3.5vw,3.25rem); margin: 18px 0 4px; line-height: 1.12; letter-spacing: -.03em; }
 .plan-card h3 > span { display: block; }
+/* Cover shot: bleeds to the card edges, letter stamped on top. Wipes open as the card scrolls in. */
+.plan-cover { position: relative; margin: -32px -32px 22px; aspect-ratio: 16 / 8; overflow: hidden; border-bottom: 3px solid var(--ink); background: var(--ink); }
+.plan-cover img { display: block; width: 100%; height: 100%; object-fit: cover; transition: scale .8s cubic-bezier(.2,.8,.2,1), clip-path .9s cubic-bezier(.6,0,.2,1) .15s; }
+.plan-card:hover .plan-cover img { scale: 1.04; }
+.plan-card.reveal-item .plan-cover img { clip-path: inset(0 0 100% 0); }
+.plan-card.reveal-item.is-revealed .plan-cover img { clip-path: inset(0); }
+.plan-card.has-cover .plan-code { z-index: 1; top: 10px; right: 16px; opacity: 1; color: #fff; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 4px 4px 0 var(--ink); }
+@media (max-width: 820px) { .plan-cover { margin: -22px -22px 20px; } }
+@media (prefers-reduced-motion: reduce) { .plan-cover img { transition: none; } .plan-card.reveal-item .plan-cover img { clip-path: none; } }
 .plan-description { color: var(--ink); font-weight: 600; line-height: 1.85; margin: 18px 0; }
 .plan-card .pill-row { margin: 0 0 22px; }
 .plan-card .compare-price { min-height: 70px; margin: auto 0 20px; padding-top: 18px; border-top: 2px dashed var(--ink); font-size: 16px; font-weight: 800; }
@@ -1083,6 +1092,14 @@ summary {
 .selected-banner { padding: 22px; border-bottom: 2px solid var(--ink); }
 .selected-banner > span { font-size: 14px; font-weight: 800; }
 .selected-banner h3 { margin: 8px 0 0; font-size: 24px; }
+.selected-banner.has-cover { position: relative; overflow: hidden; padding-right: 42%; }
+.selected-banner.has-cover > * { position: relative; z-index: 1; }
+.selected-banner.has-cover::after { content: ""; position: absolute; inset: 0 0 0 48%; background: var(--banner-cover) center / cover; -webkit-mask-image: linear-gradient(90deg, transparent, #000 45%); mask-image: linear-gradient(90deg, transparent, #000 45%); }
+@media (max-width: 600px) { .selected-banner.has-cover { padding-right: 26%; } .selected-banner.has-cover::after { inset-inline-start: 62%; opacity: .9; } }
+/* A summary value that just changed flashes once, so a choice made far down the form visibly lands. */
+.live-summary dd { animation: summary-flash 1s ease-out; }
+@keyframes summary-flash { from { background: #ffdf60; box-shadow: 0 0 0 4px #ffdf60; } to { background: transparent; box-shadow: 0 0 0 4px transparent; } }
+@media (prefers-reduced-motion: reduce) { .live-summary dd { animation: none; } }
 .selected-plan-purpose { padding: 16px 22px; border-bottom: 1px solid #d8d6cf; background: var(--team-tint, #fff7da); }
 .selected-plan-purpose strong { display: block; color: var(--team-ink, var(--ink)); font-size: 12px; }
 .selected-plan-purpose p { margin: 5px 0 0; color: #38444d; font-size: 14px; line-height: 1.75; }
@@ -3258,3 +3275,15 @@ body:has(dialog[open]) .plan-switch-dock { visibility: hidden; }
   .plan-switch-option > b { font-size: 15px; }
 }
 .selection-section[data-plan-switch="true"] .preference-choice, .selection-section[data-plan-switch="true"] .note-field, .selection-section[data-plan-switch="true"] .vote-review > .button { scroll-margin-bottom: calc(120px + env(safe-area-inset-bottom)); }
+
+/* Variety-show framing: each section is a round, titled like an on-screen caption (white fill, ink outline, hard colour shadow). */
+.round-chip { display: inline-block; margin: 0 12px 6px 0; padding: 3px 10px 2px; border: 2px solid var(--ink); background: var(--yellow); color: var(--ink); box-shadow: 3px 3px 0 var(--ink); font-size: 13px; font-weight: 900; letter-spacing: .12em; transform: rotate(-3deg); vertical-align: middle; }
+.arcade-section .round-chip { border-color: #fffdf5; box-shadow: 3px 3px 0 #ff378d; }
+.plans-section .section-heading h2, .selection-heading h2, .arcade-section .section-heading h2, .footer-title {
+  font-size: clamp(2.1rem, 4.4vw, 3.6rem); line-height: 1.32; color: #fff; -webkit-text-stroke: 4.5px var(--ink); paint-order: stroke fill; text-shadow: 4px 4px 0 var(--yellow); letter-spacing: .03em;
+}
+.selection-heading h2 { text-shadow: 4px 4px 0 #ff80b2; }
+.arcade-section .section-heading h2 { -webkit-text-stroke-color: #070a11; text-shadow: 5px 5px 0 #4471ff, 10px 10px 0 #ff378d; }
+.footer-title { -webkit-text-stroke-color: #070a11; text-shadow: 4px 4px 0 #ff378d; }
+.footer-title em { color: var(--yellow); }
+.plans-section .section-heading h2, .selection-heading h2 { color: var(--ink); -webkit-text-stroke: 0; }
