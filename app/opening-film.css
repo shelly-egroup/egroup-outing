@@ -23,14 +23,15 @@
 
 /* ── START gate: the show's logo stage, idling until a real tap starts the score ── */
 .film-start { position: absolute; inset: 0; z-index: 7; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 72px 20px 36px; overflow-y: auto; text-align: center; background: linear-gradient(118deg, #1533d2 0 50%, #d6005a 50%); }
-/* A light streak travels down the split line while the shots and score preload (compositor-only). */
-.film-start::before { content: ""; position: absolute; left: 50%; top: 50%; z-index: 0; width: 3px; height: 36vh; margin: -18vh 0 0 -1.5px; pointer-events: none; background: linear-gradient(180deg, transparent, rgb(255 255 255 / .9) 50%, transparent); box-shadow: 0 0 14px 3px rgb(255 255 255 / .35); transform: rotate(28deg) translateY(-95vmax); animation: seam-glint 1.8s ease-in-out infinite; }
+/* A light streak travels down the split line while the shots and score preload (compositor-only).
+   It lives in the clipped .gate-fx layer: on .film-start itself its ±95vmax travel became scrollable overflow and flashed a scrollbar. */
+.film-start > .gate-fx::before { content: ""; position: absolute; left: 50%; top: 50%; z-index: 0; width: 3px; height: 36vh; margin: -18vh 0 0 -1.5px; pointer-events: none; background: linear-gradient(180deg, transparent, rgb(255 255 255 / .9) 50%, transparent); box-shadow: 0 0 14px 3px rgb(255 255 255 / .35); transform: rotate(28deg) translateY(-95vmax); animation: seam-glint 1.8s ease-in-out infinite; }
 @keyframes seam-glint { 0%, 22% { transform: rotate(var(--seam-tilt, 28deg)) translateY(-95vmax); } 62%, 100% { transform: rotate(var(--seam-tilt, 28deg)) translateY(95vmax); } }
 .film-start > * { position: relative; }
 .film-start-eyebrow { font: 500 11px/1 var(--sd-cond); letter-spacing: .6em; text-transform: uppercase; }
 .film-start .show-logo { --logo-size: clamp(64px, min(16vw, 17svh), 150px); margin: 4svh 0 3.4svh; filter: drop-shadow(0 12px 20px rgb(0 0 0 / .22)); }
 .film-start .logo-art { animation: gate-float 3.6s ease-in-out infinite; }
-.film-start .logo-bolt { animation: bolt-flicker 3.2s steps(1) infinite; }
+.film-start .logo-bolt { animation: bolt-flicker 3.2s steps(1) infinite, bolt-shake 3.2s steps(1) infinite; }
 .film-start-match { display: flex; align-items: center; gap: 18px; font-size: 15px; font-weight: 900; letter-spacing: .1em; text-shadow: 0 2px 8px rgb(0 0 0 / .35); }
 .film-start-match > span { padding-bottom: 5px; border-bottom: 2px solid rgb(255 255 255 / .55); animation: gate-camp-left 1.8s cubic-bezier(.5,0,.2,1) infinite; }
 .film-start-match > span:last-of-type { animation-name: gate-camp-right; }
@@ -50,6 +51,13 @@
 @keyframes gate-camp-right { 0%, 100% { transform: translateX(0); } 40% { transform: translateX(-12px); } 48% { transform: translateX(4px); } 60% { transform: translateX(0); } }
 @keyframes gate-vs-clash { 0%, 38%, 100% { transform: scale(1); } 44% { transform: rotate(8deg) scale(1.35); } 52% { transform: rotate(-6deg) scale(.95); } 62% { transform: scale(1); } }
 @keyframes bolt-flicker { 0%, 88%, 92%, 100% { opacity: 1; } 90% { opacity: .2; } }
+/* A short electric shiver mid-cycle and a stronger one around the flicker; em offsets scale with the logo. */
+@keyframes bolt-shake {
+  0%, 40%, 48%, 84%, 96%, 100% { translate: 0; rotate: 0deg; }
+  42% { translate: -.01em .01em; rotate: -2deg; } 44% { translate: .01em -.01em; rotate: 2deg; } 46% { translate: -.006em 0; rotate: -1deg; }
+  86% { translate: .016em -.01em; rotate: 4deg; } 88% { translate: -.016em .01em; rotate: -4deg; } 90% { translate: .012em .01em; rotate: 3deg; }
+  92% { translate: -.01em -.01em; rotate: -2deg; } 94% { translate: .006em 0; rotate: 1deg; }
+}
 
 /* ── 0.03–0.20 type flashes ── */
 .shot-glyph { display: grid; place-items: center; }
@@ -423,7 +431,7 @@
 
 @media (max-aspect-ratio: 4/5) { .gate-rays { top: 32%; } }
 @media (prefers-reduced-motion: reduce) {
-  .gate-fx *, .film-start-gate > *, .film-start-button::after { animation: none !important; }
+  .gate-fx *, .film-start-gate > *, .film-start-button::after, .film-start .logo-bolt { animation: none !important; }
 }
 
 .film-start.is-launching::after { content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none; background: #fff; animation: gate-flash .36s ease-out both; }

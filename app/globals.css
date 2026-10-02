@@ -1159,19 +1159,6 @@ summary {
 .score-footer b { font: 700 14px/1 ui-monospace,monospace; color: #fff; }
 .score-supporters { margin-top: 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .score-supporters > span { font-size: 12px; color: #c2c9d9; }
-.avatar-stack { display: flex; padding: 4px 4px 4px 14px; isolation: isolate; overflow: visible; }
-.supporter-avatar { position: relative; display: inline-flex; flex: none; isolation: isolate; margin-left: -10px; border-radius: 50%; outline-offset: 3px; transition: transform .18s; cursor: default; }
-.supporter-avatar:hover,.supporter-avatar:focus { transform: translateY(-6px); z-index: 3; }
-.supporter-avatar .avatar { border-color: #fffdf5; box-shadow: 0 0 0 2px #111724; }
-.avatar-tooltip { visibility: hidden; opacity: 0; position: absolute; bottom: calc(100% + 9px); left: 50%; transform: translateX(-50%); padding: 6px 9px; background: #fffdf5; color: #111724; border: 1px solid #111724; box-shadow: 3px 3px 0 #0006; font-size: 12px; font-weight: 800; white-space: nowrap; pointer-events: none; transition: opacity .15s; max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
-.supporter-avatar:hover .avatar-tooltip,.supporter-avatar:focus .avatar-tooltip { visibility: visible; opacity: 1; }
-.supporter-avatar:last-child .avatar-tooltip { left: auto; right: 0; transform: none; }
-.avatar-more,.empty-avatar { margin-left: -10px; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; border: 2px solid #fffdf5; background: #26334b; color: #fff; font-size: 12px; }
-.empty-avatar { border-style: dashed; border-color: #708099; color: #a9b6ca; font: 800 18px ui-monospace,monospace; }
-.supporters { border-top: 1px solid #ffffff24; margin-top: 18px; }
-.supporters summary { font-size: 13px; color: #d6deec; padding: 12px 0 0; }
-.supporters ul { list-style: none; padding: 0; display: flex; gap: 12px 18px; flex-wrap: wrap; }
-.supporters li { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .battle-footnote { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; color: #a9b6ca; font-size: 12px; }
 .notice {
   padding: 16px 20px;
@@ -1971,7 +1958,7 @@ td {
 }
 @media (prefers-reduced-motion: reduce) {
   .plan-versus.is-visible .versus-emblem,.score-count b,.live-state.is-live i,.loading-blocks i,.loading-match > span { animation: none; }
-  .score-track > span,.supporter-avatar,.quick-plan-option { transition: none; }
+  .score-track > span,.quick-plan-option { transition: none; }
 }
 
 /* Replay the impact when the badge returns to the central viewing area. */
@@ -2015,13 +2002,11 @@ td {
 /* The score panels follow the live vote split, keeping both teams readable. */
 .results-grid[data-duel="true"] { grid-template-columns: minmax(0,var(--left-weight,50fr)) minmax(0,var(--right-weight,50fr)); transition: grid-template-columns .65s cubic-bezier(.2,.8,.2,1); }
 .score-card { container-type: inline-size; }
-.score-card .avatar-stack { flex-wrap: wrap; row-gap: 9px; max-width: 100%; }
 @container (max-width: 290px) {
   .score-title { flex-wrap: wrap; gap: 12px; }
   .score-count { margin-left: auto; }
   .score-team-meta { flex-wrap: wrap; gap: 8px; }
   .score-supporters { flex-direction: column; align-items: flex-start; }
-  .score-supporters:has(.empty-avatar) { flex-direction: row; align-items: center; }
 }
 @media (max-width: 600px) {
   .results-grid[data-duel="true"] { grid-template-columns: 1fr; }
@@ -2313,11 +2298,11 @@ td {
 .score-delta { position: absolute; top: -24px; right: 0; padding: 4px 8px; background: var(--score-accent); color: #101820; border: 1px solid #fff6; box-shadow: 3px 3px 0 #080e1b; font: 900 13px/1.2 ui-monospace,monospace; white-space: nowrap; pointer-events: none; animation: score-delta-rise 1.65s ease-out both; }
 .score-delta.is-minus { background: #202b40; color: #d8e0f0; }
 .score-track-animated > span { transition: none; }
-.battle-active .supporter-avatar { animation: score-teammate-arrive .4s ease-out; }
+.battle-active .crew-plate,.battle-active .crew-face { animation: score-teammate-arrive .4s ease-out; }
 @keyframes score-digit-land { from { opacity: .25; transform: translateY(-.35em) scale(.9); } 70% { opacity: 1; transform: translateY(.03em) scale(1.04); } to { opacity: 1; transform: none; } }
 @keyframes score-delta-rise { 0% { opacity: 0; transform: translateY(8px) scale(.8) rotate(-6deg); } 16%,65% { opacity: 1; transform: translateY(0) scale(1) rotate(-6deg); } 100% { opacity: 0; transform: translateY(-16px) scale(.94) rotate(-6deg); } }
 @keyframes score-teammate-arrive { from { opacity: 0; transform: translateY(6px) scale(.85); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .score-digit,.score-delta,.battle-active .supporter-avatar { animation: none; } .score-delta { display: none; } }
+@media (prefers-reduced-motion: reduce) { .score-digit,.score-delta,.battle-active .crew-plate,.battle-active .crew-face { animation: none; } .score-delta { display: none; } }
 
 /* A single account control keeps logout out of the main navigation row. */
 .account-menu { position: relative; z-index: 20; gap: 12px; }
@@ -2357,7 +2342,9 @@ td {
 .choice-rank-row { display: flex; gap: 12px; align-items: start; }
 .choice-rank-place { flex: none; color: var(--rank-muted); font: 700 13px/1.6 ui-monospace,monospace; }
 .choice-rank-row.is-top .choice-rank-place { color: var(--rank-accent); }
-.choice-rank-copy { min-width: 0; flex: 1; display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 0 12px; align-items: center; }
+.choice-rank-copy { min-width: 0; flex: 1; display: grid; grid-template-columns: minmax(0,1fr) auto auto auto; gap: 0 12px; align-items: center; }
+.choice-rank-percent { grid-column: 4; grid-row: 1; justify-self: end; min-width: 34px; text-align: right; color: var(--rank-muted); font: 600 12px/1 ui-monospace,monospace; }
+@container (max-width: 360px) { .choice-rank-percent { display: none; } }
 .choice-rank-copy > .choice-rank-heading { display: contents; font-size: 13px; line-height: 1.6; }
 .choice-rank-label { grid-column: 1; grid-row: 1; min-width: 0; overflow-wrap: anywhere; }
 .choice-rank-meta { display: contents; }
@@ -2625,7 +2612,7 @@ button.choice-supporters-more:focus-visible { outline: 2px solid var(--rank-acce
 .choice-people-label { margin: 10px 0 16px; opacity: .75; font-size: 12px; overflow-wrap: anywhere; }
 .choice-people-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; padding: 14px 2px 2px; margin: 0; list-style: none; overflow-y: auto; min-height: 0; border-top: 1px dashed color-mix(in srgb,currentColor 25%,transparent); overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--portrait-accent,#9fb6ff) transparent; }
 .choice-people-list > li { min-width: 0; display: flex; align-items: center; gap: 8px; padding: 8px; background: color-mix(in srgb,var(--portrait-accent,#9fb6ff) 7%,transparent); }
-.choice-people-list .avatar { width: 32px; height: 32px; font-size: 10px; border-color: var(--portrait-panel,#172238); box-shadow: 0 0 0 1px color-mix(in srgb,var(--portrait-accent,#9fb6ff) 50%,transparent); }
+.choice-people-list .avatar { width: 32px; height: 32px; font-size: 10px; background: var(--portrait-accent,#9fb6ff); color: #fff; border-color: var(--portrait-panel,#172238); box-shadow: 0 0 0 1px color-mix(in srgb,var(--portrait-accent,#9fb6ff) 50%,transparent); }
 .choice-people-list > li > span:last-child { min-width: 0; overflow-wrap: anywhere; font-size: 12px; font-weight: 650; }
 @media (max-width: 420px) { .choice-people-popover { padding: 16px; } .choice-people-list { gap: 6px; } .choice-people-list > li { padding: 7px 5px; gap: 6px; } }
 
@@ -2899,7 +2886,8 @@ body:has(dialog[open]) .plan-switch-dock { visibility: hidden; }
 .vote-review-switch .plan-switch-option { min-height: 42px; padding: 6px 8px; font-size: 13px; }
 @media (min-width: 821px) {
   .plan-switch-dock { display: none; }
-  .outing-page .vote-review { top: var(--outing-header-offset, 24px); max-height: calc(100vh - var(--outing-header-offset, 24px) - 16px); overflow-y: auto; box-sizing: border-box; }
+  /* No inner scrollbar: useTallSticky moves `top` so a panel taller than the window scrolls with the page. */
+  .outing-page .vote-review { top: var(--outing-header-offset, 24px); }
 }
 @media (max-width: 820px) { .vote-review-switch { display: none; } }
 @media (max-width: 600px) {

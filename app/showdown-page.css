@@ -24,15 +24,112 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
 .outing-page .button-ghost:hover:not(:disabled) { background: #fff; color: var(--ink); }
 
 /* ── Header ── */
-.outing-header { background: rgb(243 243 241 / .88); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
-.outing-header.is-compact { box-shadow: 0 1px 0 var(--hairline); }
-.ticker { background: var(--ink); border-bottom: 0; }
-.ticker-message { font-size: 12px; font-weight: 700; letter-spacing: .24em; }
-.outing-header .topbar { min-height: 70px; padding-block: 10px; border-bottom: 1px solid var(--hairline); }
+/* Header: a LIVE ticker of real numbers, then a white bar on the show's blue/pink rule with the date, two quick links that
+   follow the reader, the vote countdown and the visitor's side. */
+/* Pinned at -ticker height on every screen: the ticker scrolls away, the bar stays. */
+.outing-header { top: calc(-1 * var(--ticker-height, 0px)); background: #fff; }
+.outing-header::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: linear-gradient(90deg, var(--sd-blue) 0 50%, var(--sd-pink) 50%); pointer-events: none; }
+.outing-header.is-compact { box-shadow: 0 6px 14px rgb(11 13 16 / .08); }
+/* Whole-pixel height, so the header pins exactly at -ticker and never rests on a sub-pixel. */
+.ticker { display: flex; align-items: stretch; height: 38px; background: var(--ink); border-bottom: 0; }
+.ticker-track, .ticker-cycle { height: 100%; }
+.ticker-live { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; background: var(--sd-pink); color: #fff; font: 600 12px/1 var(--sd-cond); letter-spacing: .18em; }
+.ticker-live i { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: header-blink 1.2s steps(1) infinite; }
+.ticker-window { flex: 1; min-width: 0; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px); mask-image: linear-gradient(90deg, transparent, #000 28px); }
+.ticker-cycle { min-width: 100vw; justify-content: space-around; }
+.ticker-message { min-width: 0; gap: 8px; padding: 0 26px; font-size: 13px; font-weight: 700; letter-spacing: .06em; }
+.ticker-bolt { flex: none; fill: var(--yellow); }
+.ticker-key { padding: 1px 6px; border: 1px solid rgb(255 255 255 / .4); color: var(--yellow); font-size: 11px; font-weight: 900; letter-spacing: .04em; }
+.ticker-message em { font-style: normal; }
+.ticker-message em[data-team="blue"] { color: #a9b9ff; }
+.ticker-message em[data-team="pink"] { color: #ff94bf; }
+.ticker-score { margin: 0 8px; font: 600 15px/1 var(--sd-cond); letter-spacing: .08em; }
+@keyframes header-blink { 50% { opacity: .25; } }
+.outing-header .topbar { min-height: 70px; padding-block: 10px 14px; border-bottom: 0; align-items: center; }
 .outing-header .brand { align-items: center; text-decoration: none; color: inherit; }
 .brand-lockup { --logo-size: 30px; }
 .brand-lockup .logo-halo { -webkit-text-stroke-width: .16em; }
-.outing-header .outing-quick-nav .button { min-height: 40px; padding: 7px 14px; font-size: 13px; letter-spacing: .04em; }
+/* One 40px row: event facts left (date + countdown joined), quick links centre, the visitor's own chips right; no shadows. */
+.header-event { flex: none; display: flex; align-items: stretch; }
+.header-date { display: inline-flex; align-items: center; height: 40px; padding: 0 10px; border: 2px solid var(--sd-ink); background: #fff; font: 600 13px/1 var(--sd-cond); letter-spacing: .12em; white-space: nowrap; }
+.header-date + .header-countdown { margin-left: -2px; }
+.outing-header .outing-quick-nav { gap: 0; }
+.header-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; border: 2px solid var(--sd-ink); background: #fff; color: var(--sd-ink); font-size: 13px; font-weight: 900; letter-spacing: .04em; text-decoration: none; white-space: nowrap; transition: background .15s, color .15s; }
+.header-link + .header-link { margin-left: -2px; }
+.header-link:hover { background: #f1f0ec; }
+.header-link.is-current { background: var(--sd-ink); color: #fff; }
+.header-link:focus-visible { position: relative; z-index: 1; outline: 3px solid var(--sd-blue); outline-offset: 2px; }
+.header-link-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--sd-pink); }
+.header-countdown { display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 12px; border: 2px solid var(--sd-ink); background: var(--sd-ink); color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.header-countdown > i { width: 7px; height: 7px; border-radius: 50%; background: #ff3b6b; animation: header-blink 1.2s steps(1) infinite; }
+.header-countdown b { font: 600 16px/1 var(--sd-cond); letter-spacing: .04em; }
+.header-countdown b small { margin: 0 4px 0 1px; font: 700 10px/1 "Noto Sans TC", sans-serif; opacity: .8; }
+.header-countdown b > :last-child small, .header-countdown b > small:last-child { margin-right: 0; }
+.header-countdown[data-state="urgent"] { background: var(--sd-pink); }
+.header-countdown[data-state="urgent"] > i { background: #fff; }
+.header-countdown[data-state="closed"] { background: #ebe9e4; color: #4a525c; }
+.outing-header .header-vote { gap: 8px; height: 40px; max-width: 170px; padding: 3px 12px 3px 3px; border: 2px solid var(--sd-ink); background: var(--vote-accent); color: #fff; box-shadow: none; text-decoration: none; transition: background .15s; }
+.outing-header .header-vote:hover { background: color-mix(in srgb, var(--vote-accent) 85%, #000); }
+.outing-header .header-vote-code { width: 30px; height: 30px; display: grid; place-items: center; background: #fff; color: var(--vote-accent); font: 600 18px/1 var(--sd-cond); }
+.outing-header .header-vote-copy small { color: rgb(255 255 255 / .85); font-size: 10px; }
+.outing-header .header-vote-copy strong { color: #fff; }
+.outing-header .header-vote[data-pending="true"] .header-vote-copy small { color: var(--yellow); }
+.outing-header .account-menu > .button { height: 40px; min-height: 40px; padding: 0 14px; font-size: 14px; }
+.outing-header .account-menu { gap: 10px; }
+/* The account button is just the avatar (and name on wide screens), no frame; a thicker ring answers hover and an open menu. */
+.outing-page .outing-header .account-trigger { height: 40px; min-height: 40px; gap: 8px; padding: 0; border: 0; background: none; color: var(--sd-ink); }
+.outing-header .account-menu-dots { display: none; }
+.outing-page .outing-header .account-trigger:hover { background: none; color: var(--sd-ink); }
+.outing-page .outing-header .account-dropdown[open] .account-trigger { background: none; color: var(--sd-ink); }
+.outing-header .account-trigger .avatar { width: 36px; height: 36px; border-color: #fff; box-shadow: 0 0 0 2px var(--sd-ink); transition: box-shadow .15s; }
+.outing-header .account-trigger:hover .avatar, .outing-header .account-trigger:focus-visible .avatar, .outing-header .account-dropdown[open] .account-trigger .avatar { box-shadow: 0 0 0 3px var(--sd-ink), 0 0 0 6px rgb(11 13 16 / .12); }
+.outing-header .account-trigger:focus-visible { outline: none; }
+.outing-header .account-popover { top: calc(100% + 10px); width: 290px; padding: 16px; border: 2px solid var(--sd-ink); background: #fff; box-shadow: 5px 5px 0 var(--sd-ink); }
+.outing-header .account-profile { gap: 6px; border-bottom: 2px dashed #d9d6cf; }
+.outing-header .account-role { padding: 3px 8px; border: 0; background: var(--sd-ink); color: #fff; font-size: 11px; font-weight: 900; }
+.outing-header .account-organizer, .outing-header .account-logout { width: 100%; min-height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 2px solid var(--sd-ink); font-size: 14px; font-weight: 900; text-decoration: none; }
+.outing-header .account-organizer { margin-bottom: 8px; background: var(--sd-ink); color: #fff; }
+.outing-header .account-organizer:hover { background: #2a2f36; }
+.outing-header .account-logout { background: #fff; color: var(--sd-ink); }
+.outing-header .account-logout:hover:not(:disabled) { border-color: var(--sd-ink); background: #f1f0ec; }
+@media (min-width: 1101px) {
+  .outing-header .outing-quick-nav { display: flex; visibility: visible; opacity: 1; transform: none; margin-inline: auto; }
+  .outing-header .header-actions { margin-left: 0; }
+}
+@media (max-width: 1280px) { .outing-header .account-name { display: none; } }
+@media (min-width: 1101px) and (max-width: 1240px), (max-width: 720px) { .header-date { display: none; } }
+@media (max-width: 1100px) {
+  .outing-header .outing-quick-nav { background: #fff; }
+  .outing-header .header-link { flex: 1; max-width: 280px; min-height: 40px; }
+}
+@media (max-width: 600px) {
+  .ticker { height: 34px; }
+  .ticker-message { padding: 0 18px; font-size: 12px; }
+  /* Phones stack a small label over the time so the chip still says what it counts down to. */
+  .header-countdown { display: grid; grid-template-columns: auto auto; align-content: center; align-items: center; gap: 2px 6px; height: 38px; padding: 0 8px; }
+  .header-countdown > i { grid-row: 1 / 3; }
+  .header-countdown-label { font-size: 10px; line-height: 1; opacity: .85; }
+  .header-countdown-sec { display: none; }
+  .header-countdown b { font-size: 14px; }
+  .outing-header .header-vote { height: 38px; padding: 2px 8px 2px 2px; }
+  .outing-header .header-vote-code { width: 26px; height: 26px; font-size: 15px; }
+  .outing-header .account-menu > .button { height: 38px; min-height: 38px; padding: 0 10px; font-size: 13px; }
+  .outing-header .account-menu { gap: 6px; }
+  .outing-page .outing-header .account-trigger { height: 38px; min-height: 38px; gap: 0; padding: 0 1px; }
+  .outing-header .account-trigger .avatar { width: 34px; height: 34px; }
+}
+/* Small phones keep the side's letter only, so countdown, vote and account still fit beside the logo. */
+@media (max-width: 400px) {
+  .outing-header .header-vote { min-width: 0; max-width: none; width: 38px; justify-content: center; padding: 0; }
+  .outing-header .header-vote-code { background: none; color: #fff; }
+  .outing-header .header-vote-copy { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .outing-header .account-trigger .avatar { transition: none; }
+  .ticker-window { overflow-x: auto; scrollbar-width: none; }
+  .ticker-live i, .header-countdown > i { animation: none; }
+  .header-link, .outing-header .header-vote { transition: none; }
+}
 
 /* ── Hero: the poster's two bosses stand on the blue/red split; the logo lands on their crossed arms ── */
 .show-hero { --poster-h: clamp(300px, calc(100svh - 470px), 540px); position: relative; isolation: isolate; overflow: hidden; padding: 0 20px 56px; color: #fff; text-align: center; background: var(--paper); }
@@ -76,6 +173,8 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
 .show-hero[data-ready="true"] .hero-team-a { animation: hero-side-a .7s .45s cubic-bezier(.2,.8,.2,1) both; }
 .show-hero[data-ready="true"] .hero-team-b { animation: hero-side-b .7s .45s cubic-bezier(.2,.8,.2,1) both; }
 .show-hero[data-ready="true"] .hero-lockup .logo-art { animation: hero-logo .7s .5s cubic-bezier(.2,1.3,.35,1) both; }
+/* Same flicker as the opening gate's bolt, once the lockup has landed. */
+.show-hero[data-ready="true"] .hero-lockup .logo-bolt { animation: bolt-flicker 3.2s 1.2s steps(1) infinite, bolt-shake 3.2s 1.2s steps(1) infinite; }
 .show-hero[data-ready="true"] .hero-joke { animation: hero-sticker .5s 1s cubic-bezier(.2,1.6,.4,1) both; }
 .show-hero[data-ready="true"] .hero-headline { animation: hero-up .7s .62s cubic-bezier(.2,.8,.2,1) both; }
 .show-hero[data-ready="true"] .hero-kicker, .show-hero[data-ready="true"] .hero-copy { animation: hero-up .7s .7s cubic-bezier(.2,.8,.2,1) both; }
@@ -227,9 +326,25 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
 .outing-page .arcade-section .eyebrow { color: var(--ink); }
 .outing-page .arcade-section .section-heading h2 { color: var(--ink); }
 .arcade-section .round-no { -webkit-text-stroke-color: var(--ink); }
-.outing-page .arcade-section .live-state { color: #0c7a4f; border-color: rgb(12 122 79 / .45); background: #fff; }
-.outing-page .arcade-section .live-state.is-waiting { color: #5b6470; border-color: var(--hairline); }
+/* The live badge sits on white here (the base styles were for the dark arcade): solid border, darker text and a saturated dot with a ripple. */
+.outing-page .arcade-section .live-state { gap: 9px; padding: 7px 12px; border: 2px solid #0c7a4f; background: #fff; color: #075c3a; font-weight: 900; letter-spacing: .04em; }
+.outing-page .arcade-section .live-state.is-waiting { color: #4a525c; border-color: #8a929c; }
+.outing-page .live-state i { flex: none; width: 9px; height: 9px; border-radius: 50%; background: #8a929c; }
+.outing-page .live-state.is-live i { background: #12a150; box-shadow: none; animation: live-ring 1.8s ease-out infinite; }
+@keyframes live-ring { 0% { box-shadow: 0 0 0 0 rgb(18 161 80 / .55); } 100% { box-shadow: 0 0 0 7px rgb(18 161 80 / 0); } }
+@media (prefers-reduced-motion: reduce) { .outing-page .live-state.is-live i { animation: none; } }
 .outing-page .battle-summary { border-color: var(--hairline); }
+/* Match status as a skewed broadcast sticker in the show's blue/pink split; while voting is open the logo's bolt flickers and a light sweeps across. */
+.outing-page .match-label { position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 10px; max-width: 100%; padding: 8px 18px; border: 2px solid var(--ink); background: linear-gradient(118deg, var(--sd-blue) 0 50%, var(--sd-pink) 50%); color: #fff; box-shadow: 4px 4px 0 var(--ink); font-size: 18px; font-weight: 900; line-height: 1.35; letter-spacing: .08em; transform: skewX(-8deg); }
+.outing-page .match-label > * { transform: skewX(8deg); }
+.outing-page .match-label[data-state="final"] { background: var(--ink); color: var(--yellow); }
+.outing-page .match-label[data-state="waiting"] { background: #fff; color: var(--ink); }
+.outing-page .match-label[data-state="live"]::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; background: linear-gradient(100deg, transparent, rgb(255 255 255 / .45), transparent); transform: translateX(-120%); animation: match-sheen 3.2s 1s ease-in-out infinite; pointer-events: none; }
+.match-bolt { flex: none; width: 14px; height: 25px; overflow: visible; animation: bolt-flicker 3.2s steps(1) infinite, bolt-shake 3.2s steps(1) infinite; }
+.match-bolt path { fill: var(--yellow); stroke: var(--ink); stroke-width: 5; stroke-linejoin: round; paint-order: stroke; }
+.outing-page .match-label + p { margin-top: 12px; }
+@keyframes match-sheen { 0% { transform: translateX(-120%); } 35%, 100% { transform: translateX(320%); } }
+@media (prefers-reduced-motion: reduce) { .match-bolt, .outing-page .match-label::after { animation: none; } }
 .outing-page .vote-total > strong { font: 500 76px/1 var(--sd-cond); letter-spacing: 0; color: var(--ink); }
 .outing-page .vote-total small, .outing-page .battle-caption p, .outing-page .battle-footnote, .outing-page .preference-results-heading p, .outing-page .preference-results-note { color: #555e69; }
 .outing-page .battle-notice { border: 1px solid var(--hairline); background: #fff; color: #39424c; }
@@ -245,16 +360,91 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
 .outing-page .score-track::after { inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), rgb(0 0 0 / .26) calc(10% - 2px) 10%); }
 .outing-page .score-track > span { background: #fff; box-shadow: 0 0 10px rgb(255 255 255 / .6); }
 .outing-page .score-footer b { font: 600 16px/1 var(--sd-cond); }
+/* Team crew: names sit on white plates with ink text so they read on either saturated card.
+   Initials fall back to the team colour; ink marks the visitor, so yellow stays for the leader badge and calls to action. */
+.outing-page .score-card { --crew-tone: var(--sd-blue); }
+.outing-page .score-card.score-coral { --crew-tone: var(--sd-pink); }
+.team-crew { margin-top: 22px; padding-top: 16px; border-top: 1px solid rgb(255 255 255 / .3); }
+.crew-label { display: inline-flex; align-items: center; gap: 8px; color: #fff; font-size: 14px; font-weight: 900; letter-spacing: .04em; line-height: 1.4; }
+.crew-label > b { min-width: 26px; padding: 1px 7px; background: #fff; color: var(--sd-ink); font: 600 14px/1.3 var(--sd-cond); text-align: center; }
+.team-crew.is-empty { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.crew-join { min-height: 44px; padding: 8px 16px; border: 2px solid var(--sd-ink); background: var(--yellow); color: var(--sd-ink); box-shadow: 3px 3px 0 var(--sd-ink); font: 900 14px/1.2 "Noto Sans TC", sans-serif; letter-spacing: .06em; white-space: nowrap; transition: transform .15s, box-shadow .15s; }
+.crew-join:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--sd-ink); }
+.crew-join:focus-visible, .crew-toggle:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.crew-plates, .crew-roster { list-style: none; margin: 12px 0 0; padding: 0; }
+.crew-plates { display: flex; flex-wrap: wrap; gap: 10px; }
+.crew-plate { display: inline-flex; align-items: center; gap: 9px; min-width: 0; max-width: 100%; padding: 4px 12px 4px 4px; border: 2px solid var(--sd-ink); background: #fff; color: var(--sd-ink); box-shadow: 3px 3px 0 rgb(0 0 0 / .3); font-size: 15px; font-weight: 700; line-height: 1.3; }
+.crew-plate.is-me { border-color: var(--sd-ink); background: var(--sd-ink); color: #fff; }
+.crew-plate .avatar, .crew-face .avatar { width: 32px; height: 32px; font-size: 12px; background: var(--crew-tone); color: #fff; border-color: #fff; box-shadow: 0 0 0 1px var(--sd-ink); }
+.crew-name { min-width: 0; overflow-wrap: anywhere; }
+.crew-you { flex: none; padding: 1px 6px; background: var(--yellow); color: var(--sd-ink); font-size: 11px; font-weight: 900; }
+.crew-toggle { width: 100%; min-height: 52px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px 12px; padding: 8px 12px; border: 2px solid var(--sd-ink); background: #fff; color: var(--sd-ink); box-shadow: 3px 3px 0 rgb(0 0 0 / .3); font: inherit; text-align: left; cursor: pointer; }
+.crew-toggle:hover { background: #fff8dc; }
+.crew-toggle .crew-label { grid-column: 1; white-space: nowrap; color: var(--sd-ink); }
+.crew-toggle .crew-label > b { background: var(--sd-ink); color: #fff; }
+/* Faces sit side by side (no overlap) so two-character initials stay whole. */
+.crew-stack { grid-column: 2; justify-self: end; display: flex; gap: 4px; }
+.crew-face { display: inline-flex; border-radius: 50%; }
+.crew-face.is-me .avatar { box-shadow: 0 0 0 3px var(--sd-ink); }
+.crew-more { width: 32px; height: 32px; display: grid; place-items: center; border: 2px solid #fff; border-radius: 50%; background: var(--sd-ink); color: #fff; box-shadow: 0 0 0 1px var(--sd-ink); font: 600 12px/1 var(--sd-cond); }
+.crew-chevron { grid-column: 3; font-size: 22px; font-weight: 900; line-height: 1; transition: transform .2s; }
+.team-crew.is-open .crew-chevron { transform: rotate(90deg); }
+.team-crew.is-open .crew-toggle { box-shadow: none; }
+.crew-roster { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: -2px; padding: 12px; border: 2px solid var(--sd-ink); background: #fffdf7; box-shadow: 3px 3px 0 rgb(0 0 0 / .3); }
+.crew-roster .crew-plate { display: flex; padding: 6px 8px 6px 6px; border: 0; background: #f1f0ec; box-shadow: none; }
+.crew-roster .crew-plate.is-me { background: var(--sd-ink); color: #fff; }
+@container (max-width: 340px) { .crew-roster { grid-template-columns: 1fr; } }
+/* Narrow cards (phones, a 30% side): label and chevron on top, faces on their own line. */
+@container (max-width: 380px) {
+  .crew-toggle { grid-template-columns: 1fr auto; padding: 10px 12px; }
+  .crew-chevron { grid-column: 2; grid-row: 1; }
+  .crew-stack { grid-column: 1 / -1; grid-row: 2; justify-self: start; }
+}
+@media (prefers-reduced-motion: reduce) { .crew-chevron, .crew-join { transition: none; } }
 .outing-page .results-grid .score-versus { top: -32px; z-index: 2; width: 92px; height: 60px; border: 0; background: none; box-shadow: none; transform: translateX(-50%); }
 .outing-page .score-versus .vs-mark { width: 100%; height: 100%; filter: drop-shadow(0 6px 10px rgb(11 13 16 / .2)); }
 .outing-page .score-versus::after { display: none; }
 .outing-page .battle-active .score-versus .vs-mark path { animation: vs-draw .34s .2s cubic-bezier(.5,0,.2,1) both; }
 .outing-page .battle-active .score-versus .vs-ink path { animation-delay: .34s; }
 .outing-page .battle-first-vote { border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); background: var(--yellow); }
-.outing-page .empty-avatar { border-color: rgb(255 255 255 / .6); background: rgb(0 0 0 / .18); color: #fff; }
 .outing-page .public-choice-results { border-top-color: var(--hairline); }
 .outing-page .preference-rankings-grid .choice-ranking { --rank-accent: #1530c8; --rank-fill: #1935da; --rank-panel: #fff; --rank-line: rgb(11 13 16 / .12); --rank-muted: #5b6470; color: var(--ink); }
 .outing-page .preference-rankings-grid.score-coral .choice-ranking { --rank-accent: #c40350; --rank-fill: #e3045c; --rank-panel: #fff; }
+/* Preference rankings in the show style: ink-framed cards with a team shadow, the leader on a tint, quiet zeros. */
+.outing-page .preference-plan-tab { gap: 10px; padding: 9px 14px; border: 2px solid var(--sd-ink); background: #fff; color: var(--sd-ink); box-shadow: none; }
+.outing-page .preference-plan-tab[aria-pressed="true"], .outing-page .preference-plan-tab.is-static { padding: 9px 14px; border: 2px solid var(--sd-ink); background: var(--sd-blue); color: #fff; box-shadow: 4px 4px 0 var(--sd-ink); }
+.outing-page .preference-plan-tab.score-coral[aria-pressed="true"], .outing-page .preference-plan-tab.score-coral.is-static { background: var(--sd-pink); }
+.outing-page .preference-plan-tab b { font: 600 22px/1 var(--sd-cond); }
+.outing-page .preference-plan-tab small { font: 600 13px/1 var(--sd-cond); opacity: .85; }
+.outing-page .preference-rankings-grid .choice-ranking { --rank-tint: #e8ecfd; padding: 18px 18px 14px; border: 2px solid var(--sd-ink); box-shadow: 5px 5px 0 var(--rank-fill); }
+.outing-page .preference-rankings-grid.score-coral .choice-ranking { --rank-tint: #fde8f0; }
+.outing-page .choice-ranking-heading h4 { font-size: 18px; font-weight: 900; line-height: 1.4; }
+.outing-page .choice-ranking-heading > span { padding: 3px 8px; background: #f1f0ec; color: var(--sd-ink); font-size: 12px; font-weight: 700; }
+.outing-page .choice-winner { align-items: center; gap: 10px; margin: 14px 0 12px; padding: 10px 12px; border-left: 5px solid var(--rank-fill); background: var(--rank-tint); font-size: 15px; }
+.outing-page .choice-winner > span { padding: 2px 7px; border: 0; background: var(--rank-fill); color: #fff; font-size: 11px; font-weight: 900; }
+.outing-page .choice-winner > b { line-height: 1.4; }
+.outing-page .choice-ranking-empty { margin: 14px 0 12px; padding: 10px 12px; border-left: 5px solid #b9bec5; background: #f4f3f0; color: #4a525c; font-size: 13px; font-weight: 700; }
+.outing-page .choice-rank-list { gap: 6px; }
+.outing-page .choice-rank-row { gap: 10px; align-items: start; padding: 9px 10px; }
+.outing-page .choice-rank-row.is-top { background: var(--rank-tint); }
+.outing-page .choice-rank-place { width: 24px; color: #a3a8b0; font: 600 20px/28px var(--sd-cond); }
+.outing-page .choice-rank-row.is-top .choice-rank-place { color: var(--rank-fill); }
+.outing-page .choice-rank-copy > .choice-rank-heading { font-size: 15px; }
+.outing-page .choice-rank-label { font-weight: 500; }
+.outing-page .choice-rank-row.is-top .choice-rank-label { font-weight: 700; }
+.outing-page .choice-rank-copy b { color: var(--sd-ink); font: 600 24px/1 var(--sd-cond); }
+.outing-page .choice-rank-copy b small { font: 700 11px/1 "Noto Sans TC", sans-serif; }
+.outing-page .choice-rank-row.is-zero .choice-rank-copy b { color: #b3b8bf; }
+.outing-page .choice-rank-percent { color: #5b6470; font: 600 13px/1 var(--sd-cond); }
+.outing-page .choice-rank-meter { height: 10px; border: 0; background: #ebe9e4; }
+.outing-page .choice-rank-row:not(.is-top) .choice-rank-meter > i { background: color-mix(in srgb, var(--rank-fill) 55%, #fff); }
+.outing-page .choice-avatar-pile { padding-left: 0; }
+.outing-page .choice-supporter, .outing-page .choice-supporters-more { margin-left: 3px; }
+.outing-page .choice-supporter .avatar { width: 28px; height: 28px; font-size: 10px; background: var(--rank-fill); color: #fff; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--sd-ink); }
+.outing-page .choice-supporters-more { min-width: 28px; height: 28px; border: 2px solid #fff; background: var(--sd-ink); color: #fff; box-shadow: 0 0 0 1px var(--sd-ink); font: 600 12px/1 var(--sd-cond); }
+.outing-page button.choice-supporters-more:hover { background: var(--rank-fill); }
+.outing-page .choice-ranking-foot { margin-top: 12px; padding: 10px 10px 2px; border-top: 2px dashed #d9d6cf; color: #3f4751; font-size: 13px; font-weight: 700; }
+.outing-page .choice-ranking-foot b { color: var(--sd-ink); font: 600 18px/1 var(--sd-cond); }
 
 /* ── Form panels: hairlines instead of heavy ink frames ── */
 .outing-page .preference-panel { border: 1px solid var(--hairline); }
@@ -297,9 +487,12 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
 /* ── FINAL arena: one joined board. A tug-of-war bar on top, the VS rides the front line, the two cards meet on a diagonal seam ── */
 .outing-page .results-grid[data-duel="true"] { gap: 0; grid-template-rows: auto auto; filter: drop-shadow(0 24px 30px rgb(11 13 16 / .26)); }
 .outing-page .results-grid[data-duel="true"] > .score-card { grid-row: 2; box-shadow: none; }
+/* Room under the clash bar for the VS overhang (and its pulse), so it never sits on the PLAYER / leader labels. */
+.outing-page .results-grid[data-duel="true"] > .score-card { padding-top: 30px; }
 .outing-page .results-grid[data-duel="true"] > .score-card:first-of-type { clip-path: polygon(0 0, 100% 0, calc(100% - 28px) 100%, 0 100%); padding-right: calc(clamp(20px, 2.4vw, 30px) + 22px); }
 .outing-page .results-grid[data-duel="true"] > .score-card:last-of-type { margin-left: -28px; clip-path: polygon(28px 0, 100% 0, 100% 100%, 0 100%); padding-left: calc(clamp(20px, 2.4vw, 30px) + 28px); }
-.clash-bar { --a-share: 50%; grid-column: 1 / -1; grid-row: 1; position: relative; z-index: 3; height: 26px; background: #fff; }
+/* Clipped sideways only, so the VS can still rise above the bar while the spark glow and streaks stay inside its ends. */
+.clash-bar { --a-share: 50%; grid-column: 1 / -1; grid-row: 1; position: relative; z-index: 3; height: 26px; background: #fff; overflow-x: clip; }
 .clash-fill { position: absolute; top: 0; bottom: 0; background-size: 28px 28px; }
 .clash-a { left: 0; width: var(--a-share); background-image: linear-gradient(45deg, #1935da 25%, #2a4bf0 25% 50%, #1935da 50% 75%, #2a4bf0 75%); animation: clash-flow-a .8s linear infinite; transition: width .8s cubic-bezier(.2,.8,.2,1); }
 .clash-b { right: 0; width: calc(100% - var(--a-share)); background-image: linear-gradient(-45deg, #e3045c 25%, #f7237a 25% 50%, #e3045c 50% 75%, #f7237a 75%); animation: clash-flow-b .8s linear infinite; transition: width .8s cubic-bezier(.2,.8,.2,1); }
@@ -307,7 +500,9 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
 @keyframes clash-flow-a { to { background-position: 28px 0; } }
 @keyframes clash-flow-b { to { background-position: -28px 0; } }
 @keyframes clash-spark { 0% { opacity: 1; transform: scaleY(1); } 50% { opacity: .75; transform: scaleY(1.35); } }
-.outing-page .results-grid[data-duel="true"] .clash-bar .score-versus { display: block; position: absolute; top: calc(50% - 36px); left: var(--a-share); grid-row: auto; grid-column: auto; margin: 0; width: 112px; height: 72px; z-index: 2; transition: left .8s cubic-bezier(.2,.8,.2,1); }
+/* The VS rides the bar's real front line, but a 100–0 board would centre it on the bar's end; keep it (and its 1.2× pulse) inside.
+   It sits a little above centre so the pulse clears the PLAYER / leader labels when it reaches either end. */
+.outing-page .results-grid[data-duel="true"] .clash-bar .score-versus { display: block; position: absolute; top: calc(50% - 42px); left: clamp(64px, var(--a-share), calc(100% - 64px)); grid-row: auto; grid-column: auto; margin: 0; width: 112px; height: 72px; z-index: 2; transition: left .8s cubic-bezier(.2,.8,.2,1); }
 .clash-bar .vs-streak { width: 120px; height: 5px; margin-top: -2px; }
 .clash-bar .vs-streak-left { background: linear-gradient(90deg, transparent, #2a4bf0); }
 .clash-bar .vs-streak-right { background: linear-gradient(90deg, #f7237a, transparent); }
@@ -327,7 +522,7 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
   .outing-page .results-grid[data-duel="true"] > .score-card:first-of-type { grid-row: 2; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 24px), 0 100%); padding-right: clamp(20px, 2.4vw, 30px); padding-bottom: 44px; }
   .outing-page .results-grid[data-duel="true"] > .score-card:last-of-type { grid-row: 3; margin: -24px 0 0; clip-path: polygon(0 24px, 100% 0, 100% 100%, 0 100%); padding-left: clamp(20px, 2.4vw, 30px); padding-top: 48px; }
   .clash-bar { height: 22px; }
-  .outing-page .results-grid[data-duel="true"] .clash-bar .score-versus { width: 96px; height: 62px; top: calc(50% - 31px); }
+  .outing-page .results-grid[data-duel="true"] .clash-bar .score-versus { width: 96px; height: 62px; top: calc(50% - 35px); }
   .clash-bar .vs-streak { width: 70px; }
 }
 @media (prefers-reduced-motion: reduce) {

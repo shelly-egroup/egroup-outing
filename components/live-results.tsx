@@ -2,35 +2,12 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import VsMark from "./vs-mark";
 import { useOuting } from "./outing-provider";
-import { Avatar } from "./account-menu";
 import LoadingIndicator from "./loading-indicator";
 import PublicChoiceResults from "./public-choice-results";
+import TeamCrew from "./team-crew";
 import { useScoreMotion } from "./use-score-motion";
 import { isVotingOpen, sortedPlans, type Catalog, type PublicVote, type TripPlan } from "@/lib/trips";
 
-function Supporters({ supporters, currentUid, name }: { supporters: [string, PublicVote][]; currentUid?: string; name: string }) {
-  const detailsRef = useRef<HTMLDetailsElement>(null);
-  function showAll() { if (detailsRef.current) detailsRef.current.open = true; }
-  return <>
-    <div className="score-supporters">
-      <span>{supporters.length ? "這一派的隊友" : "第一位隊友，等你來當"}</span>
-      <div className="avatar-stack" aria-label={name + "投票同事"}>
-        {supporters.slice(0, 8).map(([uid, vote]) => (
-          <span key={uid} className="supporter-avatar" tabIndex={0} aria-label={vote.displayName + (uid === currentUid ? "（你）" : "")}>
-            <Avatar name={vote.displayName} src={vote.photoURL} />
-            <span className="avatar-tooltip" aria-hidden="true">{vote.displayName}{uid === currentUid ? "（你）" : ""}</span>
-          </span>
-        ))}
-        {supporters.length > 8 && <button type="button" className="avatar-more" onClick={showAll} aria-label={"查看全部 " + supporters.length + " 位隊友"}>+{supporters.length - 8}</button>}
-        {!supporters.length && <span className="empty-avatar" aria-hidden="true">?</span>}
-      </div>
-    </div>
-    {supporters.length > 0 && <details ref={detailsRef} className="supporters">
-      <summary>所有隊友 · {supporters.length}</summary>
-      <ul>{supporters.map(([uid, vote]) => <li key={uid}><Avatar name={vote.displayName} src={vote.photoURL} /><span>{vote.displayName}{uid === currentUid ? "（你）" : ""}</span></li>)}</ul>
-    </details>}
-  </>;
-}
 function ScoreDigits({ value }: { value: number }) {
   return <>{String(value).padStart(2, "0").split("").map((digit, index) => <span className="score-digit" key={index + ":" + digit}>{digit}</span>)}</>;
 }
@@ -38,8 +15,8 @@ function VoteTotal({ total, active, available, expected }: { total: number; acti
   const motion = useScoreMotion(total, 0, active, available);
   return <div className="vote-total"><strong key={motion.revision} aria-hidden="true">{available ? <ScoreDigits value={motion.count} /> : "—"}</strong><span className="sr-only" aria-live="polite">{available ? total + " 人已投票" : "讀取總票數中"}</span><span aria-hidden="true">人已投票{expected > 0 && <small>預計 {expected} 人</small>}</span></div>;
 }
-function LiveScoreCard({ plan, index, supporters, total, available, loading, leading, tied, open, active, currentUid }: {
-  plan: TripPlan; index: number; supporters: [string, PublicVote][]; total: number; available: boolean; loading: boolean; leading: boolean; tied: boolean; open: boolean; active: boolean; currentUid?: string;
+function LiveScoreCard({ plan, index, supporters, total, available, loading, leading, tied, open, active, currentUid, onJoin }: {
+  plan: TripPlan; index: number; supporters: [string, PublicVote][]; total: number; available: boolean; loading: boolean; leading: boolean; tied: boolean; open: boolean; active: boolean; currentUid?: string; onJoin?: () => void;
 }) {
   const count = supporters.length;
   const percent = total ? Math.round(count / total * 100) : 0;
@@ -57,11 +34,11 @@ function LiveScoreCard({ plan, index, supporters, total, available, loading, lea
     </div>
     <div className="score-track score-track-animated" role="progressbar" aria-label={plan.title + "得票比例"} aria-valuenow={available ? percent : undefined} aria-valuetext={available ? percent + "%" : "讀取中"} aria-valuemin={0} aria-valuemax={100}><span style={{ transform: "scaleX(" + (available ? motion.percent / 100 : 0) + ")" }} /></div>
     <div className="score-footer"><span>支持度</span><b aria-label={available ? percent + "%" : "讀取中"}>{available ? Math.round(motion.percent) + "%" : "—"}</b></div>
-    {available ? <Supporters supporters={supporters} currentUid={currentUid} name={plan.shortName} /> : <div className={"score-supporters score-supporters-placeholder" + (loading ? " is-loading" : "")} aria-hidden="true"><span className="loading-tile loading-supporter-label" /><span className="loading-avatar-stack"><i className="loading-tile" /><i className="loading-tile" /><i className="loading-tile" /></span></div>}
+    {available ? <TeamCrew supporters={supporters} currentUid={currentUid} name={plan.shortName} onJoin={onJoin} /> : <div className={"score-supporters score-supporters-placeholder" + (loading ? " is-loading" : "")} aria-hidden="true"><span className="loading-tile loading-supporter-label" /><span className="loading-avatar-stack"><i className="loading-tile" /><i className="loading-tile" /><i className="loading-tile" /></span></div>}
   </article>;
 }
 
-export default function LiveResults({ catalog, motionEnabled = true }: { catalog: Catalog; motionEnabled?: boolean }) {
+export default function LiveResults({ catalog, motionEnabled = true, onJoin }: { catalog: Catalog; motionEnabled?: boolean; onJoin?: (planId: string) => void }) {
   const boardRef = useRef<HTMLDivElement>(null);
   const [battleActive, setBattleActive] = useState(false);
   useEffect(() => {
@@ -111,7 +88,9 @@ export default function LiveResults({ catalog, motionEnabled = true }: { catalog
     </div>
     <div className="battle-summary">
       <VoteTotal total={total} active={battleActive} available={available} expected={catalog.settings.expectedVoters} />
-      <div className="battle-caption">{loading ? <LoadingIndicator label="正在同步最新戰況" compact /> : <b>{matchLabel}</b>}<p>免登入看戰況，登入就能加入對決。</p>
+      <div className="battle-caption">{loading ? <LoadingIndicator label="正在同步最新戰況" compact /> : <b className="match-label" data-state={!available ? "waiting" : open ? "live" : "final"}>
+        {available && open && <svg className="match-bolt" viewBox="0 0 40 72" aria-hidden="true"><path d="M25 2 3 41h15l-7 29 26-44H21l8-24z" /></svg>}<span>{matchLabel}</span>
+      </b>}<p>免登入看戰況，登入就能加入對決。</p>
         {firstVote && <a className="button battle-first-vote" href="#selection">去投第一票 →</a>}</div>
     </div>
     {votesError ? <p className="battle-notice" role="alert">{votesError}</p> : !connected && votesReady ? <div className="battle-notice"><LoadingIndicator label="重新連線中，先顯示上次戰況" compact /></div> : null}
@@ -124,7 +103,8 @@ export default function LiveResults({ catalog, motionEnabled = true }: { catalog
         const supporters = list.filter(([, vote]) => vote.planId === id).sort((a, b) => b[1].updatedAt - a[1].updatedAt);
         return <LiveScoreCard key={id} plan={plan} index={index} supporters={supporters} total={total}
           available={available} loading={loading} leading={available && high > 0 && leaders === 1 && supporters.length === high}
-          tied={high > 0 && leaders > 1 && supporters.length === high} open={open} active={battleActive} currentUid={user?.uid} />;
+          tied={high > 0 && leaders > 1 && supporters.length === high} open={open} active={battleActive} currentUid={user?.uid}
+          onJoin={open && plan.active && onJoin ? () => onJoin(id) : undefined} />;
       })}
     </div>
     <p className="battle-footnote">票數即時同步 · 每人一票 · 截止前可改票</p>

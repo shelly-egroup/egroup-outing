@@ -2,6 +2,7 @@
 import { sortedGroups } from "@/lib/trips";
 import Link from "next/link";
 import { useSectionReveal } from "./use-section-reveal";
+import { useTallSticky } from "./use-tall-sticky";
 import { HERO_POSTER, OPENING_IMAGES } from "@/lib/opening-assets";
 import ShowLogo from "./show-logo";
 import CautionTape from "./caution-tape";
@@ -96,6 +97,8 @@ export default function TripShowdown() {
   const [copyStatus, setCopyStatus] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const heroActionsRef = useRef<HTMLDivElement>(null);
+  const [reviewPanel, setReviewPanel] = useState<HTMLElement | null>(null);
+  useTallSticky(reviewPanel);
   const dirty = useRef(false),
     previousUid = useRef<string | null>(null);
   const planDrafts = useRef<Record<string, Pick<VoteDraft, "preferences" | "note">>>({});
@@ -224,7 +227,10 @@ export default function TripShowdown() {
         />
       )}
       <div ref={pageRef} hidden={intro} className="outing-page">
-        <OutingHeader announcement={eventAnnouncement} active={!intro} heroActions={heroActionsRef} vote={authReady && votesReady && actualVote ? headerVote : undefined} />
+        <OutingHeader active={!intro} heroActions={heroActionsRef} vote={authReady && votesReady && actualVote ? headerVote : undefined}
+          title={catalog.settings.title} eventDate={catalog.settings.eventDate} closesAt={catalog.settings.closesAt} votingEnabled={catalog.settings.votingOpen} now={now}
+          teams={votesReady ? plans.map(([id, plan]) => ({ name: plan.shortName, color: plan.color, count: Object.values(votes).filter(item => item.planId === id).length })) : undefined}
+          total={votesReady ? Object.keys(votes).length : undefined} expected={catalog.settings.expectedVoters} hasVoted={!!actualVote} />
         <header className="show-hero" data-ready={introReady && !intro}>
           <div className="hero-field" aria-hidden="true"><i className="hero-field-a" /><i className="hero-field-b" /></div>
           <div className="hero-stage">
@@ -387,7 +393,7 @@ export default function TripShowdown() {
                     </div>}
                   </fieldset>
                 </div>
-                <aside id="vote-review" className="vote-review" aria-label="投票摘要">
+                <aside ref={setReviewPanel} id="vote-review" className="vote-review" aria-label="投票摘要">
                   <span className="eyebrow">YOUR VOTE</span>
                   <h3>{actualVote ? "你的選擇" : "準備好站這一邊？"}</h3>
                   {plans.length > 1 && <div className="vote-review-switch" role="group" aria-label="切換方案，已選偏好會保留">
@@ -488,7 +494,7 @@ export default function TripShowdown() {
             </div>
             <PlanSwitchDock plans={plans} selectedId={draft.planId} active={!!selected && plans.length > 1 && !intro && !review && catalogStatus !== "loading"} disabled={saving} onChoose={id => choose(id, false)} />
           </section>
-          <LiveResults catalog={catalog} motionEnabled={!intro} />
+          <LiveResults catalog={catalog} motionEnabled={!intro} onJoin={id => { if (!saving) choose(id); }} />
         </main>
         <footer className="site-footer">
           <div className="wrap site-footer-inner">

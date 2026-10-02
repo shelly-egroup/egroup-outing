@@ -22,7 +22,8 @@ export function Avatar({ name, src }: { name: string; src: string }) {
     </span>
   );
 }
-export default function AccountMenu() {
+/** `organizerInMenu` tucks the organizer link into the account popover, for headers short on room. */
+export default function AccountMenu({ organizerInMenu = false }: { organizerInMenu?: boolean }) {
   const { user, authReady, signingIn, isAdmin, votingAccess, login, logout } = useOuting();
   const menuRef = useRef<HTMLDetailsElement>(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -46,7 +47,7 @@ export default function AccountMenu() {
   }
   return (
     <div className="account-menu">
-      {isAdmin && (
+      {isAdmin && !organizerInMenu && (
         <Link className="button button-white organizer-button" href="/admin">
           主辦入口
         </Link>
@@ -64,6 +65,10 @@ export default function AccountMenu() {
           </summary>
           <div className="account-popover">
             <div className="account-profile"><span className="account-role">{isAdmin ? "主辦人" : "秋遊隊友"}</span><strong>{user.displayName || "同事"}</strong><small>{user.email}</small>{votingAccess && !isAdmin && <span className={"account-access status-" + votingAccess}>{votingAccessLabels[votingAccess]}</span>}</div>
+            {isAdmin && organizerInMenu && <Link className="account-organizer" href="/admin">
+              主辦後台
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            </Link>}
             <button type="button" className="account-logout" onClick={signOut} disabled={signingOut}>
               {signingOut ? <LoadingIndicator label="登出中" compact /> : "登出帳號"}
               <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 4H4v16h5M13 8l4 4-4 4M8 12h13" /></svg>
