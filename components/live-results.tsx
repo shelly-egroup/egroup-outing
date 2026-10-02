@@ -12,7 +12,7 @@ function Supporters({ supporters, currentUid, name }: { supporters: [string, Pub
   function showAll() { if (detailsRef.current) detailsRef.current.open = true; }
   return <>
     <div className="score-supporters">
-      <span>{supporters.length ? "這一派的隊友" : "等你加入陣營"}</span>
+      <span>{supporters.length ? "這一派的隊友" : "第一位隊友，等你來當"}</span>
       <div className="avatar-stack" aria-label={name + "投票同事"}>
         {supporters.slice(0, 8).map(([uid, vote]) => (
           <span key={uid} className="supporter-avatar" tabIndex={0} aria-label={vote.displayName + (uid === currentUid ? "（你）" : "")}>
@@ -98,7 +98,8 @@ export default function LiveResults({ catalog, motionEnabled = true }: { catalog
   const available = votesReady && !votesError;
   const loading = !votesReady && !votesError;
   const stateLabel = votesError ? "連線異常" : !connected ? "重新連線中" : !votesReady ? "讀取戰況中" : open ? "即時連線中" : "投票已截止";
-  const matchLabel = !available ? "等待戰況" : !total ? "誰先拿下第一票？" : leaders > 1 ? (open ? "勢均力敵，等你這一票" : "最終平手") : (open ? "對決進行中" : "最終戰況");
+  const firstVote = available && !total && open;
+  const matchLabel = !available ? "等待戰況" : !total ? (open ? "還沒人表態，搶當第一票！" : "這次沒有人投票") : leaders > 1 ? (open ? "勢均力敵，等你這一票" : "最終平手") : (open ? "對決進行中" : "最終戰況");
   return <section className={"live-section arcade-section" + (battleActive ? " battle-active" : "")} id="results" aria-labelledby="results-title" data-motion={battleActive ? "playing" : "paused"}>
     <div className="battle-fx" aria-hidden="true"><i className="battle-grid-flow" /><i className="battle-scan" /><i className="battle-pixel pixel-one" /><i className="battle-pixel pixel-two" /><i className="battle-pixel pixel-three" /></div>
     <div className="section-heading">
@@ -107,7 +108,8 @@ export default function LiveResults({ catalog, motionEnabled = true }: { catalog
     </div>
     <div className="battle-summary">
       <VoteTotal total={total} active={battleActive} available={available} expected={catalog.settings.expectedVoters} />
-      <div className="battle-caption">{loading ? <LoadingIndicator label="正在同步最新戰況" compact /> : <b>{matchLabel}</b>}<p>免登入看戰況，登入就能加入對決。</p></div>
+      <div className="battle-caption">{loading ? <LoadingIndicator label="正在同步最新戰況" compact /> : <b>{matchLabel}</b>}<p>免登入看戰況，登入就能加入對決。</p>
+        {firstVote && <a className="button battle-first-vote" href="#selection">去投第一票 →</a>}</div>
     </div>
     {votesError ? <p className="battle-notice" role="alert">{votesError}</p> : !connected && votesReady ? <div className="battle-notice"><LoadingIndicator label="重新連線中，先顯示上次戰況" compact /></div> : null}
     <div ref={boardRef} className={"results-grid" + (loading ? " is-loading" : "")} data-duel={teams.length === 2} style={boardStyle} aria-busy={loading}>

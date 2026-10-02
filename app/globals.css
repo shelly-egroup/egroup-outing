@@ -886,6 +886,10 @@ summary {
   font-size: 14px;
   margin: 10px 0;
 }
+/* After the opening: three pulses lead the eye to the first step, then it settles. */
+.hero-actions .button.is-cued { animation: next-step-cue 1.2s ease-out 3; }
+@keyframes next-step-cue { 0% { box-shadow: 4px 4px 0 var(--ink), 0 0 0 0 #ffdf60; transform: none; } 30% { transform: translateY(-3px); } 60% { box-shadow: 4px 4px 0 var(--ink), 0 0 0 14px #ffdf6000; transform: none; } 100% { box-shadow: 4px 4px 0 var(--ink), 0 0 0 0 #ffdf6000; } }
+@media (prefers-reduced-motion: reduce) { .hero-actions .button.is-cued, .arcade-section.battle-active .battle-first-vote { animation: none; } }
 .hero-actions {
   grid-area: actions;
   align-self: start;
@@ -1230,6 +1234,11 @@ summary {
 .battle-caption { text-align: right; }
 .battle-caption b { font-size: 19px; }
 .battle-caption p { margin: 6px 0 0; font-size: 13px; color: #a9b6ca; }
+/* Empty board: invite the first vote instead of showing a dead 00 / 0%. */
+.battle-first-vote { display: inline-flex; margin-top: 12px; padding: 9px 16px; min-height: 42px; background: #ffe173; color: #111724; border: 2px solid #111724; box-shadow: 3px 3px 0 #ffffff40; font-size: 14px; font-weight: 900; }
+.battle-first-vote:hover { background: #fff; }
+.arcade-section.battle-active .battle-first-vote { animation: first-vote-nudge 2.4s ease-in-out infinite; }
+@keyframes first-vote-nudge { 0%,70%,100% { transform: none; } 78% { transform: translateY(-3px); } 86% { transform: none; } 92% { transform: translateY(-2px); } }
 .battle-notice { padding: 15px; background: #ffffff0a; border: 1px dashed #68758c; margin: 0 0 22px; color: #dde3ef; font-size: 14px; }
 .results-grid { position: relative; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
 .results-grid .score-versus { position: absolute; top: 82px; grid-column: 2; left: -12px; transform: translateX(-50%) rotate(-8deg); width: 46px; height: 40px; display: grid; place-items: center; background: #ffe173; color: #111724; border: 2px solid #111724; box-shadow: 3px 3px 0 #111724; font-size: 21px; font-style: italic; font-weight: 950; z-index: 2; pointer-events: none; }

@@ -64,7 +64,16 @@ export default function TripShowdown() {
   const plans = sortedPlans(catalog).filter(([, plan]) => plan.active);
   const [intro, setIntro] = useState(false), [introReady, setIntroReady] = useState(false);
   useLayoutEffect(() => { setIntro(!openingHistory.hasSeen()); setIntroReady(true); }, []);
-  const finishIntro = useCallback(() => { openingHistory.markSeen(); setIntro(false); }, []);
+  // After the opening, cue the next step so the "your vote decides" ending leads straight into choosing.
+  const [cueNext, setCueNext] = useState(false);
+  const nextStepRef = useRef<HTMLAnchorElement>(null);
+  const finishIntro = useCallback(() => { openingHistory.markSeen(); setIntro(false); setCueNext(true); }, []);
+  useEffect(() => {
+    if (!cueNext) return;
+    nextStepRef.current?.focus({ preventScroll: true });
+    const timer = setTimeout(() => setCueNext(false), 3600);
+    return () => clearTimeout(timer);
+  }, [cueNext]);
   const [draft, setDraft] = useState<VoteDraft>(emptyDraft);
   const [review, setReview] = useState(false),
     [saving, setSaving] = useState(false),
@@ -235,7 +244,7 @@ export default function TripShowdown() {
             <HeroStamp active={introReady && !intro} />
           </div>
           <div className="hero-actions" ref={heroActionsRef}>
-            <a href="#plans" className="button button-dark">
+            <a ref={nextStepRef} href="#plans" className={"button button-dark" + (cueNext ? " is-cued" : "")}>
               看方案，選陣營
             </a>
             <a href="#results" className="button button-white">看即時戰況</a>
