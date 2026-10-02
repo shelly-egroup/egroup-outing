@@ -227,9 +227,9 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
           <HostShot side="A" plans={plans} />
           <HostShot side="B" plans={plans} />
           <div className="film-orbit" aria-hidden="true">
-            <div className="orbit-ring orbit-outer"><HostShot side="A" plans={plans} /></div>
-            <div className="orbit-ring orbit-middle"><HostShot side="B" plans={plans} /></div>
-            <div className="orbit-ring orbit-inner"><HostShot side="A" plans={plans} /></div>
+            <div className="faceoff-host faceoff-a"><img src={HOSTS} alt="" /></div>
+            <div className="faceoff-host faceoff-b"><img src={HOSTS} alt="" /></div>
+            <i className="faceoff-flash" />
           </div>
         </div>}
         {step === 5 && <div className="film-montage">

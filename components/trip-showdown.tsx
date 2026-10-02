@@ -238,7 +238,6 @@ export default function TripShowdown() {
           </div>
           <div className="hero-art">
             <img className="hero-art-scene" src="/assets/jo-showdown-hero-bosses-v9.png" alt="釣蝦與港點對決雷射槍戰與下午茶" />
-            <img className="hero-art-type" src="/assets/hero-title-comic-v1.png" alt="揪是要對決" />
             <div className="hero-art-plans">
               <span><strong>{plans[0]?.[1].shortName || "釣趣派"}</strong><small>釣蝦＋港點午餐</small></span>
               <b aria-hidden="true">VS</b>
