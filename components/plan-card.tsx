@@ -11,7 +11,6 @@ type Props = {
   disabled?: boolean;
   onChoose?: () => void;
   edit?: EditPlan;
-  cover?: string;
 };
 function titleLines(title: string) {
   if (title.includes("\n")) return title.split("\n");
@@ -19,15 +18,14 @@ function titleLines(title: string) {
   const plus = title.indexOf("＋");
   return plus < 0 ? [title] : [title.slice(0, plus), title.slice(plus)];
 }
-export default function PlanCard({ plan, selected = false, hasVoted = false, disabled = false, onChoose, edit, cover }: Props) {
+export default function PlanCard({ plan, selected = false, hasVoted = false, disabled = false, onChoose, edit }: Props) {
   const reorder = useReorder((plan.schedule || []).map((stop, index) => ({ id: String(index), label: stop.title })),
     (from, to) => edit?.(p => { p.schedule = moveItem(p.schedule, from, to); }), !edit || disabled);
   function field(key: "category" | "title" | "description" | "priceNote" | "shortName", label: string, maxLength: number, multiline = false) {
     return <InlineEditField label={label} value={key === "title" ? titleLines(plan.title).join("\n") : plan[key]} maxLength={maxLength} multiline={multiline}
       onChange={value => edit?.(p => { p[key] = value; })} />;
   }
-  return <article className={"plan-card tone-" + plan.color + (selected ? " is-selected" : "") + (edit ? " plan-card-editable" : "") + (cover ? " has-cover" : "")}>
-    {cover && <div className="plan-cover"><img src={cover} alt="" loading="lazy" decoding="async" /></div>}
+  return <article className={"plan-card tone-" + plan.color + (selected ? " is-selected" : "") + (edit ? " plan-card-editable" : "")}>
     <div className="plan-card-top">
       <span className="plan-code" aria-hidden="true">{plan.code}</span>
       <span className="eyebrow">{edit ? field("category", "方案分類", 150) : plan.category}</span>
@@ -61,7 +59,7 @@ export default function PlanCard({ plan, selected = false, hasVoted = false, dis
     {(edit || plan.priceNote) && <div className="compare-price">{edit ? field("priceNote", "費用說明", 150, true) : plan.priceNote}</div>}
     {edit ? <div className={"button choose-button editable-choose " + (plan.color === "yellow" ? "button-dark" : "button-white")}>
       <span>我偏好</span>{field("shortName", "陣營名稱", 150)}
-    </div> : <button type="button" className={"button choose-button " + (plan.color === "yellow" || selected ? "button-dark" : "button-white")} disabled={disabled} aria-pressed={selected} onClick={onChoose}>
+    </div> : <button type="button" className={"button choose-button " + (selected ? "button-dark" : "button-team")} disabled={disabled} aria-pressed={selected} onClick={onChoose}>
       {selected ? "已選擇 " + plan.shortName + " ✓" : "我偏好" + plan.shortName}
     </button>}
   </article>;

@@ -2,7 +2,6 @@
 import { sortedGroups } from "@/lib/trips";
 import Link from "next/link";
 import { useSectionReveal } from "./use-section-reveal";
-import { OPENING_IMAGES } from "@/lib/opening-assets";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import OutingHeader from "./outing-header";
 import HeroStamp from "./hero-stamp";
@@ -70,7 +69,6 @@ export default function TripShowdown() {
   const [cueNext, setCueNext] = useState(false);
   const nextStepRef = useRef<HTMLAnchorElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
-  const planCovers = plans.length === 2 ? [OPENING_IMAGES.fishing, OPENING_IMAGES.laser] : [];
   useSectionReveal(pageRef, introReady && !intro);
   const finishIntro = useCallback(() => { openingHistory.markSeen(); setIntro(false); setCueNext(true); }, []);
   useEffect(() => {
@@ -91,7 +89,6 @@ export default function TripShowdown() {
     previousUid = useRef<string | null>(null);
   const planDrafts = useRef<Record<string, Pick<VoteDraft, "preferences" | "note">>>({});
   const selected = catalog.plans[draft.planId];
-  const selectedCover = planCovers[plans.findIndex(([id]) => id === draft.planId)];
   const [menuOpen, setMenuOpen] = useState(true);
 
   useEffect(() => {
@@ -303,9 +300,8 @@ export default function TripShowdown() {
             <div className={"plan-grid-shell" + (catalogStatus === "loading" ? " is-loading" : "")}>
             <div className="plan-grid" data-duel={plans.length === 2} inert={catalogStatus === "loading"} aria-hidden={catalogStatus === "loading" || undefined}>
               {plans.length === 2 && <VersusBadge />}
-              {plans.map(([id, plan], index) => (
+              {plans.map(([id, plan]) => (
                 <PlanCard key={id} plan={plan} selected={draft.planId === id}
-                  cover={planCovers[index]}
                   hasVoted={actualVote?.planId === id} disabled={saving} onChoose={() => choose(id)} />
               ))}
             </div>
@@ -332,7 +328,7 @@ export default function TripShowdown() {
             ) : (
               <div className="selection-layout" data-team-tone={selected.color}>
                 <div className="preference-panel">
-                  <div className={"selected-banner tone-" + selected.color + (selectedCover ? " has-cover" : "")} style={selectedCover ? { "--banner-cover": `url(${selectedCover})` } as React.CSSProperties : undefined}>
+                  <div className={"selected-banner tone-" + selected.color}>
                     <span>
                       {selected.code} · {selected.shortName}
                     </span>
