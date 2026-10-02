@@ -3,6 +3,9 @@ import { OutingProvider } from "@/components/outing-provider";
 import { OPENING_IMAGES } from "@/lib/opening-assets";
 import { OPENING_SEEN_KEY } from "@/lib/opening-history";
 import "./globals.css";
+import "./showdown.css";
+import "./opening-film.css";
+import "./showdown-page.css";
 
 // Runs with the HTML, before any bundle: first-time visitors start the opening shots at once,
 // ahead of the Chinese font slices, so START unlocks sooner. Returning visitors skip the download.
@@ -26,7 +29,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Marcellus&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Oswald:wght@200;300;500;600&display=swap"
           rel="stylesheet"
         />
       </head>

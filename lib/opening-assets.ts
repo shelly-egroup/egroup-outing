@@ -1,6 +1,9 @@
-/** Opening shots, in the order they appear. Shared by the intro and the first-visit preload in the root layout. */
+/** Opening cut-outs (B&W hosts, hand-held props). Shared by the film, the first-visit preload and the page hero. */
 export const OPENING_IMAGES = {
-  hosts: "/assets/intro-hosts.webp",
-  fishing: "/assets/intro-fishing-dimsum-three.webp",
-  laser: "/assets/intro-gun-battle-afternoon-tea.webp",
+  hostA: "/assets/show-host-a.webp",
+  hostB: "/assets/show-host-b.webp",
+  photoA: "/assets/show-photo-a.webp",
+  photoB: "/assets/show-photo-b.webp",
+  feastA: "/assets/show-feast-a.webp",
+  feastB: "/assets/show-feast-b.webp",
 } as const;

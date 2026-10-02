@@ -1,0 +1,44 @@
+/* ─── Showdown design system: the show package (fields, cut-outs, micro type, lockup) ─── */
+:root {
+  --sd-blue: #1935da;
+  --sd-blue-hi: #2445ee;
+  --sd-blue-deep: #1127b4;
+  --sd-pink: #e3045c;
+  --sd-pink-hi: #f4176d;
+  --sd-pink-deep: #be024e;
+  --sd-studio: #f7f7f6;
+  --sd-studio-shade: #e4e4e2;
+  --sd-charcoal: #1c2026;
+  --sd-coal: #111418;
+  --sd-cyan: #44bcf3;
+  --sd-ink: #090b0e;
+  --sd-serif: "Marcellus", "Optima", "Times New Roman", serif;
+  --sd-cond: "Oswald", "Arial Narrow", sans-serif;
+  --sd-fringe: drop-shadow(.16vmin 0 0 rgb(255 0 92 / .55)) drop-shadow(-.16vmin 0 0 rgb(0 226 255 / .55));
+}
+
+.sd-field-blue { background: radial-gradient(130% 100% at 50% 42%, var(--sd-blue-hi) 0%, var(--sd-blue) 46%, var(--sd-blue-deep) 100%); }
+.sd-field-pink { background: radial-gradient(130% 100% at 50% 42%, var(--sd-pink-hi) 0%, var(--sd-pink) 46%, var(--sd-pink-deep) 100%); }
+.sd-studio { background: radial-gradient(120% 90% at 50% 38%, #ffffff 0%, var(--sd-studio) 45%, var(--sd-studio-shade) 100%); }
+.sd-stage-dark { background: radial-gradient(70% 70% at 50% 50%, transparent 0 60%, rgb(0 0 0 / .45) 100%), repeating-radial-gradient(circle at 50% 50%, #1f242a 0 7vmin, #1a1e23 7vmin 14vmin), var(--sd-charcoal); }
+
+.sd-micro { font-family: var(--sd-cond); font-weight: 300; font-size: 11px; line-height: 1; letter-spacing: .42em; text-transform: uppercase; }
+.sd-vertical { writing-mode: vertical-rl; }
+.sd-cutout { filter: var(--sd-fringe); }
+
+/* ─── Lockup ─── */
+.show-logo { display: inline-block; margin: 0; font-size: var(--logo-size, 96px); font-weight: 900; line-height: .92; letter-spacing: -.02em; color: #fff; }
+.show-logo .logo-art { position: relative; display: inline-grid; justify-items: start; transform: rotate(-6deg) skewX(-10deg); transform-origin: 50% 60%; }
+.logo-word { display: inline-grid; }
+.logo-word > span { grid-area: 1 / 1; }
+.logo-halo { color: transparent; -webkit-text-stroke: .22em var(--sd-cyan); }
+.logo-edge { color: #07090c; -webkit-text-stroke: .12em #07090c; text-shadow: .08em .09em 0 #07090c; }
+.logo-face { color: transparent; -webkit-background-clip: text; background-clip: text; }
+.logo-jiu { margin-left: .5em; font-size: 1em; }
+.logo-jiu .logo-face { background-image: linear-gradient(176deg, #ffffff 0 38%, #c9ced6 46%, #f6f7f9 58%, #9ca3ad 100%); }
+.logo-line { display: flex; align-items: center; margin: -.16em 0 0 -.06em; font-size: .6em; }
+.logo-blue .logo-face { background-image: linear-gradient(180deg, #8ddcff 0%, #44bcf3 42%, #1d6fe6 100%); }
+.logo-pink .logo-face { background-image: linear-gradient(180deg, #ff9cc6 0%, #f23b8b 44%, #cf0758 100%); }
+.logo-bolt { width: .5em; height: .9em; margin: 0 -.04em 0 -.02em; overflow: visible; position: relative; z-index: 1; }
+.logo-bolt path { fill: #fff; stroke: #07090c; stroke-width: 5; stroke-linejoin: round; paint-order: stroke; }
+.logo-tag { justify-self: end; margin: -.02em -.1em 0 0; padding: .3em .7em .26em; background: #07090c; color: #fff; font: italic 600 .17em/1 var(--sd-cond); letter-spacing: .14em; white-space: nowrap; clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%); }

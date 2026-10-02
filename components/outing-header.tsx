@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import ShowLogo from "./show-logo";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import AccountMenu from "./account-menu";
 import { useScrollReveal } from "./use-scroll-reveal";
@@ -87,7 +88,7 @@ export default function OutingHeader({ active, heroActions, vote, announcement }
   return <div className={"outing-header" + (compact ? " is-compact" : "") + (quickNavRetracted ? " is-nav-retracted" : "")} ref={bar}>
     <OutingTicker announcement={announcement} />
     <div className="topbar wrap">
-      <Link href="/" className="brand">揪是要對決<span>2026</span></Link>
+      <Link href="/" className="brand" aria-label="揪是要對決 首頁"><ShowLogo className="brand-lockup" tag="" /></Link>
       <div className="header-actions">
         {vote && <a className="header-vote" href={vote.target} data-tone={vote.tone} data-pending={vote.pending} title={"我的投票：" + vote.label + " · " + vote.status} aria-label={"我的投票，" + vote.label + "，" + vote.status + "。查看你的選擇"}>
           <span className="header-vote-code" aria-hidden="true">{vote.code}</span>

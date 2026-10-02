@@ -2,9 +2,10 @@
 import { sortedGroups } from "@/lib/trips";
 import Link from "next/link";
 import { useSectionReveal } from "./use-section-reveal";
+import { OPENING_IMAGES } from "@/lib/opening-assets";
+import ShowLogo from "./show-logo";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import OutingHeader from "./outing-header";
-import HeroStamp from "./hero-stamp";
 import VoteCountdown from "./vote-countdown";
 import { votingAccessMessage } from "@/lib/voting-access";
 import { voteReminder } from "@/lib/vote-reminder";
@@ -38,6 +39,11 @@ import {
   sortedPlans,
   type VoteDraft,
 } from "@/lib/trips";
+
+const PLAN_ART = [
+  { photo: OPENING_IMAGES.photoA, feast: OPENING_IMAGES.feastA, word: "悠閒" },
+  { photo: OPENING_IMAGES.photoB, feast: OPENING_IMAGES.feastB, word: "熱血" },
+];
 
 export default function TripShowdown() {
   const context = useOuting();
@@ -213,47 +219,41 @@ export default function TripShowdown() {
       )}
       <div ref={pageRef} hidden={intro} className="outing-page">
         <OutingHeader announcement={eventAnnouncement} active={!intro} heroActions={heroActionsRef} vote={authReady && votesReady && actualVote ? headerVote : undefined} />
-        <header className="outing-hero wrap">
-          <div className="hero-lead">
-            <span className="eyebrow">THE AUTUMN OUTING</span>
-            <p className="event-meta">
-              {catalog.settings.eventDate.replaceAll("-", ".")} · 預計{" "}
-              {catalog.settings.expectedVoters} 人
+        <header className="show-hero" data-ready={introReady && !intro}>
+          <div className="hero-field" aria-hidden="true"><i className="hero-field-a sd-field-blue" /><i className="hero-field-b sd-field-pink" /></div>
+          <span className="hero-word hero-word-a" aria-hidden="true">悠<br />閒</span>
+          <span className="hero-word hero-word-b" aria-hidden="true">熱<br />血</span>
+          <img className="hero-host hero-host-a sd-cutout" src={OPENING_IMAGES.hostA} alt="" />
+          <img className="hero-host hero-host-b sd-cutout" src={OPENING_IMAGES.hostB} alt="" />
+          <div className="hero-center">
+            <p className="hero-kicker sd-micro">
+              <span>THE AUTUMN OUTING</span><i aria-hidden="true" />
+              <span>{catalog.settings.eventDate.replaceAll("-", ".")}</span><i aria-hidden="true" />
+              <span>預計 {catalog.settings.expectedVoters} 人</span>
             </p>
-            <h1>
-              秋遊去哪？
-              <br />
-              <em>揪 差你一票</em>
-            </h1>
-          </div>
-          <div className="hero-body">
-            <p>
-              到底是釣蝦吃港點聚餐吸引人，
-              <br />
-              還是雷射團戰享用飯店 Buffet <span className="hero-nowrap">令人嚮往？</span>
-              <br />
+            <div className="hero-brand">
+              <ShowLogo className="hero-lockup" tag="" />
+              <p className="hero-joke"><span>這次不吃</span> 牛肉麵！</p>
+            </div>
+            <h1 className="hero-title">秋遊去哪？<em>揪 差你一票</em></h1>
+            <p className="hero-copy">
+              到底是釣蝦吃港點聚餐吸引人，還是雷射團戰享用飯店 Buffet <span className="hero-nowrap">令人嚮往？</span>
               看完行程，選一個你最想去的方案。
             </p>
-            <p className="hero-joke"><span>這次不吃</span> 牛肉麵！</p>
-          </div>
-          <div className="hero-art">
-            <img className="hero-art-scene" src="/assets/jo-showdown-hero-bosses-v9.png" alt="釣蝦與港點對決雷射槍戰與下午茶" />
-            <div className="hero-art-plans">
-              <span><strong>{plans[0]?.[1].shortName || "釣趣派"}</strong><small>釣蝦＋港點午餐</small></span>
-              <b aria-hidden="true">VS</b>
-              <span><strong>{plans[1]?.[1].shortName || "熱血對戰派"}</strong><small>雷射槍戰＋飯店下午茶</small></span>
+            <div className="hero-actions" ref={heroActionsRef}>
+              <a ref={nextStepRef} href="#plans" className={"button button-yellow hero-primary" + (cueNext ? " is-cued" : "")}>
+                看方案，選陣營
+              </a>
+              <a href="#results" className="button button-ghost">看即時戰況</a>
+              <button type="button" className="hero-replay" onClick={() => setIntro(true)}>
+                <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10a9 9 0 1 1 2.6 8.4" /><path d="M3 4v6h6" /></svg>
+                重播開場
+              </button>
             </div>
-            <HeroStamp active={introReady && !intro} />
           </div>
-          <div className="hero-actions" ref={heroActionsRef}>
-            <a ref={nextStepRef} href="#plans" className={"button button-dark" + (cueNext ? " is-cued" : "")}>
-              看方案，選陣營
-            </a>
-            <a href="#results" className="button button-white">看即時戰況</a>
-            <button type="button" className="button button-white hero-replay" onClick={() => setIntro(true)}>
-              <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10a9 9 0 1 1 2.6 8.4" /><path d="M3 4v6h6" /></svg>
-              重播開場
-            </button>
+          <div className="hero-teams">
+            <p className="hero-team hero-team-a"><small className="sd-micro">TEAM A</small><strong>{plans[0]?.[1].shortName || "釣趣派"}</strong><span>釣蝦＋港點午餐</span></p>
+            <p className="hero-team hero-team-b"><small className="sd-micro">TEAM B</small><strong>{plans[1]?.[1].shortName || "熱血對戰派"}</strong><span>雷射槍戰＋飯店下午茶</span></p>
           </div>
         </header>
         <main className="wrap">
@@ -287,7 +287,7 @@ export default function TripShowdown() {
           <section id="plans" className="plans-section">
             <div className="section-heading">
               <div>
-                <span className="round-chip">ROUND 1</span><span className="eyebrow">CHOOSE YOUR SIDE</span>
+                <span className="round-no" aria-hidden="true">01</span><span className="eyebrow">ROUND 1 — CHOOSE YOUR SIDE</span>
                 <h2>你是哪一派？</h2>
               </div>
               <p>
@@ -299,8 +299,8 @@ export default function TripShowdown() {
             <div className={"plan-grid-shell" + (catalogStatus === "loading" ? " is-loading" : "")}>
             <div className="plan-grid" data-duel={plans.length === 2} inert={catalogStatus === "loading"} aria-hidden={catalogStatus === "loading" || undefined}>
               {plans.length === 2 && <VersusBadge />}
-              {plans.map(([id, plan]) => (
-                <PlanCard key={id} plan={plan} selected={draft.planId === id}
+              {plans.map(([id, plan], index) => (
+                <PlanCard key={id} plan={plan} selected={draft.planId === id} art={plans.length === 2 ? PLAN_ART[index] : undefined}
                   hasVoted={actualVote?.planId === id} disabled={saving} onChoose={() => choose(id)} />
               ))}
             </div>
@@ -313,7 +313,7 @@ export default function TripShowdown() {
           <section id="selection" className="selection-section" data-plan-switch={!!selected && plans.length > 1 || undefined}>
             <div className="section-heading selection-heading">
               <div className="selection-heading-copy">
-                <span className="round-chip">ROUND 2</span><span className="eyebrow">MAKE IT YOUR TRIP</span>
+                <span className="round-no" aria-hidden="true">02</span><span className="eyebrow">ROUND 2 — MAKE IT YOUR TRIP</span>
                 <h2>{success ? <>你的一票，<span>已收到！</span></> : <>選好陣營，<span>確認這一票</span></>}</h2>
                 {!success && <p className="quiet">票投給你想去的一派；有餐廳選項再填偏好，沒有就直接確認。</p>}
               </div>
@@ -486,14 +486,15 @@ export default function TripShowdown() {
           </section>
           <LiveResults catalog={catalog} motionEnabled={!intro} />
         </main>
-        <footer className="site-footer">
+        <footer className="site-footer sd-stage-dark">
           <div className="wrap site-footer-inner">
-            <p className="footer-kicker">SEE YOU ON {catalog.settings.eventDate.slice(5).replace("-", ".")}</p>
+            <p className="footer-kicker sd-micro">SEE YOU ON {catalog.settings.eventDate.slice(5).replace("-", ".")}</p>
+            <ShowLogo className="footer-lockup" />
             <h2 className="footer-title">秋遊去哪，<em>你說了算。</em></h2>
             <a href={actualVote ? "#selection" : "#plans"} className="button button-yellow footer-cta">{actualVote ? "查看我的一票" : "現在就去選陣營"}</a>
             <p className="footer-meta">{eventAnnouncement}</p>
+            <p className="footer-partners sd-micro">馴錢師 <b>×</b> Egroup</p>
           </div>
-          <p className="footer-wordmark" aria-hidden="true">揪是要對決</p>
         </footer>
       </div>
       <dialog
