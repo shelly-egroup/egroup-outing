@@ -236,7 +236,7 @@ export default function TripShowdown() {
           <div className="hero-stage">
             <p className="hero-team hero-team-a"><small className="sd-micro">TEAM A</small><strong>{plans[0]?.[1].shortName || "療癒派"}</strong><span>{planLine(plans[0]?.[1]) || "手碟＋港點午餐"}</span></p>
             <div className="hero-poster">
-              <img className="hero-poster-img" src={HERO_POSTER} width={1912} height={804} alt="兩位老闆對決：左邊是手碟與港點，右邊是雷射槍戰與飯店下午茶" fetchPriority="high" />
+              <img className="hero-poster-img" src={HERO_POSTER} width={2272} height={804} alt="兩位老闆對決：左邊是手碟與港點，右邊是雷射槍戰與飯店下午茶" fetchPriority="high" />
             </div>
             <p className="hero-team hero-team-b"><small className="sd-micro">TEAM B</small><strong>{plans[1]?.[1].shortName || "熱血派"}</strong><span>{planLine(plans[1]?.[1]) || "雷射槍戰＋飯店下午茶"}</span></p>
           </div>

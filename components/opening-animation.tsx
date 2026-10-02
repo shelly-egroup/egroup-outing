@@ -302,8 +302,9 @@ export default function OpeningAnimation({onFinish, plans, date = "10.29"}: {onF
       </Shot>}
       {step === 7 && <Shot at={CUES[7]} className="shot-split split-play">
         <Split a={<Cut src={IMG.photoA} className="prop sd-cutout" />} b={<Cut src={IMG.photoSwap} className="prop sd-cutout" />}>
+          <Cut src={IMG.handB} className="prop prop-hand sd-cutout" />
           <span className="split-word word-top"><span className="split-word-mask"><span>HANDPAN</span></span></span>
-          <span className="split-word word-bottom"><span className="split-word-mask"><span>LASER BATTLE</span></span></span>
+          <span className="split-word word-bottom"><span className="split-word-mask"><span>BATTLE</span></span></span>
         </Split>
       </Shot>}
       {step === 8 && <Shot at={CUES[8]} className="shot-turn sd-field-blue">

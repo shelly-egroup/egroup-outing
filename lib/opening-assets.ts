@@ -5,6 +5,7 @@ export const OPENING_IMAGES = {
   photoA: "/assets/show-photo-a.webp",
   photoB: "/assets/show-photo-b.webp",
   photoSwap: "/assets/show-photo-swap.webp",
+  handB: "/assets/show-hand-b.webp",
   feastA: "/assets/show-feast-a.webp",
   feastB: "/assets/show-feast-b.webp",
 } as const;

@@ -141,6 +141,9 @@
   100% { transform: rotate(-80deg); }
 }
 .split-play .prop { --tx: -57.7%; --ty: -50.4%; width: min(56vw, 100dvh); animation: prop-play 1.567s both; }
+/* The second camp's hand: drawn on the print's own pixel grid but 1200px wide (1040 + its sleeve), so the box is
+   1.15385x wider; its origin and x-offset are rescaled so it moves exactly with the print, across both halves. */
+.split-play .prop.prop-hand { width: calc(min(56vw, 100dvh) * 1.15385); transform-origin: 43.333% 50%; --tx: -50.007%; }
 @keyframes prop-play {
   0% { transform: translate(var(--tx, -50%), var(--ty, -50%)) rotate(-30deg) scale(2.1); animation-timing-function: cubic-bezier(.16,.8,.3,1); }
   12% { transform: translate(var(--tx, -50%), var(--ty, -50%)) rotate(-8deg) scale(1.04); animation-timing-function: linear; }
@@ -344,7 +347,8 @@
   .shot-equals > i:first-child { left: 24vw; top: 42dvh; }
   .shot-equals > i:last-child { left: 32vw; top: 51dvh; }
   .split-play .prop { --tx: -58.4%; --ty: -53.3%; width: min(116vw, 62dvh); }
-  .split-word { font-size: 8.2vw; }
+  .split-play .prop.prop-hand { width: calc(min(116vw, 62dvh) * 1.15385); --tx: -50.613%; }
+  .split-word { font-size: 10vw; }
   .word-top { top: 13dvh; left: 8vw; }
   .word-bottom { bottom: 13dvh; right: 6vw; }
     .shot-turn { --b: 90deg; }
