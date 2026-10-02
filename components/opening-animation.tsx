@@ -52,7 +52,7 @@ export default function OpeningAnimation({onFinish, plans, date = "10.29"}: {onF
   const [soundReady, setSoundReady] = useState(false), [imagesReady, setImagesReady] = useState(false);
   const [imagesSlow, setImagesSlow] = useState(false);
   const [scoreSrc, setScoreSrc] = useState<string>(), [soundSlow, setSoundSlow] = useState(false);
-  const [startAttempts, setStartAttempts] = useState(0), [slowStart, setSlowStart] = useState(false);
+  const [startAttempts, setStartAttempts] = useState(0);
   const [launching, setLaunching] = useState(false), [launchSlow, setLaunchSlow] = useState(false);
   const requested = useRef(false), skipButtonRef = useRef<HTMLButtonElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null), stageRef = useRef<HTMLDivElement>(null), progressRef = useRef<HTMLDivElement>(null);
@@ -143,14 +143,12 @@ export default function OpeningAnimation({onFinish, plans, date = "10.29"}: {onF
       requested.current = true;
       setLaunching(true);
       setLaunchSlow(false);
-      setSlowStart(false);
       setStartAttempts(value => value + 1);
       controller.start();
       return;
     }
     if (audioState === "blocked" || audioState === "error") {
       setLaunchSlow(false);
-      setSlowStart(false);
       setStartAttempts(value => value + 1);
     }
     controller.interact();
@@ -202,12 +200,11 @@ export default function OpeningAnimation({onFinish, plans, date = "10.29"}: {onF
     const slow = setTimeout(() => { setSoundSlow(true); setScoreSrc(current => current ?? SCORE); }, 15000);
     return () => clearTimeout(slow);
   }, [soundLoaded]);
-  // A slow score never strands the visitor: the hint updates at 3s, and at 8s the film starts and the music joins when it arrives.
+  // A slow score never strands the visitor: at 8s the film starts and the music joins when it arrives.
   useEffect(() => {
     if (!startAttempts || started || audioState === "blocked") return;
-    const hint = setTimeout(() => setSlowStart(true), 3000);
     const fallback = setTimeout(startSilently, 8000);
-    return () => { clearTimeout(hint); clearTimeout(fallback); };
+    return () => clearTimeout(fallback);
   }, [startAttempts, started, audioState]);
 
   useEffect(() => {
@@ -279,7 +276,7 @@ export default function OpeningAnimation({onFinish, plans, date = "10.29"}: {onF
           ? <LoadingIndicator label={loadingLabel} compact />
           : <><span>{audioState === "blocked" ? "再點一下開始" : "開始對決"}</span><span className="film-start-play" aria-hidden="true">▶</span></>}
       </button>
-      <p id="film-start-hint" className="film-start-hint" role="status">{audioState === "blocked" ? "瀏覽器需要再點一次，才能播放音樂。" : slowStart ? "網路較慢，音樂載入中，馬上開始。" : "建議開啟聲音・精彩馬上開始"}</p>
+      <p id="film-start-hint" className="film-start-hint" role="status">{audioState === "blocked" ? "瀏覽器需要再點一次，才能播放音樂。" : "建議開啟聲音・精彩馬上開始"}</p>
       <span className="film-start-partners">馴錢師 <b>×</b> Egroup</span>
     </OpeningSplash>}
     <div ref={stageRef} className="film-stage" data-scene={step} data-playing={started} data-buffering={bufferedAt.current !== null} aria-hidden="true">
