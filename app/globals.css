@@ -2161,10 +2161,11 @@ td {
  .shot-walk .film-vertical { left:8%; }
  .film-corner { bottom:5vh; right:4vw; font-size:20px; } .shot-walk .film-corner { left:4vw; }
  .film-cross { top:40%; left:46%; width:50px; } .film-cross::before { height:50px; top:-25px; left:25px; }
- .film-object-composite > img { width:100%; max-width:none; height:66%; }
+ /* The 2:1 composites would be a thin strip on a portrait phone; bleed the arms off-screen instead. */
+ .film-object-composite > img { width:128%; max-width:none; height:auto; }
  .film-object-label { font-size:42px; }
  .film-object-label small { font-size:clamp(11px,3.3vw,14px); margin:6px 0; letter-spacing:.06em; }
- .object-walk { top:20%; left:7%; } .object-chill { bottom:17%; right:7%; }
+ .object-walk { top:24%; left:7%; } .object-chill { bottom:22%; right:7%; }
  .film-type-flash { flex-direction:column; font-size:24vw; }
  .montage-versus { top:18%; font-size:clamp(26px,7.5vw,42px); gap:4%; left:4%; right:4%; }
  .montage-versus small { max-width:36vw; font-size:11px; line-height:1.7; }
@@ -2480,6 +2481,19 @@ td {
 .film-start-partners > b { margin: 0 8px; color: #ffe173; }
 @keyframes film-gate-title { from { opacity: 0; transform: translateY(14px) skew(-6deg); } to { opacity: 1; transform: translateY(0) skew(-6deg); } }
 @keyframes film-start-nudge { 0%,65%,100% { transform: translateX(0); } 35% { transform: translateX(10px); } }
+/* Idle cover motion: the two camps square up while the score preloads, so waiting never looks frozen. */
+.film-start-match > span { animation: film-camp-left 1.8s cubic-bezier(.5,0,.2,1) infinite; }
+.film-start-match > span:last-child { animation-name: film-camp-right; }
+.film-start-match > b { animation: film-vs-clash 1.8s ease-out infinite; }
+.film-start-gate::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(118deg,transparent 49.4%,#ffffff8c 50%,transparent 50.6%); -webkit-mask-image: linear-gradient(180deg,transparent 40%,#000 50%,transparent 60%); mask-image: linear-gradient(180deg,transparent 40%,#000 50%,transparent 60%); -webkit-mask-size: 100% 300%; mask-size: 100% 300%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; animation: film-split-sweep 1.8s ease-in-out infinite; }
+@keyframes film-camp-left { 0%,100% { transform: translateX(0); } 40% { transform: translateX(14px); } 48% { transform: translateX(-4px); } 60% { transform: translateX(0); } }
+@keyframes film-camp-right { 0%,100% { transform: translateX(0); } 40% { transform: translateX(-14px); } 48% { transform: translateX(4px); } 60% { transform: translateX(0); } }
+@keyframes film-vs-clash { 0%,38%,100% { transform: rotate(-8deg) scale(1); } 44% { transform: rotate(10deg) scale(1.5); } 52% { transform: rotate(-14deg) scale(.95); } 62% { transform: rotate(-8deg) scale(1); } }
+/* A glint travels down the split line, landing as the camps clash. */
+@keyframes film-split-sweep { 0%,22% { -webkit-mask-position: 0 100%; mask-position: 0 100%; } 62%,100% { -webkit-mask-position: 0 0; mask-position: 0 0; } }
+.film-start-silent { margin-top: 12px; padding: 8px 14px; border: 2px solid #fffdf5; background: #101820cc; color: #fffdf5; font-family: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
+.film-start-silent:hover { background: #fffdf5; color: #101820; }
+.film-start-silent:focus-visible { outline: 2px dashed #ffe173; outline-offset: 3px; }
 @media (max-height: 550px) {
   .film-start-gate { justify-content: flex-start; padding-top: 56px; }
   .film-start-gate h1 { font-size: 60px; margin: 10px 0; }
@@ -2488,7 +2502,7 @@ td {
   .film-start-partners { margin-top: 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .film-start-gate h1,.film-start-play { animation: none; }
+  .film-start-gate h1,.film-start-play,.film-start-match > span,.film-start-match > b,.film-start-gate::after { animation: none; }
   .film-start-button { transition: none; }
 }
 
