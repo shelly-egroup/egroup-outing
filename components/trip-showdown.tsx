@@ -1,6 +1,7 @@
 "use client";
 import { sortedGroups } from "@/lib/trips";
 import Link from "next/link";
+import { useSectionReveal } from "./use-section-reveal";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import OutingHeader from "./outing-header";
 import HeroStamp from "./hero-stamp";
@@ -67,6 +68,8 @@ export default function TripShowdown() {
   // After the opening, cue the next step so the "your vote decides" ending leads straight into choosing.
   const [cueNext, setCueNext] = useState(false);
   const nextStepRef = useRef<HTMLAnchorElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
+  useSectionReveal(pageRef, introReady && !intro);
   const finishIntro = useCallback(() => { openingHistory.markSeen(); setIntro(false); setCueNext(true); }, []);
   useEffect(() => {
     if (!cueNext) return;
@@ -208,7 +211,7 @@ export default function TripShowdown() {
           ]}
         />
       )}
-      <div hidden={intro} className="outing-page">
+      <div ref={pageRef} hidden={intro} className="outing-page">
         <OutingHeader announcement={eventAnnouncement} active={!intro} heroActions={heroActionsRef} vote={authReady && votesReady && actualVote ? headerVote : undefined} />
         <header className="outing-hero wrap">
           <div className="hero-lead">
@@ -484,7 +487,15 @@ export default function TripShowdown() {
           </section>
           <LiveResults catalog={catalog} motionEnabled={!intro} />
         </main>
-        <footer className="site-footer"><div className="wrap">{eventAnnouncement}</div></footer>
+        <footer className="site-footer">
+          <div className="wrap site-footer-inner">
+            <p className="footer-kicker">SEE YOU ON {catalog.settings.eventDate.slice(5).replace("-", ".")}</p>
+            <h2 className="footer-title">秋遊去哪，<em>你說了算。</em></h2>
+            <a href={actualVote ? "#selection" : "#plans"} className="button button-yellow footer-cta">{actualVote ? "查看我的一票" : "現在就去選陣營"}</a>
+            <p className="footer-meta">{eventAnnouncement}</p>
+          </div>
+          <p className="footer-wordmark" aria-hidden="true">揪是要對決</p>
+        </footer>
       </div>
       <dialog
         ref={dialogRef}
