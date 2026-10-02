@@ -2164,7 +2164,12 @@ td {
 .montage-versus { position:absolute; z-index:3; top:17%; left:5%; right:5%; display:flex; align-items:center; justify-content:center; gap:5%; font-weight:900; font-size:clamp(28px,4.8vw,66px); animation:montage-title-in .4s .05s both; }
 .montage-versus span { display:flex; flex-direction:column; text-align:center; gap:9px; }
 .montage-versus small { font-size:clamp(11px,1.2vw,16px); font-weight:600; letter-spacing:.06em; }
-.montage-versus b { color:#eb0059; font-size:.65em; padding-bottom:25px; font-style:italic; }
+.montage-versus > span:first-of-type { text-shadow:4px 4px 0 #1a35d8; }
+.montage-versus > span:last-of-type { text-shadow:4px 4px 0 #eb0059; }
+.montage-versus small { text-shadow:none; }
+/* The matchup card lands like the show's VS slam: same tilted yellow badge as the site, dropped in after the names. */
+.montage-versus b { flex:none; display:grid; place-items:center; width:1.55em; height:1.55em; margin-bottom:.55em; border:.07em solid #101820; background:#ffdf60; color:#101820; box-shadow:.1em .1em 0 #101820; font-size:.78em; font-style:italic; letter-spacing:-.04em; transform:rotate(-8deg); animation:montage-vs-slam .5s .3s cubic-bezier(.3,1.5,.5,1) both; }
+@keyframes montage-vs-slam { from { opacity:0; transform:rotate(-34deg) scale(2.8); } 55% { opacity:1; } to { transform:rotate(-8deg) scale(1); } }
 @keyframes montage-camera { 0% { transform:scale(1.12); opacity:0; } 12% { transform:scale(1); opacity:1; } 100% { transform:scale(1.035); opacity:1; } }
 @keyframes montage-pink-turn { from { transform:translateX(105%) rotate(-5deg); } to { transform:translateX(0) rotate(-5deg); } }
 @keyframes montage-blue-turn { from { transform:translateX(-105%) rotate(5deg); } to { transform:translateX(0) rotate(5deg); } }
@@ -2226,7 +2231,7 @@ td {
  .film-type-flash { flex-direction:column; font-size:24vw; }
  .montage-versus { top:18%; font-size:clamp(26px,7.5vw,42px); gap:4%; left:4%; right:4%; }
  .montage-versus small { max-width:36vw; font-size:11px; line-height:1.7; }
- .montage-versus b { padding-bottom:30px; }
+ .montage-versus b { margin-bottom:1.1em; }
  .ending-logo { font-size:23vw; margin:25px 0 30px; }
  .ending-message strong { display:block; }
  .ending-partnership { margin-top:25px; padding:17px 12px 10px; gap:20px; }
