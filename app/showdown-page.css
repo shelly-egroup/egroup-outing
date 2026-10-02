@@ -526,3 +526,17 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
   .show-hero { --poster-gap: 22px; }
   .hero-poster > img { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 3.4%, #000 74%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 3.4%, #000 74%, transparent 100%); }
 }
+
+/* ── Poster: one place for its size. The box is the original picture (1672x714); the image file adds a soft,
+      out-of-focus margin that fades to transparent (120px each side, 90px on top), so it spills past the box
+      and no edge is ever visible. The top gap equals that margin, so nothing is clipped under the header. ── */
+.show-hero { --poster-w: min(calc(100vw - 520px), calc(var(--poster-h) * 2.342), 1180px); --poster-gap: calc(var(--poster-w) * .0538 + 2px); --split-end: calc(var(--poster-w) / 2.342 + 60px); }
+.hero-poster { position: relative; width: var(--poster-w); max-width: none; aspect-ratio: 1672 / 714; }
+.hero-poster > .hero-poster-img { position: absolute; left: -7.177%; top: -12.605%; width: 114.354%; height: 112.605%; max-width: none; object-fit: fill; -webkit-mask: none; mask: none; }
+.hero-team { position: relative; z-index: 2; }
+@media (max-width: 1099px) { .show-hero { --poster-w: calc(100vw - 40px); } }
+@media (max-width: 700px) {
+  .show-hero { --poster-w: 100vw; --split-end: calc(100vw / 2.342 + 40px); }
+  .hero-lockup { margin-top: calc(var(--logo-size) * -.8); }
+}
+

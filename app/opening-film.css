@@ -130,7 +130,7 @@
   93.6% { transform: rotate(-24deg); animation-timing-function: cubic-bezier(.6,0,.9,.6); }
   100% { transform: rotate(-80deg); }
 }
-.split-play .prop { width: min(56vw, 100vh); animation: prop-play 1.567s both; }
+.split-play .prop { --tx: -57.7%; --ty: -50.4%; width: min(56vw, 100vh); animation: prop-play 1.567s both; }
 @keyframes prop-play {
   0% { transform: translate(var(--tx, -50%), var(--ty, -50%)) rotate(-30deg) scale(2.1); animation-timing-function: cubic-bezier(.16,.8,.3,1); }
   12% { transform: translate(var(--tx, -50%), var(--ty, -50%)) rotate(-8deg) scale(1.04); animation-timing-function: linear; }
@@ -335,7 +335,7 @@
   .split-play .split-rotor { animation-name: rotor-play-tall; }
   .split-play .split-counter { animation-name: counter-play-tall; }
   .split-play .prop { --tx: -58.4%; --ty: -53.3%; width: 116vw; }
-  .split-word { font-size: 10vw; }
+  .split-word { font-size: 8.2vw; }
   .word-top { top: 13vh; left: 8vw; }
   .word-bottom { bottom: 13vh; right: 6vw; }
     .shot-turn { --b: 90deg; }
@@ -393,12 +393,10 @@
   .film-progress { display: none; }
 }
 
-/* ── Gate showmanship: rays turn behind the logo, speed lines run along the seam ── */
+/* ── Gate showmanship: rays turn behind the logo ── */
 .film-start > .gate-fx { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .gate-rays { position: absolute; left: 50%; top: 42%; width: 170vmax; height: 170vmax; margin: -85vmax 0 0 -85vmax; background: repeating-conic-gradient(rgb(255 255 255 / .1) 0 5deg, transparent 5deg 15deg); -webkit-mask-image: radial-gradient(circle, #000 0, transparent 38%); mask-image: radial-gradient(circle, #000 0, transparent 38%); animation: gate-rays 48s linear infinite; }
-.gate-lines { position: absolute; inset: -120px; background: repeating-linear-gradient(118deg, transparent 0 46px, rgb(255 255 255 / .07) 46px 48px); animation: gate-lines 1.4s linear infinite; }
 @keyframes gate-rays { to { transform: rotate(360deg); } }
-@keyframes gate-lines { to { transform: translate(42.4px, 22.5px); } }
 @keyframes gate-rise { from { opacity: 0; transform: translateY(22px); } }
 
 /* Staggered arrival of the stage itself */

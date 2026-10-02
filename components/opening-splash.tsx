@@ -6,7 +6,6 @@ export default function OpeningSplash({ loading = false, launching = false, chil
   return <div className={"film-start" + (children ? " film-start-gate" : "") + (launching ? " is-launching" : "")}>
     {children && <div className="gate-fx" aria-hidden="true">
       <i className="gate-rays" />
-      <i className="gate-lines" />
     </div>}
     <span className="film-start-eyebrow">THE AUTUMN OUTING</span>
     <ShowLogo title />

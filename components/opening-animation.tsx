@@ -46,7 +46,7 @@ const VS_PATHS = <>
   <path className="vs-s" pathLength={1} d="M196 14h-62l-12 46h58l-12 46h-66" />
 </>;
 
-export default function OpeningAnimation({onFinish, plans}: {onFinish: () => void; plans: Plans}) {
+export default function OpeningAnimation({onFinish, plans, date = "10.29"}: {onFinish: () => void; plans: Plans; date?: string}) {
   const [step, setStep] = useState(0), [started, setStarted] = useState(false), [holdOutro, setHoldOutro] = useState(false);
   const [audioState, setAudioState] = useState<OpeningAudioState>("idle");
   const [soundReady, setSoundReady] = useState(false), [imagesReady, setImagesReady] = useState(false);
@@ -311,7 +311,7 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
       {step === 7 && <Shot at={CUES[7]} className="shot-split split-play">
         <Split a={<Cut src={IMG.photoA} className="prop sd-cutout" />} b={<Cut src={IMG.photoSwap} className="prop sd-cutout" />}>
           <span className="split-word word-top"><span className="split-word-mask"><span>HANDPAN</span></span></span>
-          <span className="split-word word-bottom"><span className="split-word-mask"><span>LASER TAG</span></span></span>
+          <span className="split-word word-bottom"><span className="split-word-mask"><span>LASER BATTLE</span></span></span>
         </Split>
       </Shot>}
       {step === 8 && <Shot at={CUES[8]} className="shot-turn sd-field-blue">
@@ -324,7 +324,7 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
           <span className="turn-item turn-letter turn-letter-s"><b>S</b></span>
         </div>
         <span className="sd-micro sd-vertical feast-side">VERSUS</span>
-        <span className="sd-micro feast-corner">R—02</span>
+        <span className="sd-micro feast-corner">{date}</span>
       </Shot>}
       {step === 9 && <Shot at={CUES[9]} className="shot-sweep" />}
       {step === 10 && <Shot at={CUES[10]} className="shot-rapid">
