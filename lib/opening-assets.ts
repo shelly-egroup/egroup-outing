@@ -4,6 +4,10 @@ export const OPENING_IMAGES = {
   hostB: "/assets/show-host-b.webp",
   photoA: "/assets/show-photo-a.webp",
   photoB: "/assets/show-photo-b.webp",
+  photoSwap: "/assets/show-photo-swap.webp",
+  poster: "/assets/show-poster.webp",
   feastA: "/assets/show-feast-a.webp",
   feastB: "/assets/show-feast-b.webp",
 } as const;
+
+export const OPENING_SCORE = "/assets/autumn-opening-score.m4a?v=2";

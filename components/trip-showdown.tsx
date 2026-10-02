@@ -220,22 +220,25 @@ export default function TripShowdown() {
       <div ref={pageRef} hidden={intro} className="outing-page">
         <OutingHeader announcement={eventAnnouncement} active={!intro} heroActions={heroActionsRef} vote={authReady && votesReady && actualVote ? headerVote : undefined} />
         <header className="show-hero" data-ready={introReady && !intro}>
-          <div className="hero-field" aria-hidden="true"><i className="hero-field-a sd-field-blue" /><i className="hero-field-b sd-field-pink" /></div>
-          <span className="hero-word hero-word-a" aria-hidden="true">悠<br />閒</span>
-          <span className="hero-word hero-word-b" aria-hidden="true">熱<br />血</span>
-          <img className="hero-host hero-host-a sd-cutout" src={OPENING_IMAGES.hostA} alt="" />
-          <img className="hero-host hero-host-b sd-cutout" src={OPENING_IMAGES.hostB} alt="" />
+          <div className="hero-field" aria-hidden="true"><i className="hero-field-a" /><i className="hero-field-b" /></div>
+          <div className="hero-stage">
+            <p className="hero-team hero-team-a"><small className="sd-micro">TEAM A</small><strong>{plans[0]?.[1].shortName || "釣趣派"}</strong><span>釣蝦＋港點午餐</span></p>
+            <div className="hero-poster">
+              <img src={OPENING_IMAGES.poster} width={1672} height={714} alt="兩位老闆對決：左邊釣蝦港點的釣趣派，右邊雷射槍戰下午茶的熱血對戰派" fetchPriority="high" />
+            </div>
+            <p className="hero-team hero-team-b"><small className="sd-micro">TEAM B</small><strong>{plans[1]?.[1].shortName || "熱血對戰派"}</strong><span>雷射槍戰＋飯店下午茶</span></p>
+          </div>
           <div className="hero-center">
+            <ShowLogo className="hero-lockup" tag="" />
+            <div className="hero-headline">
+              <h1 className="hero-title">秋遊去哪？<em>揪 差你一票</em></h1>
+              <p className="hero-joke"><span>這次不吃</span> 牛肉麵！</p>
+            </div>
             <p className="hero-kicker sd-micro">
               <span>THE AUTUMN OUTING</span><i aria-hidden="true" />
               <span>{catalog.settings.eventDate.replaceAll("-", ".")}</span><i aria-hidden="true" />
               <span>預計 {catalog.settings.expectedVoters} 人</span>
             </p>
-            <div className="hero-brand">
-              <ShowLogo className="hero-lockup" tag="" />
-              <p className="hero-joke"><span>這次不吃</span> 牛肉麵！</p>
-            </div>
-            <h1 className="hero-title">秋遊去哪？<em>揪 差你一票</em></h1>
             <p className="hero-copy">
               到底是釣蝦吃港點聚餐吸引人，還是雷射團戰享用飯店 Buffet <span className="hero-nowrap">令人嚮往？</span>
               看完行程，選一個你最想去的方案。
@@ -250,10 +253,6 @@ export default function TripShowdown() {
                 重播開場
               </button>
             </div>
-          </div>
-          <div className="hero-teams">
-            <p className="hero-team hero-team-a"><small className="sd-micro">TEAM A</small><strong>{plans[0]?.[1].shortName || "釣趣派"}</strong><span>釣蝦＋港點午餐</span></p>
-            <p className="hero-team hero-team-b"><small className="sd-micro">TEAM B</small><strong>{plans[1]?.[1].shortName || "熱血對戰派"}</strong><span>雷射槍戰＋飯店下午茶</span></p>
           </div>
         </header>
         <main className="wrap">
@@ -315,7 +314,6 @@ export default function TripShowdown() {
               <div className="selection-heading-copy">
                 <span className="round-no" aria-hidden="true">02</span><span className="eyebrow">ROUND 2 — MAKE IT YOUR TRIP</span>
                 <h2>{success ? <>你的一票，<span>已收到！</span></> : <>選好陣營，<span>確認這一票</span></>}</h2>
-                {!success && <p className="quiet">票投給你想去的一派；有餐廳選項再填偏好，沒有就直接確認。</p>}
               </div>
               {ready && <VoteCountdown closesAt={catalog.settings.closesAt} now={now} votingEnabled={catalog.settings.votingOpen} />}
               <a className="button button-white selection-compare-button" href="#plans">比較完整行程</a>
@@ -486,7 +484,7 @@ export default function TripShowdown() {
           </section>
           <LiveResults catalog={catalog} motionEnabled={!intro} />
         </main>
-        <footer className="site-footer sd-stage-dark">
+        <footer className="site-footer">
           <div className="wrap site-footer-inner">
             <p className="footer-kicker sd-micro">SEE YOU ON {catalog.settings.eventDate.slice(5).replace("-", ".")}</p>
             <ShowLogo className="footer-lockup" />

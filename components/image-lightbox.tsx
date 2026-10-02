@@ -26,9 +26,27 @@ function PageControls({ index, count, title, onTurn, controls, pageLabel }: { in
   </div>;
 }
 
+// In-page navigation: arrows around a strip of page thumbnails, so every page is one tap away.
+function BookNav({ pages, index, onTurn, onJump, controls, pageLabel }: { pages: readonly MenuPage[]; index: number; onTurn: (direction: Direction) => void; onJump: (index: number) => void; controls: string; pageLabel: string }) {
+  return <div className="menu-book-nav" role="group" aria-label={pageLabel + "翻頁"}>
+    <button type="button" className="menu-book-arrow" aria-label={"上一頁" + pageLabel} aria-controls={controls} disabled={index === 0} onClick={() => onTurn(-1)}>
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m14 5-7 7 7 7" /></svg>
+    </button>
+    <div className="menu-book-thumbs">
+      {pages.map((item, i) => <button key={item.src} type="button" className="menu-book-thumb" aria-label={"第 " + (i + 1) + " 頁：" + item.title} aria-current={i === index ? "page" : undefined} aria-controls={controls} onClick={() => onJump(i)}>
+        <img src={item.src} alt="" draggable={false} />
+      </button>)}
+    </div>
+    <button type="button" className="menu-book-arrow" aria-label={"下一頁" + pageLabel} aria-controls={controls} disabled={index === pages.length - 1} onClick={() => onTurn(1)}>
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m10 5 7 7-7 7" /></svg>
+    </button>
+  </div>;
+}
+
 function MenuSheet({ pages, view, sheetRef }: { pages: readonly MenuPage[]; view: PageView; sheetRef?: RefObject<HTMLSpanElement | null> }) {
   const page = pages[view.index];
   return <span className="menu-sheet" ref={sheetRef}>
+    <img className="menu-page-ambient" src={page.src} alt="" aria-hidden="true" draggable={false} />
     <img className="menu-page-face" src={page.src} alt={page.alt} draggable={false} />
     {view.from !== null && <span key={view.revision} className={"menu-page-leaf " + (view.direction === 1 ? "turn-forward" : "turn-backward")} aria-hidden="true">
       <img src={pages[view.from].src} alt="" draggable={false} />
@@ -81,6 +99,9 @@ export default function ImageLightbox({ pages, bookLabel = "不老松店家圖�
     viewport.reset();
     dialogRef.current?.querySelector(".image-lightbox-stage")?.scrollTo({ left: 0, top: 0, behavior: "instant" });
   }
+  function jump(index: number) {
+    setView(current => index === current.index ? current : { index, from: current.index, direction: index > current.index ? 1 : -1, revision: current.revision + 1 });
+  }
   function keyTurn(event: KeyboardEvent) {
     if (viewport.keyDown(event)) return;
     if (isZoomed || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
@@ -122,14 +143,14 @@ export default function ImageLightbox({ pages, bookLabel = "不老松店家圖�
 
   return <>
     <section className="menu-book" aria-label={bookLabel} onKeyDown={keyTurn}>
-      <div className="menu-book-heading"><span>{heading}</span>{pages.length > 1 && <small>左右滑動翻頁</small>}</div>
+      <div className="menu-book-heading"><span>{heading}</span>{pages.length > 1 && <small aria-live="polite" aria-atomic="true">{view.index + 1} / {pages.length} · {page.title}</small>}</div>
       <div className="menu-book-stage" id={pageId} {...swipeHandlers}>
         <button className="menu-image-trigger" type="button" aria-label={"放大檢視：" + page.alt} aria-haspopup="dialog" onClick={() => { clearTurn(); setIsOpen(true); }}>
           <MenuSheet pages={pages} view={view} />
           <span className="menu-zoom-hint">點圖放大 ＋</span>
         </button>
       </div>
-      {pages.length > 1 && <PageControls index={view.index} count={pages.length} title={page.title} controls={pageId} onTurn={turn} pageLabel={pageLabel} />}
+      {pages.length > 1 && <BookNav pages={pages} index={view.index} onTurn={turn} onJump={jump} controls={pageId} pageLabel={pageLabel} />}
     </section>
     <dialog ref={dialogRef} className="image-lightbox" aria-label={bookLabel + "，放大檢視"} onClose={close} onCancel={close} onKeyDown={keyTurn}
       onClick={event => {

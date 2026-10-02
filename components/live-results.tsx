@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import VsMark from "./vs-mark";
 import { useOuting } from "./outing-provider";
 import { Avatar } from "./account-menu";
 import LoadingIndicator from "./loading-indicator";
@@ -94,6 +95,8 @@ export default function LiveResults({ catalog, motionEnabled = true }: { catalog
   // Keep a readable minimum at 0–100 while the main split follows vote share.
   const leftShare = votesReady && total && teams.length === 2 ? Math.min(70, Math.max(30, counts[0] / total * 100)) : 50;
   const boardStyle = teams.length === 2 ? { "--left-weight": leftShare + "fr", "--right-weight": (100 - leftShare) + "fr" } as CSSProperties : undefined;
+  // The tug-of-war front line follows the real split; an empty board starts dead even.
+  const aShare = votesReady && total && teams.length === 2 ? counts[0] / total * 100 : 50;
   const open = isVotingOpen(catalog, now);
   const available = votesReady && !votesError;
   const loading = !votesReady && !votesError;
@@ -113,7 +116,10 @@ export default function LiveResults({ catalog, motionEnabled = true }: { catalog
     </div>
     {votesError ? <p className="battle-notice" role="alert">{votesError}</p> : !connected && votesReady ? <div className="battle-notice"><LoadingIndicator label="重新連線中，先顯示上次戰況" compact /></div> : null}
     <div ref={boardRef} className={"results-grid" + (loading ? " is-loading" : "")} data-duel={teams.length === 2} style={boardStyle} aria-busy={loading}>
-      {teams.length === 2 && <span className="score-versus" aria-hidden="true"><b>VS</b><i className="vs-streak vs-streak-left" /><i className="vs-streak vs-streak-right" /></span>}
+      {teams.length === 2 && <div className="clash-bar" aria-hidden="true" style={{ "--a-share": aShare + "%" } as CSSProperties}>
+        <i className="clash-fill clash-a" /><i className="clash-fill clash-b" /><i className="clash-spark" />
+        <span className="score-versus"><VsMark /><i className="vs-streak vs-streak-left" /><i className="vs-streak vs-streak-right" /></span>
+      </div>}
       {teams.map(([id, plan], index) => {
         const supporters = list.filter(([, vote]) => vote.planId === id).sort((a, b) => b[1].updatedAt - a[1].updatedAt);
         return <LiveScoreCard key={id} plan={plan} index={index} supporters={supporters} total={total}

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import VsMark from "./vs-mark";
 export default function VersusBadge() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -21,6 +22,6 @@ export default function VersusBadge() {
   return <div ref={ref} className={"plan-versus" + (visible ? " is-visible" : "")} aria-hidden="true">
     <i className="versus-streak streak-blue" /><i className="versus-streak streak-pink" />
     <span className="versus-shockwave" />
-    <div className="versus-emblem"><span>VS</span></div>
+    <div className="versus-emblem"><VsMark /></div>
   </div>;
 }
