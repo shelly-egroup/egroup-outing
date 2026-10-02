@@ -342,9 +342,7 @@
   .shot-equals > i { width: 46vw; height: 5vh; }
   .shot-equals > i:first-child { left: 24vw; top: 42vh; }
   .shot-equals > i:last-child { left: 32vw; top: 51vh; }
-  .split-play .split-rotor { animation-name: rotor-play-tall; }
-  .split-play .split-counter { animation-name: counter-play-tall; }
-  .split-play .prop { --tx: -58.4%; --ty: -53.3%; width: 116vw; }
+  .split-play .prop { --tx: -58.4%; --ty: -53.3%; width: min(116vw, 62vh); }
   .split-word { font-size: 8.2vw; }
   .word-top { top: 13vh; left: 8vw; }
   .word-bottom { bottom: 13vh; right: 6vw; }
@@ -385,18 +383,6 @@
   .ending-line { font-size: 5vw; }
 }
 
-@keyframes rotor-play-tall {
-  0% { transform: rotate(55deg); animation-timing-function: cubic-bezier(.2,.7,.3,1); }
-  16% { transform: rotate(104deg); animation-timing-function: linear; }
-  93.6% { transform: rotate(114deg); animation-timing-function: cubic-bezier(.6,0,.9,.6); }
-  100% { transform: rotate(170deg); }
-}
-@keyframes counter-play-tall {
-  0% { transform: rotate(-55deg); animation-timing-function: cubic-bezier(.2,.7,.3,1); }
-  16% { transform: rotate(-104deg); animation-timing-function: linear; }
-  93.6% { transform: rotate(-114deg); animation-timing-function: cubic-bezier(.6,0,.9,.6); }
-  100% { transform: rotate(-170deg); }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .film-opening *, .film-opening *::before, .film-opening *::after { animation: none !important; }
