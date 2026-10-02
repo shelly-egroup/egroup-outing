@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSectionReveal } from "./use-section-reveal";
 import { HERO_POSTER, OPENING_IMAGES } from "@/lib/opening-assets";
 import ShowLogo from "./show-logo";
+import CautionTape from "./caution-tape";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import OutingHeader from "./outing-header";
 import VoteCountdown from "./vote-countdown";
@@ -48,14 +49,6 @@ const PLAN_ART = [
   { photo: OPENING_IMAGES.photoA, feast: OPENING_IMAGES.feastA, word: "療癒" },
   { photo: OPENING_IMAGES.photoB, feast: OPENING_IMAGES.feastB, word: "熱血" },
 ];
-
-// A broadcast ticker: the phrase is repeated so translating the track by half its width loops seamlessly.
-function FooterRibbon({ className, words }: { className: string; words: string[] }) {
-  const run = Array.from({ length: 6 }, () => words).flat();
-  return <div className={"ribbon " + className}>
-    <div className="ribbon-track">{[...run, ...run].map((word, index) => <span key={index}>{word}<i>✦</i></span>)}</div>
-  </div>;
-}
 
 export default function TripShowdown() {
   const context = useOuting();
@@ -498,11 +491,11 @@ export default function TripShowdown() {
         </main>
         <footer className="site-footer">
           <div className="wrap site-footer-inner">
-            <p className="footer-kicker sd-micro">SEE YOU ON {catalog.settings.eventDate.slice(5).replace("-", ".")}</p>
+            <p className="footer-kicker"><span>SEE YOU ON</span><b>{catalog.settings.eventDate.slice(5).replace("-", ".")}</b></p>
             <div className="footer-stage">
               <div className="footer-ribbons" aria-hidden="true">
-                <FooterRibbon className="ribbon-a" words={[plans[0]?.[1].shortName || "療癒派", planLine(plans[0]?.[1]) || "手碟＋港點午餐", "TEAM A"]} />
-                <FooterRibbon className="ribbon-b" words={[plans[1]?.[1].shortName || "熱血派", planLine(plans[1]?.[1]) || "雷射槍戰＋飯店下午茶", "TEAM B"]} />
+                <CautionTape tone="ink" className="tape-upper" words={[plans[0]?.[1].shortName || "療癒派", planLine(plans[0]?.[1]) || "手碟＋港點午餐", "TEAM A"]} />
+                <CautionTape reverse className="tape-lower" words={[plans[1]?.[1].shortName || "熱血派", planLine(plans[1]?.[1]) || "雷射槍戰＋飯店下午茶", "TEAM B"]} />
               </div>
               <ShowLogo className="footer-lockup" />
             </div>

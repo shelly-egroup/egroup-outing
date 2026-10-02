@@ -465,32 +465,43 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
   .hero-team span { white-space: nowrap; }
 }
 
-/* ── Footer: two team tickers cross in an X behind the logo and run in opposite directions ── */
+/* ── Caution tape: hazard-striped edges and a running label. Used as round dividers and in the footer ── */
+.outing-page { overflow-x: clip; }
+.caution-tape { position: relative; display: flex; align-items: center; height: 50px; overflow: hidden; box-shadow: 0 14px 26px -14px rgb(0 0 0 / .55); }
+.caution-tape::before, .caution-tape::after { content: ""; position: absolute; left: 0; right: 0; z-index: 1; height: 8px; background: repeating-linear-gradient(-45deg, var(--stripe) 0 9px, transparent 9px 18px); }
+.caution-tape::before { top: 0; }
+.caution-tape::after { bottom: 0; }
+.tape-yellow { --stripe: var(--ink); background: var(--yellow); color: var(--ink); }
+.tape-ink { --stripe: var(--yellow); background: var(--ink); color: var(--yellow); }
+.caution-track { display: flex; flex: none; padding-top: 1px; white-space: nowrap; animation: tape-left 26s linear infinite; }
+.caution-tape.is-reverse .caution-track { animation-name: tape-right; }
+.caution-track > span { display: inline-flex; align-items: center; gap: 22px; padding-right: 22px; font-size: 15px; font-weight: 900; letter-spacing: .14em; }
+.caution-track i { font-style: normal; font-size: 11px; }
+.tape-yellow .caution-track i { color: #d6005a; }
+.tape-ink .caution-track i { color: #5d7bff; }
+@keyframes tape-left { to { transform: translateX(-50%); } }
+@keyframes tape-right { from { transform: translateX(-50%); } to { transform: none; } }
+
+/* Footer: two parallel tapes cordon off the logo, running in opposite directions. */
 .footer-stage { position: relative; }
 .footer-ribbons { position: absolute; left: 50%; top: 50%; width: 100vw; height: 0; margin-left: -50vw; pointer-events: none; }
-.ribbon { position: absolute; left: -12vw; right: -12vw; top: -21px; height: 42px; overflow: hidden; display: flex; align-items: center; box-shadow: 0 12px 24px -14px rgb(0 0 0 / .55); }
-.ribbon-a { background: var(--ink); color: #fff; transform: rotate(-7deg); }
-.ribbon-b { background: var(--yellow); color: var(--ink); transform: rotate(7deg); }
-.ribbon-track { display: flex; flex: none; white-space: nowrap; animation: ribbon-left 26s linear infinite; }
-.ribbon-b .ribbon-track { animation-name: ribbon-right; }
-.ribbon-track > span { display: inline-flex; align-items: center; gap: 22px; padding-right: 22px; font-size: 15px; font-weight: 900; letter-spacing: .14em; }
-.ribbon-track i { font-style: normal; font-size: 11px; }
-.ribbon-a .ribbon-track i { color: #5d7bff; }
-.ribbon-b .ribbon-track i { color: #d6005a; }
-@keyframes ribbon-left { to { transform: translateX(-50%); } }
-@keyframes ribbon-right { from { transform: translateX(-50%); } to { transform: none; } }
+.footer-ribbons > .caution-tape { position: absolute; left: -12vw; right: -12vw; transform: rotate(-5deg); }
+.footer-ribbons > .tape-upper { top: -78px; }
+.footer-ribbons > .tape-lower { top: 22px; }
 .footer-lockup { position: relative; }
 .footer-title em { animation: footer-hit 2.4s .6s ease-in-out infinite; }
 @keyframes footer-hit { 0%, 18%, 100% { transform: skewX(-8deg) scale(1); } 6% { transform: skewX(-8deg) scale(1.08); } 11% { transform: skewX(-8deg) scale(.98); } }
 @media (max-width: 600px) {
-  .ribbon { top: -17px; height: 34px; }
-  .ribbon-a { transform: rotate(-8deg); }
-  .ribbon-b { transform: rotate(8deg); }
-  .ribbon-track > span { gap: 16px; padding-right: 16px; font-size: 12px; }
+  .caution-tape { height: 40px; }
+  .caution-tape::before, .caution-tape::after { height: 6px; background-size: auto; }
+  .caution-track > span { gap: 16px; padding-right: 16px; font-size: 12px; }
+  .footer-ribbons > .tape-upper { top: -58px; }
+  .footer-ribbons > .tape-lower { top: 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ribbon-track, .footer-title em { animation: none !important; }
+  .caution-track, .footer-title em { animation: none !important; }
 }
+
 
 .hero-copy-cta { display: block; margin-top: 4px; }
 @media (min-width: 1100px) { .hero-copy { max-width: 36em; } }
@@ -498,4 +509,20 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
 @media (max-width: 700px) {
   .show-hero { --split-end: calc(100vw / 1.75 + 40px); }
   .hero-poster { aspect-ratio: 1.75; }
+}
+/* The date is the footer's headline: a stamped ticket, not a whisper. */
+.footer-kicker { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 0 0 40px; }
+.footer-kicker > span { font: 600 clamp(14px, 1.5vw, 18px)/1 var(--sd-cond); letter-spacing: .42em; color: #fff; text-shadow: 0 2px 8px rgb(0 0 0 / .3); }
+.footer-kicker > b { padding: 7px 16px 6px; background: #fff; color: var(--ink); font: 600 clamp(28px, 3.4vw, 42px)/1 var(--sd-cond); letter-spacing: .06em; transform: skewX(-10deg); box-shadow: 5px 5px 0 var(--ink); }
+@media (max-width: 600px) { .footer-kicker { gap: 10px; margin-bottom: 30px; } .footer-kicker > span { letter-spacing: .3em; } }
+
+/* Headroom: the poster sits a little below the header and its top edge dissolves into the field,
+   so the bosses' heads (which start ~4% into the image) are never pressed against the edge. */
+.show-hero { --poster-gap: 36px; padding-top: var(--poster-gap); }
+.hero-field { -webkit-mask-image: linear-gradient(180deg, #000 calc(var(--split-end) + var(--poster-gap) - 200px), transparent calc(var(--split-end) + var(--poster-gap))); mask-image: linear-gradient(180deg, #000 calc(var(--split-end) + var(--poster-gap) - 200px), transparent calc(var(--split-end) + var(--poster-gap))); }
+.hero-poster > img { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%), linear-gradient(180deg, transparent 0, #000 3.4%, #000 74%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%), linear-gradient(180deg, transparent 0, #000 3.4%, #000 74%, transparent 100%); -webkit-mask-composite: source-in; mask-composite: intersect; }
+@media (max-width: 1099px) { .show-hero { --poster-gap: 28px; } }
+@media (max-width: 700px) {
+  .show-hero { --poster-gap: 22px; }
+  .hero-poster > img { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 3.4%, #000 74%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 3.4%, #000 74%, transparent 100%); }
 }

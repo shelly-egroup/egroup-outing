@@ -209,30 +209,44 @@
 @keyframes beat-5 { 0%, 59.9% { opacity: 0; } 60%, 79.9% { opacity: 1; } 80%, 100% { opacity: 0; } }
 @keyframes beat-6 { 0%, 79.9% { opacity: 0; } 80%, 100% { opacity: 1; } }
 
-/* ── 5.80–8.00 the studio: both camps on pedestals, VERSUS drawn in light ── */
+/* ── 5.80–8.00 the studio. The camera pulls back from a close-up and keeps drifting out; every kick in the score
+      lands an event (pillars rise 5.835/6.015/6.27, photos land 6.27–6.585, equaliser pumps 6.82 + 6.95,
+      glint 7.28) so the wait for the VS at 7.433 never goes still. Delays are seconds from the 5.80 cut. ── */
 .shot-studio { color: var(--sd-ink); }
-.studio-camera { position: absolute; inset: 0; animation: studio-push 2.2s linear both; }
-@keyframes studio-push { from { transform: scale(1); } to { transform: scale(1.05); } }
-.studio-ghost { position: absolute; bottom: -10vh; height: 116vh; opacity: .34; filter: contrast(.8) brightness(1.15) drop-shadow(.25vmin 0 0 rgb(255 0 92 / .6)) drop-shadow(-.25vmin 0 0 rgb(0 226 255 / .6)); animation: ghost-in .34s cubic-bezier(.2,.85,.25,1) both; }
-.ghost-a { left: -7vw; }
-.ghost-b { right: -7vw; }
-@keyframes ghost-in { from { transform: scale(1.7); opacity: .9; } }
+.studio-camera { position: absolute; inset: 0; transform-origin: 50% 62%; animation: studio-camera 2.2s both; }
+@keyframes studio-camera {
+  0% { transform: scale(1.75) translateY(9%); animation-timing-function: cubic-bezier(.15,.75,.25,1); }
+  18% { transform: scale(1.04); animation-timing-function: linear; }
+  100% { transform: scale(.93); }
+}
+.studio-ghost { position: absolute; bottom: -6vh; height: 104vh; opacity: .34; filter: contrast(.8) brightness(1.15) drop-shadow(.25vmin 0 0 rgb(255 0 92 / .6)) drop-shadow(-.25vmin 0 0 rgb(0 226 255 / .6)); animation: ghost-in .5s ease-out both, ghost-drift 2.2s cubic-bezier(.3,0,.4,1) both, ghost-flash .55s 1.15s ease-out; }
+.ghost-a { left: calc(20vw - 104vh * .3669); --drift: 8vw; }
+.ghost-b { left: calc(80vw - 104vh * .4754); --drift: -8vw; }
+@keyframes ghost-in { from { opacity: .9; } }
+@keyframes ghost-drift { to { translate: var(--drift) 0; } }
+@keyframes ghost-flash { 0% { opacity: .34; } 18% { opacity: .66; } 100% { opacity: .34; } }
 .studio-row { position: absolute; left: 50%; bottom: 7vh; height: 64vh; display: flex; align-items: flex-end; gap: 1.2vw; translate: -50% 0; }
-.pillar { display: block; width: 7.2vw; transform-origin: 50% 100%; box-shadow: .3vmin 0 0 rgb(0 226 255 / .55), -.3vmin 0 0 rgb(255 0 92 / .55); animation: pillar-in .3s cubic-bezier(.2,.9,.3,1) both; }
+.pillar { position: relative; overflow: hidden; display: block; width: 7.2vw; transform-origin: 50% 100%; box-shadow: .3vmin 0 0 rgb(0 226 255 / .55), -.3vmin 0 0 rgb(255 0 92 / .55); animation: pillar-rise .38s cubic-bezier(.2,1.25,.35,1) both, pillar-pump .45s 1.02s ease-out; }
+.pillar::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 25%, rgb(255 255 255 / .62) 50%, transparent 75%); transform: translateX(-130%); animation: pillar-glint .42s ease-out both; animation-delay: calc(1.48s + var(--i) * .035s); }
 .pa1, .pa2, .pa3 { background: var(--sd-blue); }
 .pb1, .pb2, .pb3 { background: var(--sd-pink); }
-.pa1, .pb1 { height: 26%; animation-delay: .08s; }
-.pa2, .pb2 { height: 50%; animation-delay: .04s; }
-.pa3, .pb3 { height: 82%; }
+.pa3, .pb3 { height: 82%; animation-delay: .035s, 1.02s; }
+.pa2, .pb2 { height: 50%; animation-delay: .215s, 1.02s; }
+.pa1, .pb1 { height: 26%; animation-delay: .47s, 1.02s; }
+.pa1 { --i: 0; } .pa2 { --i: 1; } .pa3 { --i: 2; } .pb3 { --i: 3; } .pb2 { --i: 4; } .pb1 { --i: 5; }
 .pillar-gap { width: 5vw; }
-@keyframes pillar-in { from { transform: scale(1.9, 2.2); } }
-.studio-prop { position: absolute; z-index: 1; animation: prop-pop .32s cubic-bezier(.2,1.3,.4,1) both; }
-.sp-feast-a { left: 9vw; bottom: 4vh; height: 22vh; animation-delay: .12s; }
-.sp-photo-a { left: 21vw; bottom: 30vh; height: 27vh; animation-delay: .18s; }
-.sp-photo-b { right: 20vw; bottom: 30vh; height: 27vh; animation-delay: .2s; }
-.sp-feast-b { right: 9vw; bottom: 4vh; height: 27vh; animation-delay: .14s; }
+@keyframes pillar-rise { from { transform: scaleY(0); } }
+@keyframes pillar-pump { 0%, 100% { scale: 1 1; } 9% { scale: 1 1.1; } 27%, 29% { scale: 1 1.02; } 38% { scale: 1 1.16; } }
+@keyframes pillar-glint { to { transform: translateX(130%); } }
+.studio-prop { position: absolute; z-index: 1; animation: prop-pop .34s cubic-bezier(.2,1.3,.4,1) both, prop-hop .45s 1.02s ease-out; }
+.sp-feast-a { left: 9vw; bottom: 4vh; height: 22vh; animation-delay: .47s, 1.02s; }
+.sp-photo-a { left: 21vw; bottom: 30vh; height: 27vh; animation-delay: .57s, 1.02s; }
+.sp-photo-b { right: 20vw; bottom: 30vh; height: 27vh; animation-delay: .69s, 1.02s; }
+.sp-feast-b { right: 9vw; bottom: 4vh; height: 27vh; animation-delay: .785s, 1.02s; }
 @keyframes prop-pop { from { transform: translateY(10vh) scale(.5); opacity: 0; } }
-.studio-versus { position: absolute; top: 12vh; left: 50%; translate: -50% 0; font-size: 12px; letter-spacing: 1em; opacity: .65; }
+@keyframes prop-hop { 0%, 27%, 29%, 100% { translate: 0 0; } 9% { translate: 0 -1.6vh; } 38% { translate: 0 -2.6vh; } }
+.studio-versus { position: absolute; top: 12vh; left: 50%; translate: -50% 0; font-size: 12px; letter-spacing: 1em; opacity: .65; animation: versus-flash .55s 1.48s ease-out; }
+@keyframes versus-flash { 0% { opacity: .65; } 15% { opacity: 1; } 100% { opacity: .65; } }
 .vs-draw { position: absolute; inset: 0; z-index: 2; }
 .vs-draw svg, .vs-solid { position: absolute; left: 50%; top: 52%; overflow: visible; transform: translate(-50%, -50%) skewX(-14deg); }
 .vs-draw svg { width: min(44vw, 80vh); }
@@ -338,9 +352,9 @@
   .beat-5 { --band-h: 26vh; }
   .beat-6 .cut { height: 10vh; }
   .beat-6 { --band-h: 13vh; }
-  .studio-ghost { height: 66vh; bottom: 18vh; }
-  .ghost-a { left: -34vw; }
-  .ghost-b { right: -34vw; }
+  .studio-ghost { height: 52vh; bottom: 30vh; }
+  .ghost-a { left: calc(24vw - 52vh * .3669); --drift: 7vw; }
+  .ghost-b { left: calc(76vw - 52vh * .4754); --drift: -7vw; }
   .studio-row { height: 42vh; bottom: 9vh; gap: 1.6vw; }
   .pillar { width: 10vw; }
   .pillar-gap { width: 6vw; }
