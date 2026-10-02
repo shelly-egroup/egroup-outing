@@ -12,6 +12,8 @@ import LoadingIndicator from "./loading-indicator";
 const CUES = [0, 0.033, 0.1, 0.133, 0.2, 1, 1.05, 2.133, 3.7, 5.267, 5.3, 5.8, 7.433, 8, 8.617];
 const LAST = CUES.length - 1;
 const DURATION = 10.85;
+// The score is silent for its first 50ms; starting there makes the first hit answer the press immediately.
+const LEAD_IN = 0.05;
 const IMG = OPENING_IMAGES;
 const SCORE = OPENING_SCORE;
 type Plans = [string, string];
@@ -51,6 +53,7 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
   const [imagesLagging, setImagesLagging] = useState(false), [imagesSlow, setImagesSlow] = useState(false);
   const [scoreSrc, setScoreSrc] = useState<string>(), [soundSlow, setSoundSlow] = useState(false);
   const [startAttempts, setStartAttempts] = useState(0), [slowStart, setSlowStart] = useState(false);
+  const [launching, setLaunching] = useState(false), [launchSlow, setLaunchSlow] = useState(false);
   const requested = useRef(false), skipButtonRef = useRef<HTMLButtonElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null), stageRef = useRef<HTMLDivElement>(null), progressRef = useRef<HTMLDivElement>(null);
   const finishRef = useRef(onFinish), sceneRef = useRef(-1);
@@ -95,7 +98,7 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
       },
     });
     sound.current = controller;
-    const stopWatchingReadiness = watchOpeningAudioReady(audio, setSoundReady);
+    const stopWatchingReadiness = watchOpeningAudioReady(audio, ready => { if (ready) setSoundReady(true); });
     // Decode and prepaint while the visitor is on the START cover, without
     // delaying the original sound-first start button.
     // A failed image must not lock the cover, so errors also count as settled.
@@ -132,14 +135,25 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
     };
   }, []);
 
-  function startFromClick() {
+  // Called from the mouse press itself (no wait for release) and from every click; play() always runs inside the gesture.
+  function launch() {
     const controller = sound.current;
     if (!controller || playbackStarted.current) return;
-    setSlowStart(false);
-    setStartAttempts(value => value + 1);
-    // No timer or await here: audio starts inside the actual button click.
-    if (!requested.current) { requested.current = true; controller.start(); }
-    else controller.interact();
+    if (!requested.current) {
+      requested.current = true;
+      setLaunching(true);
+      setLaunchSlow(false);
+      setSlowStart(false);
+      setStartAttempts(value => value + 1);
+      controller.start();
+      return;
+    }
+    if (audioState === "blocked" || audioState === "error") {
+      setLaunchSlow(false);
+      setSlowStart(false);
+      setStartAttempts(value => value + 1);
+    }
+    controller.interact();
   }
   // Visuals first when the score is slow: the shared clock lets the music align and join once it can play.
   function startSilently() {
@@ -155,6 +169,17 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
   useEffect(() => {
     if (started) skipButtonRef.current?.focus({ preventScroll: true });
   }, [started]);
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!soundReady || started || !audio || audio.currentTime >= LEAD_IN) return;
+    try { audio.currentTime = LEAD_IN; } catch { /* Not seekable yet: it simply starts at 0. */ }
+  }, [soundReady, started]);
+  // The press is answered visually at once; only a genuinely slow start turns the button into a loader.
+  useEffect(() => {
+    if (!launching || started) return;
+    const timer = setTimeout(() => setLaunchSlow(true), 700);
+    return () => clearTimeout(timer);
+  }, [launching, started, startAttempts]);
   useEffect(() => {
     if (imagesReady) return;
     const slow = setTimeout(() => setImagesSlow(true), 10000);
@@ -238,8 +263,9 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
   // the tap until the music plays. play() still runs inside the tap; only a browser refusal asks for one more tap.
   const waitingForImages = !imagesReady && !imagesSlow;
   const waitingForSound = !soundLoaded && !soundSlow;
-  const waitingForPlayback = startAttempts > 0 && audioState !== "blocked";
-  const preparing = waitingForImages || waitingForSound || waitingForPlayback;
+  const loadingAssets = waitingForImages || waitingForSound;
+  const launchVisible = launching && audioState !== "blocked";
+  const preparing = loadingAssets || (launchVisible && launchSlow);
   const loadingLabel = waitingForImages ? "畫面準備中" : waitingForSound ? "音效準備中" : audioState === "error" ? "音樂重新連線中" : "準備開場";
 
   return <section className="film-opening" data-audio-state={audioState} role="dialog" aria-modal="true" aria-label="揪是要對決開場動畫">
@@ -250,24 +276,25 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
     {started && audioState === "blocked" && <button className="film-audio-note film-sound-prompt" onClick={(event) => { event.stopPropagation(); sound.current?.interact(); }}>音樂自動重試中，也可點一下接上</button>}
     {started && audioState === "error" && <button className="film-audio-note film-sound-prompt" onClick={(event) => { event.stopPropagation(); sound.current?.interact(); }}>音樂自動重試中，也可點一下重試</button>}
     {started && audioState === "loading" && <div className="film-audio-note"><LoadingIndicator label="音樂載入中" compact /></div>}
-    {!started && <OpeningSplash>
+    {!started && <OpeningSplash launching={launchVisible}>
       <div className="film-start-match" aria-label={plans.join("對決")}><span>{plans[0]}</span><VsMark /><span>{plans[1]}</span></div>
-      <button type="button" className="film-start-button" onClick={startFromClick} disabled={preparing} aria-busy={preparing} aria-describedby="film-start-hint">
+      <button type="button" className="film-start-button" disabled={loadingAssets} aria-busy={preparing || launchVisible} aria-describedby="film-start-hint"
+        onPointerDown={event => { if (event.pointerType === "mouse" && event.button === 0 && !loadingAssets) launch(); }} onClick={launch}>
         {preparing
           ? <LoadingIndicator label={loadingLabel} compact />
-          : <><span>{startAttempts > 0 ? "再點一下開始" : "開始對決"}</span><span className="film-start-play" aria-hidden="true">▶</span></>}
+          : <><span>{audioState === "blocked" ? "再點一下開始" : "開始對決"}</span><span className="film-start-play" aria-hidden="true">▶</span></>}
       </button>
-      <p id="film-start-hint" className="film-start-hint" role="status">{(waitingForImages || waitingForSound) && imagesLagging ? "網路較慢，畫面與音效載入中，也可以右上跳過。" : audioState === "blocked" ? "瀏覽器需要再點一次，才能播放音樂。" : slowStart ? "網路較慢，音樂載入中，馬上開始。" : "建議開啟聲音・點一下開場"}</p>
+      <p id="film-start-hint" className="film-start-hint" role="status">{(waitingForImages || waitingForSound) && imagesLagging ? "網路較慢，畫面與音效載入中，也可以右上跳過。" : audioState === "blocked" ? "瀏覽器需要再點一次，才能播放音樂。" : slowStart ? "網路較慢，音樂載入中，馬上開始。" : "建議開啟聲音・精彩馬上開始"}</p>
       <span className="film-start-partners">馴錢師 <b>×</b> Egroup</span>
     </OpeningSplash>}
     <div ref={stageRef} className="film-stage" data-scene={step} data-playing={started} data-buffering={bufferedAt.current !== null} aria-hidden="true">
-      {!started && <div className="prepaint">{Object.values(IMG).map(src => <Cut key={src} src={src} />)}</div>}
-      {step === 1 && <Shot at={CUES[1]} className="shot-glyph glyph-white"><b>悠</b></Shot>}
-      {step === 3 && <Shot at={CUES[3]} className="shot-glyph glyph-blue"><b>閒</b></Shot>}
+      <div className="prepaint">{Object.values(IMG).map(src => <Cut key={src} src={src} />)}</div>
+      {step === 1 && <Shot at={CUES[1]} className="shot-glyph glyph-white"><b>療</b></Shot>}
+      {step === 3 && <Shot at={CUES[3]} className="shot-glyph glyph-blue"><b>癒</b></Shot>}
       {step === 4 && <Shot at={CUES[4]} className="shot-host host-a sd-field-blue">
         <Cut src={IMG.hostA} className="host sd-cutout" />
         <Glitch src={IMG.hostA} />
-        <div className="host-word"><strong>悠<br />閒</strong><span className="sd-micro sd-vertical">LEISURE</span></div>
+        <div className="host-word"><strong>療<br />癒</strong><span className="sd-micro sd-vertical">HEALING</span></div>
         <span className="host-team sd-micro">TEAM A — {plans[0]}</span>
         <Cross />
         <i className="x-wipe" />
@@ -283,17 +310,21 @@ export default function OpeningAnimation({onFinish, plans}: {onFinish: () => voi
       </Shot>}
       {step === 7 && <Shot at={CUES[7]} className="shot-split split-play">
         <Split a={<Cut src={IMG.photoA} className="prop sd-cutout" />} b={<Cut src={IMG.photoSwap} className="prop sd-cutout" />}>
-          <span className="split-word word-top">FISHING</span>
-          <span className="split-word word-bottom">LASER TAG</span>
+          <span className="split-word word-top"><span className="split-word-mask"><span>HANDPAN</span></span></span>
+          <span className="split-word word-bottom"><span className="split-word-mask"><span>LASER TAG</span></span></span>
         </Split>
       </Shot>}
-      {step === 8 && <Shot at={CUES[8]} className="shot-split split-feast">
-        <Split a={<Cut src={IMG.feastA} className="prop prop-a sd-cutout" />} b={<Cut src={IMG.feastB} className="prop prop-b sd-cutout" />}>
-          <span className="vs-letter letter-v">V</span><i className="vs-rule rule-v" />
-          <i className="vs-rule rule-s" /><span className="vs-letter letter-s">S</span>
-          <span className="sd-micro sd-vertical feast-side">VERSUS</span>
-          <span className="sd-micro feast-corner">R—02</span>
-        </Split>
+      {step === 8 && <Shot at={CUES[8]} className="shot-turn sd-field-blue">
+        <div className="turn-stage">
+          <i className="turn-field-b sd-field-pink" />
+          <i className="turn-seam" />
+          <span className="turn-item turn-tray-a"><Cut src={IMG.feastA} className="sd-cutout" /></span>
+          <span className="turn-item turn-tray-b"><Cut src={IMG.feastB} className="sd-cutout" /></span>
+          <span className="turn-item turn-letter turn-letter-v"><b>V</b></span>
+          <span className="turn-item turn-letter turn-letter-s"><b>S</b></span>
+        </div>
+        <span className="sd-micro sd-vertical feast-side">VERSUS</span>
+        <span className="sd-micro feast-corner">R—02</span>
       </Shot>}
       {step === 9 && <Shot at={CUES[9]} className="shot-sweep" />}
       {step === 10 && <Shot at={CUES[10]} className="shot-rapid">

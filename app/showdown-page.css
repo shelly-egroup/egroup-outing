@@ -71,8 +71,7 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
 .hero-replay:hover { text-decoration-color: #fff; }
 
 /* Entrance once the film hands over (or on a return visit). */
-.show-hero[data-ready="true"] .hero-field-a { animation: hero-open-a .7s cubic-bezier(.55,0,.15,1) both; }
-.show-hero[data-ready="true"] .hero-field-b { animation: hero-open-b .7s cubic-bezier(.55,0,.15,1) both; }
+.show-hero[data-ready="true"] .hero-field-a, .show-hero[data-ready="true"] .hero-field-b { transform-origin: 50% 50%; animation: hero-open .7s cubic-bezier(.55,0,.15,1) both; }
 .show-hero[data-ready="true"] .hero-poster { animation: hero-poster .9s .25s cubic-bezier(.2,.8,.2,1) both; }
 .show-hero[data-ready="true"] .hero-team-a { animation: hero-side-a .7s .45s cubic-bezier(.2,.8,.2,1) both; }
 .show-hero[data-ready="true"] .hero-team-b { animation: hero-side-b .7s .45s cubic-bezier(.2,.8,.2,1) both; }
@@ -81,8 +80,7 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
 .show-hero[data-ready="true"] .hero-headline { animation: hero-up .7s .62s cubic-bezier(.2,.8,.2,1) both; }
 .show-hero[data-ready="true"] .hero-kicker, .show-hero[data-ready="true"] .hero-copy { animation: hero-up .7s .7s cubic-bezier(.2,.8,.2,1) both; }
 .show-hero[data-ready="true"] .hero-actions { animation: hero-up .7s .78s cubic-bezier(.2,.8,.2,1) both; }
-@keyframes hero-open-a { from { clip-path: polygon(var(--seam-t) 0, var(--seam-t) 0, var(--seam-b) 100%, var(--seam-b) 100%); } }
-@keyframes hero-open-b { from { clip-path: polygon(var(--seam-t) 0, var(--seam-t) 0, var(--seam-b) 100%, var(--seam-b) 100%); } }
+@keyframes hero-open { from { transform: scaleX(0); } }
 @keyframes hero-poster { from { opacity: 0; transform: translateY(24px) scale(1.04); } }
 @keyframes hero-side-a { from { opacity: 0; transform: translateX(-24px); } }
 @keyframes hero-side-b { from { opacity: 0; transform: translateX(24px); } }
@@ -457,3 +455,47 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
 .outing-page .note-field textarea { border: 2px solid var(--ink); }
 .outing-page .store-link-circle { border-color: rgb(11 13 16 / .55); }
 .outing-page .vote-review dl > div { border-bottom-color: rgb(11 13 16 / .25); }
+
+/* ── Desktop hero: each side column always fits its team name on one line ── */
+@media (min-width: 1100px) {
+  .hero-stage { max-width: none; grid-template-columns: minmax(170px, 1fr) auto minmax(170px, 1fr); }
+  .hero-poster { width: min(calc(100vw - 520px), calc(var(--poster-h) * 2.34), 1180px); }
+  .show-hero { --split-end: calc(min(calc(100vw - 520px), calc(var(--poster-h) * 2.34), 1180px) / 2.34 + 60px); }
+  .hero-team strong { font-size: clamp(20px, 1.9vw, 30px); white-space: nowrap; }
+  .hero-team span { white-space: nowrap; }
+}
+
+/* ── Footer: two team tickers cross in an X behind the logo and run in opposite directions ── */
+.footer-stage { position: relative; }
+.footer-ribbons { position: absolute; left: 50%; top: 50%; width: 100vw; height: 0; margin-left: -50vw; pointer-events: none; }
+.ribbon { position: absolute; left: -12vw; right: -12vw; top: -21px; height: 42px; overflow: hidden; display: flex; align-items: center; box-shadow: 0 12px 24px -14px rgb(0 0 0 / .55); }
+.ribbon-a { background: var(--ink); color: #fff; transform: rotate(-7deg); }
+.ribbon-b { background: var(--yellow); color: var(--ink); transform: rotate(7deg); }
+.ribbon-track { display: flex; flex: none; white-space: nowrap; animation: ribbon-left 26s linear infinite; }
+.ribbon-b .ribbon-track { animation-name: ribbon-right; }
+.ribbon-track > span { display: inline-flex; align-items: center; gap: 22px; padding-right: 22px; font-size: 15px; font-weight: 900; letter-spacing: .14em; }
+.ribbon-track i { font-style: normal; font-size: 11px; }
+.ribbon-a .ribbon-track i { color: #5d7bff; }
+.ribbon-b .ribbon-track i { color: #d6005a; }
+@keyframes ribbon-left { to { transform: translateX(-50%); } }
+@keyframes ribbon-right { from { transform: translateX(-50%); } to { transform: none; } }
+.footer-lockup { position: relative; }
+.footer-title em { animation: footer-hit 2.4s .6s ease-in-out infinite; }
+@keyframes footer-hit { 0%, 18%, 100% { transform: skewX(-8deg) scale(1); } 6% { transform: skewX(-8deg) scale(1.08); } 11% { transform: skewX(-8deg) scale(.98); } }
+@media (max-width: 600px) {
+  .ribbon { top: -17px; height: 34px; }
+  .ribbon-a { transform: rotate(-8deg); }
+  .ribbon-b { transform: rotate(8deg); }
+  .ribbon-track > span { gap: 16px; padding-right: 16px; font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ribbon-track, .footer-title em { animation: none !important; }
+}
+
+.hero-copy-cta { display: block; margin-top: 4px; }
+@media (min-width: 1100px) { .hero-copy { max-width: 36em; } }
+.hero-clause { display: inline-block; }
+@media (max-width: 700px) {
+  .show-hero { --split-end: calc(100vw / 1.75 + 40px); }
+  .hero-poster { aspect-ratio: 1.75; }
+}

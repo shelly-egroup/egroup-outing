@@ -2,7 +2,7 @@
 import { sortedGroups } from "@/lib/trips";
 import Link from "next/link";
 import { useSectionReveal } from "./use-section-reveal";
-import { OPENING_IMAGES } from "@/lib/opening-assets";
+import { HERO_POSTER, OPENING_IMAGES } from "@/lib/opening-assets";
 import ShowLogo from "./show-logo";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import OutingHeader from "./outing-header";
@@ -37,13 +37,25 @@ import {
   voteDraftFromDetails,
   isVotingOpen,
   sortedPlans,
+  type TripPlan,
   type VoteDraft,
 } from "@/lib/trips";
 
+// A plan's one-line summary for hero and ticker labels, so renaming a plan in the organiser desk updates them too.
+const planLine = (plan?: TripPlan) => plan?.title.replaceAll("\n", "");
+
 const PLAN_ART = [
-  { photo: OPENING_IMAGES.photoA, feast: OPENING_IMAGES.feastA, word: "悠閒" },
+  { photo: OPENING_IMAGES.photoA, feast: OPENING_IMAGES.feastA, word: "療癒" },
   { photo: OPENING_IMAGES.photoB, feast: OPENING_IMAGES.feastB, word: "熱血" },
 ];
+
+// A broadcast ticker: the phrase is repeated so translating the track by half its width loops seamlessly.
+function FooterRibbon({ className, words }: { className: string; words: string[] }) {
+  const run = Array.from({ length: 6 }, () => words).flat();
+  return <div className={"ribbon " + className}>
+    <div className="ribbon-track">{[...run, ...run].map((word, index) => <span key={index}>{word}<i>✦</i></span>)}</div>
+  </div>;
+}
 
 export default function TripShowdown() {
   const context = useOuting();
@@ -212,8 +224,8 @@ export default function TripShowdown() {
         <OpeningAnimation
           onFinish={finishIntro}
           plans={[
-            plans[0]?.[1].shortName || "釣趣派",
-            plans[1]?.[1].shortName || "熱血對戰派",
+            plans[0]?.[1].shortName || "療癒派",
+            plans[1]?.[1].shortName || "熱血派",
           ]}
         />
       )}
@@ -222,11 +234,11 @@ export default function TripShowdown() {
         <header className="show-hero" data-ready={introReady && !intro}>
           <div className="hero-field" aria-hidden="true"><i className="hero-field-a" /><i className="hero-field-b" /></div>
           <div className="hero-stage">
-            <p className="hero-team hero-team-a"><small className="sd-micro">TEAM A</small><strong>{plans[0]?.[1].shortName || "釣趣派"}</strong><span>釣蝦＋港點午餐</span></p>
+            <p className="hero-team hero-team-a"><small className="sd-micro">TEAM A</small><strong>{plans[0]?.[1].shortName || "療癒派"}</strong><span>{planLine(plans[0]?.[1]) || "手碟＋港點午餐"}</span></p>
             <div className="hero-poster">
-              <img src={OPENING_IMAGES.poster} width={1672} height={714} alt="兩位老闆對決：左邊釣蝦港點的釣趣派，右邊雷射槍戰下午茶的熱血對戰派" fetchPriority="high" />
+              <img src={HERO_POSTER} width={1672} height={714} alt="兩位老闆對決：左邊是手碟與港點，右邊是雷射槍戰與飯店下午茶" fetchPriority="high" />
             </div>
-            <p className="hero-team hero-team-b"><small className="sd-micro">TEAM B</small><strong>{plans[1]?.[1].shortName || "熱血對戰派"}</strong><span>雷射槍戰＋飯店下午茶</span></p>
+            <p className="hero-team hero-team-b"><small className="sd-micro">TEAM B</small><strong>{plans[1]?.[1].shortName || "熱血派"}</strong><span>{planLine(plans[1]?.[1]) || "雷射槍戰＋飯店下午茶"}</span></p>
           </div>
           <div className="hero-center">
             <ShowLogo className="hero-lockup" tag="" />
@@ -240,8 +252,8 @@ export default function TripShowdown() {
               <span>預計 {catalog.settings.expectedVoters} 人</span>
             </p>
             <p className="hero-copy">
-              到底是釣蝦吃港點聚餐吸引人，還是雷射團戰享用飯店 Buffet <span className="hero-nowrap">令人嚮往？</span>
-              看完行程，選一個你最想去的方案。
+              <span className="hero-clause">到底是手碟療癒配港點聚餐吸引人，</span><span className="hero-clause">還是雷射團戰享用飯店 Buffet 令人嚮往？</span>
+              <span className="hero-copy-cta">看完行程，選一個你最想去的方案。</span>
             </p>
             <div className="hero-actions" ref={heroActionsRef}>
               <a ref={nextStepRef} href="#plans" className={"button button-yellow hero-primary" + (cueNext ? " is-cued" : "")}>
@@ -362,7 +374,7 @@ export default function TripShowdown() {
                       rows={3}
                       value={draft.note}
                       disabled={saving || !votingOpen}
-                      placeholder={draft.planId === "B" ? "例如：團體活動需留意的狀況，或餐點需求…" : "例如：釣蝦需要協助，或有餐點需求…"}
+                      placeholder={draft.planId === "B" ? "例如：團體活動需留意的狀況，或餐點需求…" : "例如：第一次玩手碟需要協助，或有餐點需求…"}
                       onChange={(event) => edit({ note: event.target.value })}
                     />
                     <span>{draft.note.length} / 1000</span>
@@ -487,7 +499,13 @@ export default function TripShowdown() {
         <footer className="site-footer">
           <div className="wrap site-footer-inner">
             <p className="footer-kicker sd-micro">SEE YOU ON {catalog.settings.eventDate.slice(5).replace("-", ".")}</p>
-            <ShowLogo className="footer-lockup" />
+            <div className="footer-stage">
+              <div className="footer-ribbons" aria-hidden="true">
+                <FooterRibbon className="ribbon-a" words={[plans[0]?.[1].shortName || "療癒派", planLine(plans[0]?.[1]) || "手碟＋港點午餐", "TEAM A"]} />
+                <FooterRibbon className="ribbon-b" words={[plans[1]?.[1].shortName || "熱血派", planLine(plans[1]?.[1]) || "雷射槍戰＋飯店下午茶", "TEAM B"]} />
+              </div>
+              <ShowLogo className="footer-lockup" />
+            </div>
             <h2 className="footer-title">秋遊去哪，<em>你說了算。</em></h2>
             <a href={actualVote ? "#selection" : "#plans"} className="button button-yellow footer-cta">{actualVote ? "查看我的一票" : "現在就去選陣營"}</a>
             <p className="footer-meta">{eventAnnouncement}</p>
