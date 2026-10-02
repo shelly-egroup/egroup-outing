@@ -121,8 +121,9 @@
 
 /* ── 2.13–5.27 one object, two worlds: the split line rotates through the prop ── */
 .split-layer { position: absolute; inset: 0; }
-.split-rotor { position: absolute; left: 50%; top: 50%; width: 300vmax; height: 300vmax; margin: -150vmax 0 0 -150vmax; clip-path: inset(0 0 0 50%); }
-.split-counter { position: absolute; left: 50%; top: 50%; width: 100vw; height: 100vh; margin: -50vh 0 0 -50vw; overflow: hidden; }
+/* The rotor only has to cover the frame's circumcircle (about 142vmax across); a far larger layer is one iPhone Safari drops. */
+.split-rotor { position: absolute; left: 50%; top: 50%; width: 150vmax; height: 150vmax; margin: -75vmax 0 0 -75vmax; clip-path: inset(0 0 0 50%); }
+.split-counter { position: absolute; left: 50%; top: 50%; width: 100vw; height: 100vh; height: 100dvh; margin: -50vh 0 0 -50vw; margin-top: -50dvh; overflow: hidden; }
 .shot-split .prop { position: absolute; left: 50%; top: 50%; }
 .split-play .split-rotor { animation: rotor-play 1.567s both; }
 .split-play .split-counter { animation: counter-play 1.567s both; }
@@ -323,6 +324,7 @@
 
 /* ── Portrait phones: same cuts, recomposed for a tall frame ── */
 @media (max-aspect-ratio: 4/5) {
+  .film-stage .sd-cutout, .film-stage .split-word { filter: none; }
   .film-controls { top: 14px; right: 12px; }
   .glyph-blue b { font-size: 74vw; translate: -18% 0; }
   .shot-host .host, .shot-host .band { height: 66vh; }
@@ -347,16 +349,16 @@
   .word-top { top: 13vh; left: 8vw; }
   .word-bottom { bottom: 13vh; right: 6vw; }
     .shot-turn { --b: 90deg; }
-  .turn-tray-a { --x: -23vh; --y: 4vw; }
-  .turn-tray-b { --x: 24vh; --y: -5vw; }
+  .turn-tray-a { --x: -23vh; --y: -4vw; }
+  .turn-tray-b { --x: 23vh; --y: -6vw; }
   .turn-letter-v { --x: -4vh; --y: 30vw; }
   .turn-letter-s { --x: 5vh; --y: -30vw; }
-  .turn-tray-a .cut { width: 78vw; }
-  .turn-tray-b .cut { width: 56vw; }
+  .turn-tray-a .cut { width: 64vw; }
+  .turn-tray-b .cut { width: 50vw; }
   .turn-letter > b { font-size: 24vw; }
   .feast-side { display: none; }
-  .beat-2 .cut, .beat-4 .cut { height: 22vh; }
-  .beat-5 .cut { height: 30vh; }
+  .beat-2 .cut, .beat-4 .cut { width: 46vw; height: auto; }
+  .beat-5 .cut { height: min(30vh, 58vw); }
   .beat-5 { --band-h: 26vh; }
   .beat-6 .cut { height: 10vh; }
   .beat-6 { --band-h: 13vh; }

@@ -50,7 +50,7 @@ export default function OpeningAnimation({onFinish, plans, date = "10.29"}: {onF
   const [step, setStep] = useState(0), [started, setStarted] = useState(false), [holdOutro, setHoldOutro] = useState(false);
   const [audioState, setAudioState] = useState<OpeningAudioState>("idle");
   const [soundReady, setSoundReady] = useState(false), [imagesReady, setImagesReady] = useState(false);
-  const [imagesLagging, setImagesLagging] = useState(false), [imagesSlow, setImagesSlow] = useState(false);
+  const [imagesSlow, setImagesSlow] = useState(false);
   const [scoreSrc, setScoreSrc] = useState<string>(), [soundSlow, setSoundSlow] = useState(false);
   const [startAttempts, setStartAttempts] = useState(0), [slowStart, setSlowStart] = useState(false);
   const [launching, setLaunching] = useState(false), [launchSlow, setLaunchSlow] = useState(false);
@@ -196,11 +196,6 @@ export default function OpeningAnimation({onFinish, plans, date = "10.29"}: {onF
     return () => { alive = false; if (url) URL.revokeObjectURL(url); };
   }, []);
   const soundLoaded = soundReady;
-  useEffect(() => {
-    if (imagesReady && soundLoaded) return;
-    const lagging = setTimeout(() => setImagesLagging(true), 3000);
-    return () => clearTimeout(lagging);
-  }, [imagesReady, soundLoaded]);
   // A score that never arrives must not lock the cover forever; after 15s START works and the music joins when it can.
   useEffect(() => {
     if (soundLoaded) return;
@@ -284,7 +279,7 @@ export default function OpeningAnimation({onFinish, plans, date = "10.29"}: {onF
           ? <LoadingIndicator label={loadingLabel} compact />
           : <><span>{audioState === "blocked" ? "再點一下開始" : "開始對決"}</span><span className="film-start-play" aria-hidden="true">▶</span></>}
       </button>
-      <p id="film-start-hint" className="film-start-hint" role="status">{(waitingForImages || waitingForSound) && imagesLagging ? "網路較慢，畫面與音效載入中，也可以右上跳過。" : audioState === "blocked" ? "瀏覽器需要再點一次，才能播放音樂。" : slowStart ? "網路較慢，音樂載入中，馬上開始。" : "建議開啟聲音・精彩馬上開始"}</p>
+      <p id="film-start-hint" className="film-start-hint" role="status">{audioState === "blocked" ? "瀏覽器需要再點一次，才能播放音樂。" : slowStart ? "網路較慢，音樂載入中，馬上開始。" : "建議開啟聲音・精彩馬上開始"}</p>
       <span className="film-start-partners">馴錢師 <b>×</b> Egroup</span>
     </OpeningSplash>}
     <div ref={stageRef} className="film-stage" data-scene={step} data-playing={started} data-buffering={bufferedAt.current !== null} aria-hidden="true">
