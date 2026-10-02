@@ -12,7 +12,7 @@ import LoadingIndicator from "./loading-indicator";
 import LoadingPanel from "./loading-panel";
 import VersusBadge from "./versus-badge";
 import PlanPicker from "./plan-picker";
-import PlanSwitchDock from "./plan-switch-dock";
+import PlanSwitchDock, { PlanSwitchOptions } from "./plan-switch-dock";
 import PlanCard from "./plan-card";
 import SavedVoteCard from "./saved-vote-card";
 import PreferenceGroup from "./preference-group";
@@ -375,6 +375,9 @@ export default function TripShowdown() {
                 <aside id="vote-review" className="vote-review" aria-label="投票摘要">
                   <span className="eyebrow">YOUR VOTE</span>
                   <h3>{actualVote ? "你的選擇" : "準備好站這一邊？"}</h3>
+                  {plans.length > 1 && <div className="vote-review-switch" role="group" aria-label="切換方案，已選偏好會保留">
+                    <PlanSwitchOptions plans={plans} selectedId={draft.planId} disabled={saving} onChoose={id => choose(id, false)} />
+                  </div>}
                   <VotePlanSummary plan={selected} />
                   <dl>
                     {preferenceSummary.map((item) => (

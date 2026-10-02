@@ -1,8 +1,10 @@
 "use client";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { TripPlan } from "@/lib/trips";
+import { useScrollReveal } from "./use-scroll-reveal";
 
-const COLLAPSE_DELAY_MS = 500;
+// Revealed by scrolling up, so it never sits over the itinerary while reading down.
+const REVEAL_IDLE_MS = 2500;
 
 type Props = {
   plans: [string, TripPlan][];
@@ -14,37 +16,10 @@ type Props = {
 
 export default function PlanSwitchDock({ plans, selectedId, active, disabled, onChoose }: Props) {
   const [visible, setVisible] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
-  const pendingPlan = useRef("");
-  const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const wake = useCallback(() => {
-    if (collapseTimer.current) clearTimeout(collapseTimer.current);
-    collapseTimer.current = null;
-    setCollapsed(false);
-    if (active && visible) {
-      collapseTimer.current = setTimeout(() => {
-        collapseTimer.current = null;
-        setCollapsed(true);
-      }, COLLAPSE_DELAY_MS);
-    }
-  }, [active, visible]);
-
-  useEffect(() => {
-    if (!active || !visible) {
-      if (collapseTimer.current) clearTimeout(collapseTimer.current);
-      collapseTimer.current = null;
-      setCollapsed(false);
-      return;
-    }
-    wake();
-    window.addEventListener("scroll", wake, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", wake);
-      if (collapseTimer.current) clearTimeout(collapseTimer.current);
-      collapseTimer.current = null;
-    };
-  }, [active, visible, wake]);
+  const dock = useRef<HTMLElement>(null);
+  const [revealed, wake] = useScrollReveal(active && visible, REVEAL_IDLE_MS,
+    () => !!dock.current?.contains(document.activeElement) && document.activeElement?.matches(":focus-visible") === true);
+  const collapsed = !revealed;
 
   useEffect(() => {
     if (!active) return;
@@ -59,9 +34,7 @@ export default function PlanSwitchDock({ plans, selectedId, active, disabled, on
         document.activeElement?.matches('textarea, select, input:not([type="radio"]):not([type="checkbox"]), [contenteditable="true"]');
       const viewportBottom = window.visualViewport ? window.visualViewport.offsetTop + window.visualViewport.height : window.innerHeight;
       const beforeResults = (results?.getBoundingClientRect().top ?? content.getBoundingClientRect().bottom) > viewportBottom;
-      const book = content.querySelector(".menu-details[open] .menu-book")?.getBoundingClientRect();
-      const viewingBook = book && book.bottom > top && book.top < viewportBottom;
-      setVisible(!editing && !viewingBook && picker.getBoundingClientRect().bottom <= top && beforeResults);
+      setVisible(!editing && picker.getBoundingClientRect().bottom <= top && beforeResults);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(() => { frame = 0; sync(); }); };
     const size = new ResizeObserver(schedule);
@@ -82,6 +55,16 @@ export default function PlanSwitchDock({ plans, selectedId, active, disabled, on
     };
   }, [active, selectedId]);
 
+  return <nav ref={dock} className={"plan-switch-dock" + (collapsed ? " is-collapsed" : "")} aria-label="切換偏好方案" hidden={!active || !visible} aria-hidden={collapsed || undefined} onPointerDown={wake} onFocus={wake}>
+    <div className="plan-switch-caption"><b>切換方案</b><span>已選偏好會保留</span></div>
+    <PlanSwitchOptions plans={plans} selectedId={selectedId} disabled={disabled} onChoose={onChoose} onPress={wake} />
+  </nav>;
+}
+
+/** A/B buttons shared by the phone dock and the desktop YOUR VOTE card; switching returns to the top of the new plan. */
+export function PlanSwitchOptions({ plans, selectedId, disabled, onChoose, onPress }: Omit<Props, "active"> & { onPress?: () => void }) {
+  const pendingPlan = useRef("");
+
   useLayoutEffect(() => {
     if (!pendingPlan.current || pendingPlan.current !== selectedId) return;
     pendingPlan.current = "";
@@ -94,20 +77,17 @@ export default function PlanSwitchDock({ plans, selectedId, active, disabled, on
     return () => cancelAnimationFrame(frame);
   }, [selectedId]);
 
-  return <nav className={"plan-switch-dock" + (collapsed ? " is-collapsed" : "")} aria-label="切換偏好方案" hidden={!active || !visible} aria-hidden={collapsed || undefined} onPointerDown={wake} onFocus={wake}>
-    <div className="plan-switch-caption"><b>切換方案</b><span>已選偏好會保留</span></div>
-    <div className="plan-switch-options">
-      {plans.map(([id, plan]) => <button type="button" key={id} className="plan-switch-option" data-tone={plan.color}
-        disabled={disabled} aria-pressed={id === selectedId} aria-controls="selection-content"
-        aria-label={plan.code + "・" + plan.shortName + (id === selectedId ? "，目前選擇" : "，切換方案")}
-        title={plan.title} onClick={() => {
-          wake();
-          if (id === selectedId) return;
-          pendingPlan.current = id;
-          onChoose(id);
-        }}>
-        <b aria-hidden="true">{plan.code}</b><span>{plan.shortName}</span><span className="plan-switch-check" aria-hidden="true">{id === selectedId ? "✓" : ""}</span>
-      </button>)}
-    </div>
-  </nav>;
+  return <div className="plan-switch-options">
+    {plans.map(([id, plan]) => <button type="button" key={id} className="plan-switch-option" data-tone={plan.color}
+      disabled={disabled} aria-pressed={id === selectedId} aria-controls="selection-content"
+      aria-label={plan.code + "・" + plan.shortName + (id === selectedId ? "，目前選擇" : "，切換方案")}
+      title={plan.title} onClick={() => {
+        onPress?.();
+        if (id === selectedId) return;
+        pendingPlan.current = id;
+        onChoose(id);
+      }}>
+      <b aria-hidden="true">{plan.code}</b><span>{plan.shortName}</span><span className="plan-switch-check" aria-hidden="true">{id === selectedId ? "✓" : ""}</span>
+    </button>)}
+  </div>;
 }

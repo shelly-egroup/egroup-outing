@@ -2,9 +2,11 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import AccountMenu from "./account-menu";
+import { useScrollReveal } from "./use-scroll-reveal";
 import type { VoteReminder } from "@/lib/vote-reminder";
 
-const MOBILE_NAV_RETRACT_DELAY_MS = 200;
+// On phones the quick nav only drops down while scrolling up, so it never covers what is being read.
+const MOBILE_NAV_IDLE_MS = 2000;
 
 function OutingTicker({ announcement }: { announcement: string }) {
   const messages = ["10/29 秋季員旅・雙方案對決・你的一票決定全員行程", announcement];
@@ -38,10 +40,11 @@ function OutingTicker({ announcement }: { announcement: string }) {
 }
 export default function OutingHeader({ active, heroActions, vote, announcement }: { active: boolean; heroActions: RefObject<HTMLDivElement | null>; vote?: VoteReminder; announcement: string }) {
   const [compact, setCompact] = useState(false);
-  const [quickNavRetracted, setQuickNavRetracted] = useState(false);
+  const [mobile, setMobile] = useState(false);
   const bar = useRef<HTMLDivElement>(null);
   const quickNav = useRef<HTMLElement>(null);
-  const retractTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [quickNavRevealed] = useScrollReveal(active && compact && mobile, MOBILE_NAV_IDLE_MS,
+    () => !!quickNav.current?.contains(document.activeElement));
   useEffect(() => {
     if (!active) { setCompact(false); return; }
     const actions = heroActions.current;
@@ -58,44 +61,28 @@ export default function OutingHeader({ active, heroActions, vote, announcement }
     return () => { observer.disconnect();size.disconnect();cancelAnimationFrame(frame);window.removeEventListener("scroll",schedule); };
   }, [active, heroActions]);
   useEffect(() => {
-    if (retractTimer.current) clearTimeout(retractTimer.current);
-    retractTimer.current = null;
-    if (!active || !compact) {
-      setQuickNavRetracted(false);
-      return;
-    }
-    const mobile = window.matchMedia("(max-width: 600px)");
-    const wake = () => {
-      if (retractTimer.current) clearTimeout(retractTimer.current);
-      retractTimer.current = null;
-      setQuickNavRetracted(false);
-      if (!mobile.matches) return;
-      retractTimer.current = setTimeout(() => {
-        retractTimer.current = null;
-        if (!quickNav.current?.contains(document.activeElement)) setQuickNavRetracted(true);
-      }, MOBILE_NAV_RETRACT_DELAY_MS);
-    };
-    window.addEventListener("scroll", wake, { passive: true });
-    mobile.addEventListener("change", wake);
-    wake();
-    return () => {
-      window.removeEventListener("scroll", wake);
-      mobile.removeEventListener("change", wake);
-      if (retractTimer.current) clearTimeout(retractTimer.current);
-      retractTimer.current = null;
-    };
-  }, [active, compact]);
+    const query = window.matchMedia("(max-width: 600px)");
+    const sync = () => setMobile(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
   useEffect(() => {
     const header = bar.current;
     if (!active || !header) return;
     const sync = () => {
       const extra = window.matchMedia("(max-width: 1100px)").matches ? 62 : 0;
-      document.documentElement.style.setProperty("--outing-header-offset", header.offsetHeight + extra + 24 + "px");
+      // Phones stick the header at -ticker height, so the ticker scrolls away and only the brand bar stays pinned.
+      const ticker = header.querySelector<HTMLElement>(".ticker")?.offsetHeight ?? 0;
+      header.style.setProperty("--ticker-height", ticker + "px");
+      const hidden = window.matchMedia("(max-width: 600px)").matches ? ticker : 0;
+      document.documentElement.style.setProperty("--outing-header-offset", header.offsetHeight - hidden + extra + 24 + "px");
     };
     const observer = new ResizeObserver(sync); observer.observe(header);
     window.addEventListener("resize",sync); sync();
     return () => { observer.disconnect();window.removeEventListener("resize",sync);document.documentElement.style.removeProperty("--outing-header-offset"); };
   }, [active, compact]);
+  const quickNavRetracted = compact && mobile && !quickNavRevealed;
   const hideQuickNav = !compact || quickNavRetracted;
   return <div className={"outing-header" + (compact ? " is-compact" : "") + (quickNavRetracted ? " is-nav-retracted" : "")} ref={bar}>
     <OutingTicker announcement={announcement} />
