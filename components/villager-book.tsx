@@ -1,27 +1,31 @@
 import ImageLightbox, { type MenuPage } from "./image-lightbox";
 
-// Screenshots supplied for this outing show the restaurant's gallery, dish page,
-// and Shilin weekday-lunch price card. Keep the price card intact for zooming.
+// Photos supplied for this outing show the restaurant, signature dishes, and menu.
 const pages: readonly [MenuPage, ...MenuPage[]] = [
   {
-    src: "/assets/villager-gallery.png",
-    alt: "村民食堂官網相簿，包含港點、甜品、廚師料理與店內照片",
-    title: "菜色與店內相簿",
+    src: "/assets/good-food-menu.webp",
+    alt: "好食在食堂菜單與單點價格",
+    title: "店內菜單",
   },
   {
-    src: "/assets/villager-dish.png",
-    alt: "村民食堂官網菜色頁的港式蘿蔔糕照片",
-    title: "官網菜色照片",
+    src: "/assets/good-food-sashimi.webp",
+    alt: "好食在食堂綜合生魚片拼盤",
+    title: "綜合生魚片",
   },
   {
-    src: "/assets/villager-weekday-lunch-pricing.png",
-    alt: "士林官邸店官網價目圖：平日午餐 11:00 至 14:00，720 元另加一成服務費，供餐至 13:45，用餐 2 小時",
-    title: "士林平日午餐資訊",
+    src: "/assets/good-food-chicken.webp",
+    alt: "好食在食堂白斬雞拼盤",
+    title: "招牌白斬雞",
+  },
+  {
+    src: "/assets/good-food-storefront.webp",
+    alt: "好食在食堂基隆路店面入口",
+    title: "店面外觀",
   },
 ];
 
 export default function VillagerBook() {
   return <div className="villager-book">
-    <ImageLightbox pages={pages} bookLabel="村民食堂菜色與平日午餐圖冊" heading="村民食堂 · 菜色與午餐" pageLabel="圖頁" />
+    <ImageLightbox pages={pages} bookLabel="好食在食堂菜色與菜單圖冊" heading="好食在食堂 · 菜色與菜單" pageLabel="圖頁" />
   </div>;
 }

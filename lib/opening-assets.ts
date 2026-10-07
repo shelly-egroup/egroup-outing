@@ -11,5 +11,5 @@ export const OPENING_IMAGES = {
 } as const;
 
 export const OPENING_SCORE = "/assets/autumn-opening-score.m4a?v=2";
-// The hero poster with a built-in soft margin (see show-poster.webp for the original picture).
-export const HERO_POSTER = "/assets/show-poster-ext.webp";
+// Keep one project asset as the single source of truth for the current hero poster.
+export const HERO_POSTER = "/assets/show-poster.png";

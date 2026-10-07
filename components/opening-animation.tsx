@@ -281,12 +281,12 @@ export default function OpeningAnimation({onFinish, plans, date = "10.29"}: {onF
     </OpeningSplash>}
     <div ref={stageRef} className="film-stage" data-scene={step} data-playing={started} data-buffering={bufferedAt.current !== null} aria-hidden="true">
       <div className="prepaint">{Object.values(IMG).map(src => <Cut key={src} src={src} />)}</div>
-      {step === 1 && <Shot at={CUES[1]} className="shot-glyph glyph-white"><b>悠</b></Shot>}
-      {step === 3 && <Shot at={CUES[3]} className="shot-glyph glyph-blue"><b>閒</b></Shot>}
+      {step === 1 && <Shot at={CUES[1]} className="shot-glyph glyph-white"><b>極</b></Shot>}
+      {step === 3 && <Shot at={CUES[3]} className="shot-glyph glyph-blue"><b>限</b></Shot>}
       {step === 4 && <Shot at={CUES[4]} className="shot-host host-a sd-field-blue">
         <Cut src={IMG.hostA} className="host sd-cutout" />
         <Glitch src={IMG.hostA} />
-        <div className="host-word"><strong>悠<br />閒</strong><span className="sd-micro sd-vertical">LEISURE</span></div>
+        <div className="host-word"><strong>極<br />限</strong><span className="sd-micro sd-vertical">EXTREME</span></div>
         <span className="host-team sd-micro">TEAM A — {plans[0]}</span>
         <Cross />
         <i className="x-wipe" />
@@ -303,7 +303,7 @@ export default function OpeningAnimation({onFinish, plans, date = "10.29"}: {onF
       {step === 7 && <Shot at={CUES[7]} className="shot-split split-play">
         <Split a={<Cut src={IMG.photoA} className="prop sd-cutout" />} b={<Cut src={IMG.photoSwap} className="prop sd-cutout" />}>
           <Cut src={IMG.handB} className="prop prop-hand sd-cutout" />
-          <span className="split-word word-top"><span className="split-word-mask"><span>FISHING</span></span></span>
+          <span className="split-word word-top"><span className="split-word-mask"><span>NINJA</span></span></span>
           <span className="split-word word-bottom"><span className="split-word-mask"><span>BATTLE</span></span></span>
         </Split>
       </Shot>}

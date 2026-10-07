@@ -1,86 +1,86 @@
 {
-  "zhishan-shrimp-fishing": {
-    "storeName": "台北市士林區至善釣蝦場",
-    "rating": 4.1,
-    "reviewCount": 2716,
-    "capturedAt": "2026-10-01T08:12:51.925Z",
-    "sourceUrl": "https://www.google.com/search?q=%E8%87%B3%E5%96%84%E9%87%A3%E8%9D%A6%E5%A0%B4#lrd=0x3442adb5337b7055:0x9e274fbe076e914a,1,,,,",
+  "gymefit-ninja-keelung": {
+    "storeName": "GYMEFIT Ninja 忍者館",
+    "rating": 4.9,
+    "reviewCount": 159,
+    "capturedAt": "2026-10-07T17:35:10.403Z",
+    "sourceUrl": "https://www.google.com/search?q=GYMEFIT%20Ninja%20%E5%8F%B0%E5%8C%97#lrd=0x3442aba06778a613:0x199d0dbefac7de8d,1,,,,",
     "reviews": [
-      { "author": "李坤霖", "authorUrl": "https://www.google.com/maps/contrib/113935654986838608458/reviews?hl=zh-Hant-TW", "rating": 4, "relativeTimeAtCapture": "上次編輯：3 天前", "text": "用餐娛樂 非常舒適唯讀停車問題比較麻煩 一位難求 加上是否有意要收費停車場更難停車了" },
-      { "author": "Weber Chuang", "authorUrl": "https://www.google.com/maps/contrib/100922976207353798555/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "4 天前", "text": "東西好吃！態度和善！" },
-      { "author": "賴合一", "authorUrl": "https://www.google.com/maps/contrib/116051485245573006390/reviews?hl=zh-Hant-TW", "rating": 1, "relativeTimeAtCapture": "4 天前", "text": "放蝦時間不準時" },
-      { "author": "游源堂", "authorUrl": "https://www.google.com/maps/contrib/111673132126836281097/reviews?hl=zh-Hant-TW", "rating": 4, "relativeTimeAtCapture": "4 天前", "text": "" },
-      { "author": "Hong Jessica", "authorUrl": "https://www.google.com/maps/contrib/113434315188900209330/reviews?hl=zh-Hant-TW", "rating": 1, "relativeTimeAtCapture": "5 天前", "text": "來體驗朋友辦的釣蝦包池\n料理是不錯吃\n但工作人員態度很差" }
+      { "author": "James Z.", "authorUrl": "https://www.google.com/maps/contrib/115017066559468576677/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "2 個月前", "text": "" },
+      { "author": "Gabi Aviv", "authorUrl": "https://www.google.com/maps/contrib/101492146349843194156/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "6 個月前", "text": "一個專業且設備齊全的忍者訓練中心，工作人員專業且熱情友善。強烈推薦。", "translated": true },
+      { "author": "Moran Aviv", "authorUrl": "https://www.google.com/maps/contrib/115177888490453855358/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "6 個月前", "text": "簡直太棒了！ ！ ！設計精美，每個細節都精雕細琢；氣氛極佳，一踏進門就讓人感覺舒適自在；團隊更是卓越非凡——熱情、體貼、專業。在這裡，你會感覺自己得到了最好的照顧。我們一直在尋找忍者訓練場地，一眼就愛上了這裡。這裡應有盡有，而且都是頂級的——一流的器材、精心設計的場地，以及激勵你更加努力訓練、不斷進步的氛圍。強烈推薦！ ！ ！ 💪🔥", "translated": true },
+      { "author": "Justin Lu", "authorUrl": "https://www.google.com/maps/contrib/115220599099912728742/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "6 個月前", "text": "" },
+      { "author": "Krzysztof Dziurda", "authorUrl": "https://www.google.com/maps/contrib/110135237783260258322/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "8 個月前", "text": "" }
     ]
   },
-  "villager-shilin": {
-    "storeName": "村民食堂廚窗港點 士林官邸店",
-    "rating": 4.6,
-    "reviewCount": 13306,
-    "capturedAt": "2026-10-01T08:17:53.870Z",
-    "sourceUrl": "https://www.google.com/search?q=%E6%9D%91%E6%B0%91%E9%A3%9F%E5%A0%82+%E5%BB%9A%E7%AA%97%E6%B8%AF%E9%BB%9E+%E5%A3%AB%E6%9E%97%E5%AE%98%E9%82%B8%E5%BA%97#lrd=0x3442afc4ca5a03ef:0x59a70b82aac725fd,1,,,,",
+  "good-food-keelung": {
+    "storeName": "好食在食堂",
+    "rating": 4.0,
+    "reviewCount": 427,
+    "capturedAt": "2026-10-07T17:35:20.778Z",
+    "sourceUrl": "https://www.google.com/search?q=%E5%A5%BD%E9%A3%9F%E5%9C%A8%E9%A3%9F%E5%A0%82#lrd=0x3442ab9738831bdd:0x2cde9859f73362af,1,,,,",
     "reviews": [
-      { "author": "Wade Lo", "authorUrl": "https://www.google.com/maps/contrib/108258498207218734784/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "3 小時前", "text": "" },
-      { "author": "ROCK HUANG", "authorUrl": "https://www.google.com/maps/contrib/116673179606769940403/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "3 小時前", "text": "筠鑫服務非常非常非常非常好" },
-      { "author": "蕭妙文", "authorUrl": "https://www.google.com/maps/contrib/109810419117202487102/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "3 小時前", "text": "筠鑫小姐服務態度很好，親民、風趣。" },
-      { "author": "LiLy Li", "authorUrl": "https://www.google.com/maps/contrib/110455063348192479243/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "3 小時前", "text": "" },
-      { "author": "莊沛婕", "authorUrl": "https://www.google.com/maps/contrib/105423547649152140215/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "3 小時前", "text": "" }
-    ]
-  },
-  "grand-hotel-garden": {
-    "storeName": "圓山大飯店-松鶴餐廳",
-    "rating": 4.1,
-    "reviewCount": 4220,
-    "capturedAt": "2026-10-01T08:12:01.032Z",
-    "sourceUrl": "https://www.google.com/search?q=%E5%9C%93%E5%B1%B1%E5%A4%A7%E9%A3%AF%E5%BA%97+%E6%9D%BE%E9%B6%B4%E9%A4%90%E5%BB%B3#lrd=0x3442aead5af124f3:0x7b151db9895183e6,1,,,,",
-    "reviews": [
-      { "author": "竹莉", "authorUrl": "https://www.google.com/maps/contrib/112659989892685410211/reviews?hl=zh-Hant-TW", "rating": 3, "relativeTimeAtCapture": "18 小時前", "text": "除了蛋糕和冰淇淋 其他都不好吃！" },
-      { "author": "John Chang", "authorUrl": "https://www.google.com/maps/contrib/117282189167784204039/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "5 天前", "text": "" },
-      { "author": "Peng Chen", "authorUrl": "https://www.google.com/maps/contrib/102502877274725082606/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "6 天前", "text": "原本只是抱著來吃吃看的心情，結果意外非常喜歡。餐點種類很多，味道也都很穩定，不會有一般 buffet 只有少數幾樣好吃的感覺。甜點和水果也很有水準，整體吃得很滿足。" },
-      { "author": "Yu Shen", "authorUrl": "https://www.google.com/maps/contrib/102526455021705181069/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "6 天前", "text": "非常推薦松鶴廳，不只是餐點選擇豐富，整體環境和服務也都很有飯店水準。這次最喜歡海鮮、生魚片和甜點，幾乎每一區都有想再拿第二次的東西，吃完真的很滿足。" },
-      { "author": "陳頤謙", "authorUrl": "https://www.google.com/maps/contrib/108865561058863434426/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "6 天前", "text": "很適合帶長輩來的一間餐廳，環境舒適又有質感，餐點選擇也非常完整，中式、西式、日式都有。家人每個人都吃得很開心，尤其服務真的很加分，會想再帶家人回訪" }
-    ]
-  },
-  "le-cafe": {
-    "storeName": "台北老爺酒店 - Le Café 咖啡廳",
-    "rating": 4.1,
-    "reviewCount": 2786,
-    "capturedAt": "2026-10-01T08:14:57.078Z",
-    "sourceUrl": "https://www.google.com/search?q=%E5%8F%B0%E5%8C%97%E8%80%81%E7%88%BA%20Le%20Caf%C3%A9#lrd=0x3442a968e2c3adbb:0x18fdc1b607e96645,1,,,,",
-    "reviews": [
-      { "author": "藤川卓美", "authorUrl": "https://www.google.com/maps/contrib/107692399474221957774/reviews?hl=zh-Hant-TW", "rating": 4, "relativeTimeAtCapture": "3 天前", "text": "您可以放鬆身心，享受寧靜的時光。", "translated": true },
-      { "author": "鄭宜芳", "authorUrl": "https://www.google.com/maps/contrib/110080343908136505257/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "3 天前", "text": "用餐恰逢歐陸主題，德國豬腳、西班牙烘蛋、白酒淡菜義大利麵好吃的令人驚豔🩷！\n現煮牛肉湯肉質軟嫩湯頭好，沙拉區生菜新鮮，還有蘆薈、白木耳，甜點區十分精緻，值得回訪。" },
-      { "author": "Hsiao Hsiao", "authorUrl": "https://www.google.com/maps/contrib/107345540578502690557/reviews?hl=zh-Hant-TW", "rating": 4, "relativeTimeAtCapture": "4 天前", "text": "" },
-      { "author": "徐祥倫", "authorUrl": "https://www.google.com/maps/contrib/107684689470836056592/reviews?hl=zh-Hant-TW", "rating": 1, "relativeTimeAtCapture": "4 天前", "text": "八德優質牛排？內用時旁邊還有蒼蠅在飛 夜市牛排就算了 店內用餐環境整潔？ 要去的人自己考慮一下" },
-      { "author": "社長好命長壽研究社", "authorUrl": "https://www.google.com/maps/contrib/106438010450140446117/reviews?hl=zh-Hant-TW", "rating": 3, "relativeTimeAtCapture": "5 天前", "text": "品類少但有質感" }
-    ]
-  },
-  "brasserie": {
-    "storeName": "台北晶華酒店栢麗廳 Brasserie",
-    "rating": 4.4,
-    "reviewCount": 14950,
-    "capturedAt": "2026-10-01T08:16:50.249Z",
-    "sourceUrl": "https://www.google.com/search?q=%E5%8F%B0%E5%8C%97%E6%99%B6%E8%8F%AF%20%E6%A0%A2%E9%BA%97%E5%BB%B3#lrd=0x3442a968f90507c9:0x32371c5db2902158,1,,,,",
-    "reviews": [
-      { "author": "Tina Hsu", "authorUrl": "https://www.google.com/maps/contrib/103666266302858671825/reviews?hl=zh-Hant-TW", "rating": 4, "relativeTimeAtCapture": "5 分鐘前", "text": "4人用餐的小方桌略顯擁擠，左右手會碰到餐具，餐盤放著就滿了，兩人跟4人的桌子一樣大，希望能改善" },
-      { "author": "Hsin Lee", "authorUrl": "https://www.google.com/maps/contrib/117783793299986814039/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "10 分鐘前", "text": "生日還有小蛋糕❤️" },
-      { "author": "Cindy Chen", "authorUrl": "https://www.google.com/maps/contrib/105919337386580362194/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "13 分鐘前", "text": "Albee、Indra 和 Asrii 的服務都很棒。食物美味，非常新鮮。", "translated": true },
-      { "author": "Wu Don Hua", "authorUrl": "https://www.google.com/maps/contrib/103874364859142243783/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "14 分鐘前", "text": "今天看到新的糖漿，搭配紅茶很美味，每次來都感覺的到餐檯一直有在進步！" },
-      { "author": "anguo wang", "authorUrl": "https://www.google.com/maps/contrib/101350471919228008051/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "2 小時前", "text": "" }
+      { "author": "EMMA", "authorUrl": "https://www.google.com/maps/contrib/110566897763487613648/reviews?hl=zh-Hant-TW", "rating": 2, "relativeTimeAtCapture": "1 個月前", "text": "雖然是要讓人點啤酒配著吃，但真的太重鹹了" },
+      { "author": "蔣天義", "authorUrl": "https://www.google.com/maps/contrib/113555616486661879106/reviews?hl=zh-Hant-TW", "rating": 3, "relativeTimeAtCapture": "1 個月前", "text": "" },
+      { "author": "Benjamin", "authorUrl": "https://www.google.com/maps/contrib/103007014884656297557/reviews?hl=zh-Hant-TW", "rating": 2, "relativeTimeAtCapture": "1 個月前", "text": "客家小炒肥肉多的離譜，蔥爆牛肉一般，芥蘭&高麗菜吃起來水分很多，也不太新鮮。總体很差，三個人吃剩下這些。 菜的份量倒是不少，電員服務態度也行。餐點：2/5  |  服務：4/5" },
+      { "author": "黃承棟", "authorUrl": "https://www.google.com/maps/contrib/104416439265131150098/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "1 個月前", "text": "不錯餐點：5/5  |  服務：5/5  |  氣氛：5/5" },
+      { "author": "李曉威", "authorUrl": "https://www.google.com/maps/contrib/107213191250922620145/reviews?hl=zh-Hant-TW", "rating": 4, "relativeTimeAtCapture": "2 個月前", "text": "餐點：4/5  |  服務：3/5  |  氣氛：3/5吵雜程度吵雜，但還是能交談用餐人數5 到 8 人" }
     ]
   },
   "lazertreks-taipei": {
     "storeName": "六度空間-Lazertreks",
     "rating": 4.5,
-    "reviewCount": 1468,
-    "capturedAt": "2026-10-01T08:19:32.760Z",
+    "reviewCount": 1469,
+    "capturedAt": "2026-10-07T17:35:46.571Z",
     "sourceUrl": "https://www.google.com/search?q=LazerTreks+Taipei#lrd=0x3442a94461bf07f1:0xd0284a4e6bb0c955,1,,,,",
     "reviews": [
-      { "author": "小熊", "authorUrl": "https://www.google.com/maps/contrib/108348979354568117474/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "2 天前", "text": "超好玩" },
-      { "author": "黃文俊", "authorUrl": "https://www.google.com/maps/contrib/118274310891621105923/reviews?hl=zh-Hant-TW", "rating": 3, "relativeTimeAtCapture": "1 週前", "text": "難得的公司辦活動，一起在六度空間玩雷射槍遊戲，蠻不錯的，緊張刺激，很好玩，促進團隊成員參與活動，增進彼此互相交流的感覺" },
-      { "author": "劉任", "authorUrl": "https://www.google.com/maps/contrib/111669443346143352186/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "1 週前", "text": "超好玩！超推團戰" },
-      { "author": "林宏為", "authorUrl": "https://www.google.com/maps/contrib/110150741012349320119/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "2 週前", "text": "" },
-      { "author": "Rannie Yeh", "authorUrl": "https://www.google.com/maps/contrib/105065517414362498959/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "2 週前", "text": "槍戰的時候超級好玩，但是絕對不要跑，因為撞到真的很痛我撞到過只是撞到手，但已經很痛了哈哈哈" }
+      { "author": "宥宥", "authorUrl": "https://www.google.com/maps/contrib/102660750875263430226/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "5 天前", "text": "★★★★★第一次來六度空間，整體體驗比想像中還要好！環境很舒服、氣氛也很放鬆，店員服務親切，有問題都很有耐心地介紹和協助。整體空間乾淨又有質感，讓人會想再來。這次的體驗很滿意，推薦給想找個地方放鬆、跟朋友一起玩的大家～下次還會再來！" },
+      { "author": "小熊", "authorUrl": "https://www.google.com/maps/contrib/108348979354568117474/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "1 週前", "text": "超好玩" },
+      { "author": "黃文俊", "authorUrl": "https://www.google.com/maps/contrib/118274310891621105923/reviews?hl=zh-Hant-TW", "rating": 3, "relativeTimeAtCapture": "2 週前", "text": "難得的公司辦活動，一起在六度空間玩雷射槍遊戲，蠻不錯的，緊張刺激，很好玩，促進團隊成員參與活動，增進彼此互相交流的感覺" },
+      { "author": "劉任", "authorUrl": "https://www.google.com/maps/contrib/111669443346143352186/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "2 週前", "text": "超好玩！超推團戰" },
+      { "author": "林宏為", "authorUrl": "https://www.google.com/maps/contrib/110150741012349320119/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "3 週前", "text": "" }
+    ]
+  },
+  "le-cafe": {
+    "storeName": "台北老爺酒店 - Le Café 咖啡廳",
+    "rating": 4.1,
+    "reviewCount": 2787,
+    "capturedAt": "2026-10-07T17:35:56.621Z",
+    "sourceUrl": "https://www.google.com/search?q=%E5%8F%B0%E5%8C%97%E8%80%81%E7%88%BA%20Le%20Caf%C3%A9#lrd=0x3442a968e2c3adbb:0x18fdc1b607e96645,1,,,,",
+    "reviews": [
+      { "author": "陳淑芬", "authorUrl": "https://www.google.com/maps/contrib/101297081198743743672/reviews?hl=zh-Hant-TW", "rating": 4, "relativeTimeAtCapture": "3 天前", "text": "餐點：4/5  |  服務：4/5  |  氣氛：5/5預訂網址建議訂位吵雜程度安靜，適合交談" },
+      { "author": "Lotus Yu", "authorUrl": "https://www.google.com/maps/contrib/101444632578691520945/reviews?hl=zh-Hant-TW", "rating": 4, "relativeTimeAtCapture": "上次編輯：4 天前", "text": "品項雖沒有讓人「眼睛大肚子小」的遺憾，但該有的都有，餐點「持續微調」非常重要，值得鼓勵，收拾碗盤速度快，有眼觀四方的效率，甚好。甜點是一絕，咖啡換過之後，風味更佳！小小缺點是桌子靠得太近，有點小擁擠，影響用餐心情。某些地方少一組兩人桌，就會讓空間感變好。畢竟絡繹不絕，願意長久持續支持的客人們，會比那兩客的錢重要許多，不是嗎？服務思維需要保持彈性，這麼說，是因為冬天人人有外套，圍巾，還有隨身的包，有些兩人位靠牆，小桌子只要兩個餐盤兩杯飲料就幾乎佔滿了，實在是塞爆啊！在沒有客滿的狀況下，應先提供較舒適的位置給客人，而不是空著一整小間的位子，卻把客人塞在牆角。2.22 帶著客人享用的下午茶吃得我不太開心！看到位子立即提出換位要求，負責位子的小姐不肯給較寬敞的位子，説兩個人不能給4人桌，才說呢！抬頭就看見有兩人坐4人桌呀！我沒要四人桌，只是希望別塞在牆角。與客務相關的事，處理態度要友善有智慧，只要不是無理要求，要儘可能提供協助。老爺酒店素來以貼心服務著稱，擁有諸多粉絲，長久以來，因地理位置絕佳，一直是我宴客首選，期待每個工作人員都能秉持既有服務精神及優良傳統，服務好客人，荷包賺滿。餐點：4/5  |  服務：3/5  |  氣氛：4/5建議的餐點老爺起司蛋糕, 羅馬提拉米蘇" },
+      { "author": "Amy Yang", "authorUrl": "https://www.google.com/maps/contrib/113723947913318410147/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "5 天前", "text": "" },
+      { "author": "藤川卓美", "authorUrl": "https://www.google.com/maps/contrib/107692399474221957774/reviews?hl=zh-Hant-TW", "rating": 4, "relativeTimeAtCapture": "1 週前", "text": "您可以放鬆身心，享受寧靜的時光。餐點：4/5  |  服務：4/5  |  氣氛：5/5", "translated": true },
+      { "author": "鄭宜芳", "authorUrl": "https://www.google.com/maps/contrib/110080343908136505257/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "1 週前", "text": "用餐恰逢歐陸主題，德國豬腳、西班牙烘蛋、白酒淡菜義大利麵好吃的令人驚豔🩷！現煮牛肉湯肉質軟嫩湯頭好，沙拉區生菜新鮮，還有蘆薈、白木耳，甜點區十分精緻，值得回訪。" }
+    ]
+  },
+  "brasserie": {
+    "storeName": "台北晶華酒店栢麗廳 Brasserie",
+    "rating": 4.4,
+    "reviewCount": 15072,
+    "capturedAt": "2026-10-07T17:36:08.119Z",
+    "sourceUrl": "https://www.google.com/search?q=%E5%8F%B0%E5%8C%97%E6%99%B6%E8%8F%AF%20%E6%A0%A2%E9%BA%97%E5%BB%B3#lrd=0x3442a968f90507c9:0x32371c5db2902158,1,,,,",
+    "reviews": [
+      { "author": "vivi Lu", "authorUrl": "https://www.google.com/maps/contrib/114847697046685680132/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "5 小時前", "text": "都很棒餐點：5/5  |  服務：5/5  |  氣氛：5/5用餐人數2 人" },
+      { "author": "Jia Li", "authorUrl": "https://www.google.com/maps/contrib/107559907131333139010/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "5 小時前", "text": "餐點：4/5  |  服務：5/5  |  氣氛：5/5吵雜程度吵雜，但還是能交談用餐人數3 到 4 人" },
+      { "author": "Oscar Lyu", "authorUrl": "https://www.google.com/maps/contrib/114733197732950411784/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "5 小時前", "text": "餐點：4/5  |  服務：5/5  |  氣氛：5/5" },
+      { "author": "Jerry Chu", "authorUrl": "https://www.google.com/maps/contrib/105940478802885394471/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "5 小時前", "text": "" },
+      { "author": "陳秀吟", "authorUrl": "https://www.google.com/maps/contrib/112058607902494448087/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "5 小時前", "text": "" }
+    ]
+  },
+  "grand-hotel-garden": {
+    "storeName": "圓山大飯店-松鶴餐廳",
+    "rating": 4.1,
+    "reviewCount": 4228,
+    "capturedAt": "2026-10-07T17:36:21.678Z",
+    "sourceUrl": "https://www.google.com/search?q=%E5%9C%93%E5%B1%B1%E5%A4%A7%E9%A3%AF%E5%BA%97+%E6%9D%BE%E9%B6%B4%E9%A4%90%E5%BB%B3#lrd=0x3442aead5af124f3:0x7b151db9895183e6,1,,,,",
+    "reviews": [
+      { "author": "欸龍。", "authorUrl": "https://www.google.com/maps/contrib/112980035994297839032/reviews?hl=zh-Hant-TW", "rating": 3, "relativeTimeAtCapture": "10 小時前", "text": "第二次來吃 認為餐點真的都有需待加強第一次來時覺得很好吃 口味都很道地跟到味這次吃味道完全都變了 不知道是不是換廚師只有魚 蝦卵手捲還行甜點還不錯可以吃吃飲料選擇少 除了可樂機能喝其他很普通可能不會特地再來餐點：3/5  |  服務：4/5  |  氣氛：5/5吵雜程度有點吵雜用餐人數3 到 4 人" },
+      { "author": "蘇秋霖", "authorUrl": "https://www.google.com/maps/contrib/113943451577898595609/reviews?hl=zh-Hant-TW", "rating": 3, "relativeTimeAtCapture": "1 天前", "text": "下午茶2點半開始，2點5分左右第一次排隊以為要拿順序號碼，結果竟然是發桌號，而服務人員也沒有說發的是桌號，所以很放心在附近閒晃，結果進餐廳前又重頭再排一次隊說要依序等候帶位真是傻眼，吃個下午茶要排兩次隊第一次遇到，而且先發桌號給顧客的用意到底在哪裡真搞不懂。餐點：3/5  |  服務：2/5  |  氣氛：3/5建議的餐點旭蟹用餐人數多人聚餐/單人用餐皆宜" },
+      { "author": "陳仁治", "authorUrl": "https://www.google.com/maps/contrib/107762939256746621568/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "2 天前", "text": "很棒的體驗 東西好吃新鮮 物超所值餐點：5/5  |  服務：5/5  |  氣氛：5/5" },
+      { "author": "藍宇傑", "authorUrl": "https://www.google.com/maps/contrib/118292323353674783438/reviews?hl=zh-Hant-TW", "rating": 2, "relativeTimeAtCapture": "2 天前", "text": "兩年沒吃落差感極大，10／3假日午餐，食材品質沒有提升，旅展賣一堆餐劵，再拉高價位回收餐劵價差，吃粗飽的品質，九日集的價格。不適合把費經驗豐富的人。餐點：2/5  |  服務：2/5  |  氣氛：2/5" },
+      { "author": "kiki Lin", "authorUrl": "https://www.google.com/maps/contrib/105557363643089300042/reviews?hl=zh-Hant-TW", "rating": 5, "relativeTimeAtCapture": "3 天前", "text": "餐點：5/5  |  服務：5/5  |  氣氛：5/5" }
     ]
   }
 }

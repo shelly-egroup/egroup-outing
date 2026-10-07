@@ -57,8 +57,8 @@ test("review ages advance from capture time to now and preserve edited versus pu
 });
 
 test("legacy captures remain valid and the current six venue IDs exclude unrelated stores", () => {
-  assert.equal(Object.keys(defaultStoreDirectory).length, 11);
-  assert.deepEqual(activeReviewStoreIds, ["zhishan-shrimp-fishing", "villager-shilin", "lazertreks-taipei", "le-cafe", "brasserie", "grand-hotel-garden"]);
+  assert.equal(Object.keys(defaultStoreDirectory).length, 13);
+  assert.deepEqual(activeReviewStoreIds, ["gymefit-ninja-keelung", "good-food-keelung", "lazertreks-taipei", "le-cafe", "brasserie", "grand-hotel-garden"]);
   assert.equal(Object.values(defaultStoreDirectory).filter(entry => entry.reviews).length, 11);
   for (const [id, entry] of Object.entries(defaultStoreDirectory)) {
     assert.deepEqual(parseStoreInfo(id, entry.info), entry.info);
@@ -104,7 +104,7 @@ test("new itinerary captures display over older cloud reviews without replacing 
   const merged = mergeStoreDirectory({ [seed.info.id]: old })[seed.info.id];
   assert.equal(merged.info.website, "https://example.com/saved");
   assert.deepEqual(merged.reviews, seed.reviews);
-  const newerSaved = { ...old, reviews: { ...seed.reviews, capturedAt: "2026-10-02T01:00:00.000Z" } };
+  const newerSaved = { ...old, reviews: { ...seed.reviews, capturedAt: "2026-10-08T01:00:00.000Z" } };
   assert.deepEqual(mergeStoreDirectory({ [seed.info.id]: newerSaved })[seed.info.id].reviews, newerSaved.reviews);
 });
 
@@ -203,6 +203,6 @@ test("database data wins over bundled defaults and missing/invalid reviews keep 
   const merged = mergeStoreDirectory(parsed);
   assert.deepEqual(merged["hpw-changan"], saved);
   assert.deepEqual(merged.malaya.reviews, defaultStoreDirectory.malaya.reviews);
-  assert.equal(Object.keys(merged).length, 11);
+  assert.equal(Object.keys(merged).length, 13);
   assert.deepEqual(parseStoreDirectory(null), {});
 });

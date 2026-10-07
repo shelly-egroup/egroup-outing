@@ -43,6 +43,23 @@ export const villagerStore: StoreInfo = {
   website: "https://villager.com.tw/",
 };
 
+export const ninjaStore: StoreInfo = {
+  id: "gymefit-ninja-keelung",
+  name: "GYMEFIT Ninja 忍者館",
+  branch: "台北市信義區基隆路一段 25 號 1 樓",
+  mapsQuery: "GYMEFIT Ninja 台北市信義區基隆路一段25號1樓",
+  mapsUrl: "https://www.google.com/maps/place/data=!4m2!3m1!1s0x3442aba06778a613:0x199d0dbefac7de8d",
+  website: "https://gymefit.tw/ninja/%E9%97%9C%E5%8D%A1%E4%BB%8B%E7%B4%B9/7725",
+};
+
+export const goodFoodStore: StoreInfo = {
+  id: "good-food-keelung",
+  name: "好食在食堂",
+  branch: "台北市松山區基隆路一段 8 號",
+  mapsQuery: "好食在食堂 台北市松山區基隆路一段8號",
+  mapsUrl: "https://www.google.com/maps/place/data=!4m2!3m1!1s0x3442ab9738831bdd:0x2cde9859f73362af",
+};
+
 export const lazerTreksStore: StoreInfo = {
   id: "lazertreks-taipei",
   name: "六度空間 雷射槍戰（LazerTreks）",

@@ -1,4 +1,4 @@
-import { lazerTreksStore, massageStore, restaurantStores, villagerStore, zhishanFishingStore, type StoreInfo } from "./store-references";
+import { goodFoodStore, lazerTreksStore, massageStore, ninjaStore, restaurantStores, villagerStore, zhishanFishingStore, type StoreInfo } from "./store-references";
 import { massageReviews, type StoreReviewSnapshot } from "./store-reviews";
 import restaurantReviews from "./restaurant-review-snapshots.json";
 import itineraryReviews from "./itinerary-review-snapshots.json";
@@ -6,7 +6,7 @@ import itineraryReviews from "./itinerary-review-snapshots.json";
 export type StoreRecord = { info: StoreInfo; reviews?: StoreReviewSnapshot; updatedAt?: number };
 export type StoreDirectory = Record<string, StoreRecord>;
 export const activeReviewStoreIds = [
-  "zhishan-shrimp-fishing", "villager-shilin", "lazertreks-taipei",
+  "gymefit-ninja-keelung", "good-food-keelung", "lazertreks-taipei",
   "le-cafe", "brasserie", "grand-hotel-garden",
 ] as const;
 const currentItineraryReviewCutoff = Date.parse("2026-09-30T16:00:00.000Z");
@@ -15,7 +15,7 @@ export function isCurrentItineraryReview(snapshot: StoreReviewSnapshot | undefin
 }
 const seeds: Record<string, StoreReviewSnapshot> = { ...restaurantReviews, ...itineraryReviews, [massageStore.id]: massageReviews };
 export const defaultStoreDirectory: StoreDirectory = Object.fromEntries(
-  [...restaurantStores, zhishanFishingStore, villagerStore, lazerTreksStore, massageStore].map(store => {
+  [...restaurantStores, zhishanFishingStore, villagerStore, ninjaStore, goodFoodStore, lazerTreksStore, massageStore].map(store => {
     const { id, name, mapsQuery, branch, website, facebook, line } = store;
     const info: StoreInfo = { id, name, mapsQuery };
     for (const [key, value] of Object.entries({ branch, website, facebook, line })) if (value) Object.assign(info, { [key]: value });
