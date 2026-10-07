@@ -47,7 +47,7 @@ import {
 const planLine = (plan?: TripPlan) => plan?.title.replaceAll("\n", "");
 
 const PLAN_ART = [
-  { photo: OPENING_IMAGES.photoA, feast: OPENING_IMAGES.feastA, word: "療癒" },
+  { photo: OPENING_IMAGES.photoA, feast: OPENING_IMAGES.feastA, word: "悠閒" },
   { photo: OPENING_IMAGES.photoB, feast: OPENING_IMAGES.feastB, word: "熱血" },
 ];
 
@@ -221,8 +221,8 @@ export default function TripShowdown() {
           onFinish={finishIntro}
           date={catalog.settings.eventDate.slice(5).replace("-", ".")}
           plans={[
-            plans[0]?.[1].shortName || "療癒派",
-            plans[1]?.[1].shortName || "熱血派",
+            plans[0]?.[1].shortName || "釣趣派",
+            plans[1]?.[1].shortName || "熱血對戰派",
           ]}
         />
       )}
@@ -234,11 +234,11 @@ export default function TripShowdown() {
         <header className="show-hero" data-ready={introReady && !intro}>
           <div className="hero-field" aria-hidden="true"><i className="hero-field-a" /><i className="hero-field-b" /></div>
           <div className="hero-stage">
-            <p className="hero-team hero-team-a"><small className="sd-micro">TEAM A</small><strong>{plans[0]?.[1].shortName || "療癒派"}</strong><span>{planLine(plans[0]?.[1]) || "手碟＋港點午餐"}</span></p>
+            <p className="hero-team hero-team-a"><small className="sd-micro">TEAM A</small><strong>{plans[0]?.[1].shortName || "釣趣派"}</strong><span>{planLine(plans[0]?.[1]) || "釣蝦＋港點午餐"}</span></p>
             <div className="hero-poster">
-              <img className="hero-poster-img" src={HERO_POSTER} width={2272} height={804} alt="兩位老闆對決：左邊是手碟與港點，右邊是雷射槍戰與飯店下午茶" fetchPriority="high" />
+              <img className="hero-poster-img" src={HERO_POSTER} width={2272} height={804} alt="兩位老闆對決：左邊釣蝦港點的釣趣派，右邊雷射槍戰下午茶的熱血對戰派" fetchPriority="high" />
             </div>
-            <p className="hero-team hero-team-b"><small className="sd-micro">TEAM B</small><strong>{plans[1]?.[1].shortName || "熱血派"}</strong><span>{planLine(plans[1]?.[1]) || "雷射槍戰＋飯店下午茶"}</span></p>
+            <p className="hero-team hero-team-b"><small className="sd-micro">TEAM B</small><strong>{plans[1]?.[1].shortName || "熱血對戰派"}</strong><span>{planLine(plans[1]?.[1]) || "雷射槍戰＋飯店下午茶"}</span></p>
           </div>
           <div className="hero-center">
             <ShowLogo className="hero-lockup" tag="" />
@@ -252,7 +252,7 @@ export default function TripShowdown() {
               <span>預計 {catalog.settings.expectedVoters} 人</span>
             </p>
             <p className="hero-copy">
-              <span className="hero-clause">到底是手碟療癒配港點聚餐吸引人，</span><span className="hero-clause">還是雷射團戰享用飯店 Buffet 令人嚮往？</span>
+              <span className="hero-clause">到底是釣蝦吃港點聚餐吸引人，</span><span className="hero-clause">還是雷射團戰享用飯店 Buffet 令人嚮往？</span>
               <span className="hero-copy-cta">看完行程，選一個你最想去的方案。</span>
             </p>
             <div className="hero-actions" ref={heroActionsRef}>
@@ -374,7 +374,7 @@ export default function TripShowdown() {
                       rows={3}
                       value={draft.note}
                       disabled={saving || !votingOpen}
-                      placeholder={draft.planId === "B" ? "例如：團體活動需留意的狀況，或餐點需求…" : "例如：第一次玩手碟需要協助，或有餐點需求…"}
+                      placeholder={draft.planId === "B" ? "例如：團體活動需留意的狀況，或餐點需求…" : "例如：釣蝦需要協助，或有餐點需求…"}
                       onChange={(event) => edit({ note: event.target.value })}
                     />
                     <span>{draft.note.length} / 1000</span>
@@ -501,8 +501,8 @@ export default function TripShowdown() {
             <p className="footer-kicker"><span>SEE YOU ON</span><b>{catalog.settings.eventDate.slice(5).replace("-", ".")}</b></p>
             <div className="footer-stage">
               <div className="footer-ribbons" aria-hidden="true">
-                <CautionTape tone="ink" className="tape-upper" words={[plans[0]?.[1].shortName || "療癒派", planLine(plans[0]?.[1]) || "手碟＋港點午餐", "TEAM A"]} />
-                <CautionTape reverse className="tape-lower" words={[plans[1]?.[1].shortName || "熱血派", planLine(plans[1]?.[1]) || "雷射槍戰＋飯店下午茶", "TEAM B"]} />
+                <CautionTape tone="ink" className="tape-upper" words={[plans[0]?.[1].shortName || "釣趣派", planLine(plans[0]?.[1]) || "釣蝦＋港點午餐", "TEAM A"]} />
+                <CautionTape reverse className="tape-lower" words={[plans[1]?.[1].shortName || "熱血對戰派", planLine(plans[1]?.[1]) || "雷射槍戰＋飯店下午茶", "TEAM B"]} />
               </div>
               <ShowLogo className="footer-lockup" />
             </div>
