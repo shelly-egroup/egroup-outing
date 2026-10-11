@@ -224,6 +224,9 @@ export default function TripShowdown() {
             plans[0]?.[1].shortName || "極限體能派",
             plans[1]?.[1].shortName || "熱血對戰派",
           ]}
+          standings={votesReady && plans.length === 2
+            ? [0, 1].map(index => Object.values(votes).filter(item => item.planId === plans[index][0]).length) as [number, number]
+            : null}
         />
       )}
       <div ref={pageRef} hidden={intro} className="outing-page">
@@ -262,7 +265,7 @@ export default function TripShowdown() {
               <a href="#results" className="button button-ghost">看即時戰況</a>
               <button type="button" className="hero-replay" onClick={() => setIntro(true)}>
                 <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10a9 9 0 1 1 2.6 8.4" /><path d="M3 4v6h6" /></svg>
-                重播開場
+                重播預告
               </button>
             </div>
           </div>
