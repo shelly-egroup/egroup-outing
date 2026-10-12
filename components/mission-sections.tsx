@@ -8,6 +8,7 @@ import MissionProtocols from "./mission-protocols";
 import MissionAccept from "./mission-accept";
 import ReviewDeck, { useTopChoice } from "./review-deck";
 import CaptainsFaceOff from "./captains-faceoff";
+import TeamBoard, { useTeamBoardVisible } from "./team-board";
 import ReconTargets from "./recon-targets";
 import { useOuting } from "./outing-provider";
 import { useInView } from "./use-in-view";
@@ -151,7 +152,8 @@ function MissionFuse({ onLit }: { onLit: (lit: boolean) => void }) {
 /** Below the key visual, only the trip itself, on the IMF console: the day's log, which hands straight over to accepting the
  *  mission, then the arena recon, the tea extraction and the protocols. */
 export default function MissionSections({ plan, planId, eventDate, now }: { plan?: TripPlan; planId?: string; eventDate: string; now: number }) {
-  const { stores, user, votes } = useOuting();
+  const { stores, user, votes, teamConfig } = useOuting();
+  const boardVisible = useTeamBoardVisible();
   // the briefing's status follows this agent: waiting for an answer, or accepted
   const accepted = !!(user && votes[user.uid]);
   const [alarm, setAlarm] = useState<BriefingAlarm>({ armed: false, seconds: 5 }), [lit, setLit] = useState(false);
@@ -209,6 +211,10 @@ export default function MissionSections({ plan, planId, eventDate, now }: { plan
         <Terminal name="MISSION_ACCEPTANCE.EXE" status="AWAITING AGENTS" tone="red" className="ms-accept-term">
           <MissionAccept />
         </Terminal>
+        {/* the teams, right under accepting: shown once the organisers publish them */}
+        {boardVisible && <Terminal name="TEAM_DRAFT.EXE" status={teamConfig.picking ? "CAPTAINS PICKING" : "TEAMS"} tone="blue" className="ms-teams-term">
+          <TeamBoard />
+        </Terminal>}
       </div>
     </section>
 

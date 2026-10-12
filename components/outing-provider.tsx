@@ -25,7 +25,7 @@ import {
   serverTimestamp,
   runTransaction,
 } from "firebase/database";
-import { parseTeams, type TeamMap } from "@/lib/teams";
+import { captainOf, DEFAULT_TEAM_CONFIG, normalEmail, parseTeamConfig, parseTeams, pickTurn, withCaptains, type Team, type TeamConfig, type TeamMap } from "@/lib/teams";
 import { adminEmails, getFirebase } from "@/lib/firebase";
 import { defaultStoreDirectory, mergeStoreDirectory, nextReviewRecord, parseStoreDirectory, parseStoreInfo, seedMissingStores, type StoreDirectory } from "@/lib/store-directory";
 import type { StoreInfo } from "@/lib/store-references";
@@ -67,6 +67,13 @@ type ContextValue = {
   teams: TeamMap;
   teamsReady: boolean;
   saveTeams: (teams: TeamMap) => Promise<void>;
+  /** How the teams work: shown on the front page or not, captains picking or not, and who the captains are. */
+  teamConfig: TeamConfig;
+  teamConfigReady: boolean;
+  saveTeamConfig: (config: TeamConfig) => Promise<void>;
+  /** The signed-in captain takes someone for their team (in turn), or puts back someone they took. */
+  pickAgent: (uid: string) => Promise<void>;
+  releaseAgent: (uid: string) => Promise<void>;
   saveCatalog: (catalog: Catalog, version: number | null, acceptedImpacts?: string) => Promise<void>;
   stores: StoreDirectory;
   storedStores: StoreDirectory;
@@ -107,6 +114,7 @@ export function OutingProvider({ children }: { children: ReactNode }) {
     [votesReady, setVotesReady] = useState(false);
   const [votesError, setVotesError] = useState("");
   const [teams, setTeams] = useState<TeamMap>({}), [teamsReady, setTeamsReady] = useState(false);
+  const [teamConfig, setTeamConfig] = useState<TeamConfig>(DEFAULT_TEAM_CONFIG), [teamConfigReady, setTeamConfigReady] = useState(false);
   const [myDetails, setMyDetails] = useState<VoteDetails | null>(null),
     [detailsReady, setDetailsReady] = useState(false);
   const [connected, setConnected] = useState(false),
@@ -233,6 +241,23 @@ export function OutingProvider({ children }: { children: ReactNode }) {
       return onValue(ref(getFirebase().database, "outing/teams"), (snap) => { setTeams(parseTeams(snap.val())); setTeamsReady(true); }, () => setTeamsReady(false));
     } catch { setTeamsReady(false); }
   }, [authReady, user?.uid]);
+  // The team set-up is public too; until the organisers save one, the defaults apply (teams hidden, captains by email).
+  useEffect(() => {
+    if (!authReady) return;
+    try {
+      return onValue(ref(getFirebase().database, "outing/teamConfig"), (snap) => { setTeamConfig(parseTeamConfig(snap.val())); setTeamConfigReady(true); }, () => setTeamConfigReady(false));
+    } catch { setTeamConfigReady(false); }
+  }, [authReady, user?.uid]);
+  // A captain who signs in claims their slot: their uid, name and photo go on the record, so the roster can mark them.
+  useEffect(() => {
+    if (!user || !teamConfigReady) return;
+    const team = captainOf(teamConfig.captains, null, user.email), captain = team && teamConfig.captains[team];
+    if (!team || !captain || (captain.uid === user.uid && captain.name === (user.displayName || undefined) && captain.photoURL === (user.photoURL || undefined))) return;
+    const record: Record<string, string> = { email: captain.email, uid: user.uid };
+    if (user.displayName) record.name = user.displayName.slice(0, 80);
+    if (user.photoURL?.startsWith("https://")) record.photoURL = user.photoURL;
+    set(ref(getFirebase().database, "outing/teamConfig/captains/" + team), record).catch(() => {});
+  }, [user, teamConfigReady, teamConfig.captains]);
   useEffect(() => {
     setMyDetails(null);
     setDetailsReady(false);
@@ -372,8 +397,36 @@ export function OutingProvider({ children }: { children: ReactNode }) {
   }
   async function saveTeams(next: TeamMap) {
     if (!isAdmin) throw new Error("只有主辦人可以分隊。");
-    try { await set(ref(getFirebase().database, "outing/teams"), parseTeams(next)); }
+    try { await set(ref(getFirebase().database, "outing/teams"), parseTeams(withCaptains(next, teamConfig.captains))); }
     catch { throw new Error("分隊沒有儲存，請確認連線與資料庫權限後再試。"); }
+  }
+  async function saveTeamConfig(next: TeamConfig) {
+    if (!isAdmin) throw new Error("只有主辦人可以設定分隊。");
+    const captain = (team: Team) => { const c = next.captains[team], out: Record<string, string> = { email: normalEmail(c.email) }; if (c.uid) out.uid = c.uid; if (c.name) out.name = c.name; if (c.photoURL) out.photoURL = c.photoURL; return out; };
+    try { await set(ref(getFirebase().database, "outing/teamConfig"), { published: next.published, picking: next.picking, turns: next.turns, firstPick: next.firstPick, captains: { red: captain("red"), blue: captain("blue") }, updatedAt: serverTimestamp() }); }
+    catch { throw new Error("分隊設定沒有儲存，請確認連線後再試。"); }
+  }
+  /** The captain's own team, if the signed-in member leads one and picking is open on the front page. */
+  function pickingTeam(): Team {
+    const team = user ? captainOf(teamConfig.captains, user.uid, user.email) : undefined;
+    if (!team) throw new Error("只有隊長可以選人。");
+    if (!teamConfig.published || !teamConfig.picking) throw new Error("主辦人還沒有開放隊長選人。");
+    return team;
+  }
+  async function pickAgent(uid: string) {
+    const team = pickingTeam(), placed = withCaptains(teams, teamConfig.captains);
+    if (!votes[uid]) throw new Error("這位特務還沒有接受任務。");
+    if (placed[uid]) throw new Error("這位特務已經有隊伍了。");
+    if (teamConfig.turns && pickTurn(Object.keys(votes), placed, teamConfig.captains, teamConfig.firstPick || "red") !== team) throw new Error("現在輪到對方隊長選人。");
+    // a transaction, so two captains cannot take the same person at once
+    const result = await runTransaction(ref(getFirebase().database, "outing/teams/" + uid), (current) => current ? undefined : team);
+    if (!result.committed) throw new Error("這位特務剛被另一隊選走了。");
+  }
+  async function releaseAgent(uid: string) {
+    const team = pickingTeam();
+    if (captainOf(teamConfig.captains, uid)) throw new Error("隊長不能被放回。");
+    const result = await runTransaction(ref(getFirebase().database, "outing/teams/" + uid), (current) => current === team ? null : undefined);
+    if (!result.committed) throw new Error("只能放回自己隊上的人。");
   }
   async function saveCatalog(next: Catalog, version: number | null, acceptedImpacts?: string) {
     next = upgradeCatalog(next);
@@ -427,6 +480,11 @@ export function OutingProvider({ children }: { children: ReactNode }) {
         teams,
         teamsReady,
         saveTeams,
+        teamConfig,
+        teamConfigReady,
+        saveTeamConfig,
+        pickAgent,
+        releaseAgent,
         saveCatalog,
         stores,
         storedStores,

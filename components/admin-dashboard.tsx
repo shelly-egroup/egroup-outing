@@ -298,7 +298,7 @@ export default function AdminDashboard() {
               <button type="button" aria-pressed={view === "editor"} onClick={() => setView("editor")}>編輯方案{dirty && <span>未儲存</span>}</button>
             </div>
             {catalog && <div hidden={view !== "overview"}><AdminVoteOverview catalog={catalog} votes={votes} details={details} emails={emails} ready={votesReady && detailsReady && membersReady} error={votesError || detailsError || membersError} /></div>}
-            {view === "teams" && <AdminTeams votes={votes} details={details} ready={votesReady && detailsReady} />}
+            {view === "teams" && <AdminTeams votes={votes} details={details} emails={emails} ready={votesReady && detailsReady && membersReady} />}
             <div hidden={view !== "members"}><AdminMembers members={members} ready={membersReady} error={membersError} votes={votes} votesReady={votesReady} catalog={catalog} /></div>
             {draft && (
               <form ref={editorForm} hidden={view !== "editor"} noValidate onSubmit={save} onInvalidCapture={(event) => {

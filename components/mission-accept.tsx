@@ -5,10 +5,10 @@ import AgentHat from "./agent-hat";
 import { useOuting } from "./outing-provider";
 import { createEmbers, createFilmBurn, type BurnSeed } from "@/lib/film-burn";
 import { initials, type PublicVote } from "@/lib/trips";
-import { TEAM_LABEL, TEAMS, type Team } from "@/lib/teams";
+import { captainOf, TEAM_LABEL, withCaptains, type Team } from "@/lib/teams";
 
 /** An agent's photo (or initials), wearing the fedora. */
-function Face({ vote, size }: { vote: PublicVote; size?: "lg" }) {
+export function Face({ vote, size }: { vote: PublicVote; size?: "lg" }) {
   const [broken, setBroken] = useState(false);
   return <span className={"hat-wrap" + (size ? " is-" + size : "")} aria-hidden="true">
     <span className={"agent-face" + (size ? " is-" + size : "")}>
@@ -125,33 +125,30 @@ function Briefing({ name, destroy, onDestroyed }: { name?: string; destroy: bool
   </div>;
 }
 
-/** Everyone who has accepted, as dossier photos — by team once the organisers have drawn them. */
 /** Sample agents for the local preview (?agent=new): the database is not reachable on a development machine. */
-const SAMPLE: [string, PublicVote][] = ["王特務", "林探員", "陳隊長", "張探員", "李特務", "黃探員", "測試探員"].map((name, i) => ["demo" + i, { planId: "B", displayName: name, photoURL: "", updatedAt: i } as PublicVote]);
+export const SAMPLE: [string, PublicVote][] = ["王特務", "林探員", "陳隊長", "張探員", "李特務", "黃探員", "測試探員"].map((name, i) => ["demo" + i, { planId: "B", displayName: name, photoURL: "", updatedAt: i } as PublicVote]);
 
+/** Everyone who has accepted, as dossier photos in the order they accepted; once the organisers publish the teams, each tile
+ *  carries its team colour and the captains are marked (the team board under the console shows the teams themselves). */
 function AgentRoster({ me, demo = false }: { me?: string; demo?: boolean }) {
-  const { votes: live, votesReady: liveReady, votesError, catalogStatus, teams } = useOuting();
+  const { votes: live, votesReady: liveReady, votesError, catalogStatus, teams, teamConfig } = useOuting();
   const votes = demo ? Object.fromEntries(SAMPLE) : live, votesReady = demo || liveReady;
   const agents = Object.entries(votes).sort(([, a], [, b]) => (a.updatedAt || 0) - (b.updatedAt || 0));
-  const drawn = agents.some(([uid]) => teams[uid]);
+  const shown = teamConfig.published, placed = shown ? withCaptains(teams, teamConfig.captains) : {};
   const offline = !votesReady && (catalogStatus === "error" || !!votesError);
   const grid = (rows: [string, PublicVote][]) => <ul className="dossier-grid">
-    {rows.map(([uid, vote]) => <li key={uid} className={uid === me ? "is-me" : undefined} data-team={teams[uid] || "open"}>
-      <Face vote={vote} /><span>{vote.displayName || "探員"}</span>{uid === me && <b>你</b>}
-    </li>)}
+    {rows.map(([uid, vote]) => { const leads = shown ? captainOf(teamConfig.captains, uid) : undefined;
+      return <li key={uid} className={uid === me ? "is-me" : undefined} data-team={placed[uid] || "open"}>
+        <Face vote={vote} /><span>{vote.displayName || "探員"}</span>{uid === me && <b>你</b>}
+        {leads && <em className="dossier-captain" data-team={leads}>{TEAM_LABEL[leads]}隊長</em>}
+      </li>; })}
   </ul>;
   return <div className="roster" aria-live="polite">
     <p className="roster-head"><span>AGENTS ON MISSION</span><b>{votesReady ? agents.length : "—"}</b><small>位特務已接受任務</small></p>
     {offline ? <p className="roster-offline"><i />特務名單暫時無法連線，恢復後會自動顯示。</p>
       : !votesReady ? <LoadingIndicator label="讀取特務名單" compact />
       : !agents.length ? <p className="roster-empty">還沒有人接受任務，第一位就是你。</p>
-      : !drawn ? grid(agents)
-      : <div className="roster-teams">
-          {TEAMS.map(team => { const rows = agents.filter(([uid]) => teams[uid] === team); return <div key={team} className="roster-team" data-team={team}>
-            <p className="roster-team-name"><i />{TEAM_LABEL[team]}<span>{rows.length} 人</span></p>{grid(rows)}
-          </div>; })}
-          {agents.some(([uid]) => !teams[uid]) && <div className="roster-team" data-team="open"><p className="roster-team-name"><i />待分隊<span>{agents.filter(([uid]) => !teams[uid]).length} 人</span></p>{grid(agents.filter(([uid]) => !teams[uid]))}</div>}
-        </div>}
+      : grid(agents)}
   </div>;
 }
 
@@ -160,7 +157,7 @@ function AgentRoster({ me, demo = false }: { me?: string; demo?: boolean }) {
  * lock snaps onto the photo, the facts come in, the MISSION ACCEPTED stamp slams down — the card jolts, ink flies, a shockwave
  * runs out — and the confirmation types itself.
  */
-function AgentFile({ vote, name, team, familyCount, note, fresh, actions }: { vote: PublicVote; name: string; team?: Team; familyCount: number; note: string; fresh: boolean; actions: React.ReactNode }) {
+function AgentFile({ vote, name, team, leading = false, familyCount, note, fresh, actions }: { vote: PublicVote; name: string; team?: Team; leading?: boolean; familyCount: number; note: string; fresh: boolean; actions: React.ReactNode }) {
   return <div className={"agent-card" + (fresh ? " is-new" : "")}>
     {fresh && <i className="agent-scan" aria-hidden="true" />}
     <span className="agent-stamp" aria-hidden="true">MISSION ACCEPTED{fresh && <span className="agent-ink">{Array.from({ length: 12 }, (_, i) => <i key={i} style={{ "--a": i * 30 + 8 + "deg", "--d": 26 + (i % 3) * 14 + "px" } as React.CSSProperties} />)}</span>}</span>
@@ -169,7 +166,7 @@ function AgentFile({ vote, name, team, familyCount, note, fresh, actions }: { vo
       <span><small>AGENT FILE</small><strong>{name}</strong><em>STATUS・ACTIVE</em></span>
     </div>
     <dl className="accept-facts">
-      <div><dt>隊伍</dt><dd data-team={team}>{team ? TEAM_LABEL[team] : "分隊公布後顯示在這裡"}</dd></div>
+      <div><dt>隊伍</dt><dd data-team={team}>{team ? TEAM_LABEL[team] + (leading ? "・隊長" : "") : "分隊公布後顯示在這裡"}</dd></div>
       <div><dt>同行</dt><dd>{familyCount ? "帶 " + familyCount + " 位家眷" : "單獨行動"}</dd></div>
       <div><dt>備註</dt><dd>{note || "無"}</dd></div>
     </dl>
@@ -184,7 +181,7 @@ function AgentFile({ vote, name, team, familyCount, note, fresh, actions }: { vo
  * trip is set; this is how the people who never voted join, and how everyone keeps their note and family up to date.
  */
 export default function MissionAccept() {
-  const { user, authReady, profileReady, signingIn, votingAccess, canVote, votes, myDetails, detailsReady, connected, teams, login, logout, acceptMission } = useOuting();
+  const { user, authReady, profileReady, signingIn, votingAccess, canVote, votes, myDetails, detailsReady, connected, teams, teamConfig, login, logout, acceptMission } = useOuting();
   const mine = user ? votes[user.uid] : undefined;
   const [editing, setEditing] = useState(false), [saving, setSaving] = useState(false), [failed, setFailed] = useState(""), [justAccepted, setJustAccepted] = useState(false), [burnt, setBurnt] = useState(false);
   const [note, setNote] = useState(""), [family, setFamily] = useState(false), [familyCount, setFamilyCount] = useState(1), [familyNote, setFamilyNote] = useState("");
@@ -196,7 +193,9 @@ export default function MissionAccept() {
   }, [detailsReady, myDetails]);
   useEffect(() => { setEditing(false); setJustAccepted(false); setFailed(""); }, [user?.uid]);
   const countValid = !family || (Number.isSafeInteger(familyCount) && familyCount >= 1 && familyCount <= 20);
-  const team: Team | undefined = user ? teams[user.uid] : undefined;
+  // your team only once the organisers publish the teams; captains are always on the team they lead
+  const team: Team | undefined = user && teamConfig.published ? withCaptains(teams, teamConfig.captains)[user.uid] : undefined;
+  const leading = !!user && teamConfig.published && !!captainOf(teamConfig.captains, user.uid, user.email);
   const [demo, setDemo] = useState(false);
   useEffect(() => {
     if (process.env.NODE_ENV !== "development" || new URLSearchParams(window.location.search).get("agent") !== "new") return;
@@ -229,7 +228,7 @@ export default function MissionAccept() {
     <p>{votingAccess === "rejected" ? "請聯絡主辦人，或改用 egroup. 開頭的 Google 帳號。" : "主辦人確認後，這裡會自動開放接受任務。"}</p>
     <button type="button" className="accept-link" onClick={login}>改用公司 Google 帳號 →</button>
   </div>;
-  else if (mine && !editing) panel = <AgentFile vote={mine} name={mine.displayName || user.displayName || "特務"} team={team} familyCount={myDetails?.familyCount || 0} note={myDetails?.note?.trim() || ""} fresh={justAccepted}
+  else if (mine && !editing) panel = <AgentFile vote={mine} name={mine.displayName || user.displayName || "特務"} team={team} leading={leading} familyCount={myDetails?.familyCount || 0} note={myDetails?.note?.trim() || ""} fresh={justAccepted}
     actions={<><button type="button" className="accept-link" onClick={() => { setEditing(true); setJustAccepted(false); }}>修改任務資料</button><button type="button" className="accept-link is-quiet" onClick={logout}>登出</button></>} />;
   else panel = <form className="accept-form" onSubmit={event => { event.preventDefault(); void accept(); }}>
     <p className="accept-who"><span className="ms-label">AGENT FILE</span>特務 <strong>{user.displayName || user.email}</strong><button type="button" className="accept-link is-quiet" onClick={logout}>不是你？登出</button></p>

@@ -2911,6 +2911,39 @@ body:has(dialog[open]) .plan-switch-dock { visibility: hidden; }
 .admin-teams-switch button[data-team="red"][aria-pressed="true"] { position: relative; border-color: #d7193c; background: #d7193c; color: #fff; }
 .admin-teams-switch button[data-team="blue"][aria-pressed="true"] { position: relative; border-color: #2f5fe0; background: #2f5fe0; color: #fff; }
 .admin-teams-switch button:focus-visible { position: relative; outline: 3px solid #f5c842; outline-offset: 1px; }
+.admin-teams-switch button:disabled { opacity: .55; cursor: not-allowed; }
+/* the team set-up: switches, the first pick, the two captains */
+.admin-teams-config { display: grid; gap: 12px; margin: 20px 0; padding: 16px; border: 2px solid var(--ink); background: #fffdf5; }
+.admin-teams-toggle { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 14px; cursor: pointer; }
+.admin-teams-toggle input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.admin-teams-toggle-track { position: relative; width: 52px; height: 30px; border: 2px solid var(--ink); background: #e2dfd8; transition: background .2s; }
+.admin-teams-toggle-track i { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border: 2px solid var(--ink); background: #fff; transition: transform .2s; }
+.admin-teams-toggle[data-on="true"] .admin-teams-toggle-track { background: #1f9d55; }
+.admin-teams-toggle[data-on="true"] .admin-teams-toggle-track i { transform: translateX(22px); }
+.admin-teams-toggle input:focus-visible + .admin-teams-toggle-track { outline: 3px solid #f5c842; outline-offset: 2px; }
+.admin-teams-toggle[data-disabled] { opacity: .5; cursor: not-allowed; }
+.admin-teams-toggle strong, .admin-teams-first strong { display: block; font-size: 15px; }
+.admin-teams-toggle small, .admin-teams-first small { display: block; color: #5b6470; font-size: 12px; }
+.admin-teams-first { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-top: 12px; border-top: 1px dashed #10182030; }
+.admin-captains { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 12px; margin: 0 0 24px; }
+.admin-captain { display: grid; gap: 12px; padding: 16px; border: 2px solid var(--ink); background: #fff; }
+.admin-captain[data-team="red"] { border-color: #d7193c; box-shadow: inset 6px 0 0 #d7193c; }
+.admin-captain[data-team="blue"] { border-color: #2f5fe0; box-shadow: inset 6px 0 0 #2f5fe0; }
+.admin-captain-role { margin: 0; font-size: 13px; font-weight: 900; letter-spacing: .12em; }
+.admin-captain[data-team="red"] .admin-captain-role { color: #a3122d; } .admin-captain[data-team="blue"] .admin-captain-role { color: #1f45b0; }
+.admin-captain-who { display: flex; align-items: center; gap: 12px; }
+.admin-captain-who strong { display: block; font-size: 17px; }
+.admin-captain-who small { display: block; color: #5b6470; font-size: 12px; overflow-wrap: anywhere; }
+.admin-captain-who em { display: block; font-size: 12px; font-style: normal; font-weight: 800; color: #b45309; }
+.admin-captain-who em[data-ok="true"] { color: #1f7a45; }
+.admin-captain-change { display: grid; gap: 8px; }
+.admin-captain-change label { display: grid; gap: 4px; color: #444; font-size: 12px; font-weight: 800; }
+.admin-captain-change select, .admin-captain-change input { min-height: 40px; padding: 0 10px; border: 2px solid var(--ink); background: #fff; font-size: 14px; }
+.admin-captain-change form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
+.admin-teams-sheet { margin-top: 8px; }
+.admin-teams-sheet h3 { margin: 0; font-size: 20px; }
+.admin-teams-captain { margin-left: 8px; padding: 2px 6px; color: #fff; font-size: 11px; font-weight: 900; vertical-align: 2px; }
+.admin-teams-captain[data-team="red"] { background: #d7193c; } .admin-teams-captain[data-team="blue"] { background: #2f5fe0; }
 
 /* ─── Boot screen (components/outing-loading.tsx): the IMF console coming on while the page loads ─── */
 .boot-screen { --ink: #050506; --paper: #f2ede4; position: fixed; inset: 0; z-index: 1100; display: grid; place-items: center; overflow: hidden; padding: 24px; background: radial-gradient(70% 60% at 50% 46%, #0d0f13, #050506 70%), #050506; color: var(--paper); isolation: isolate; }
