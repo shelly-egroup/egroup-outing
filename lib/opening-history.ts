@@ -1,6 +1,6 @@
 /** Bump the version whenever the trailer changes: a new key means every device counts as not having seen it, so the new
  *  cut plays once for everyone again (the old key is simply left behind). */
-const OPENING_VERSION = "mission-score-2";
+const OPENING_VERSION = "mission-score-3";
 export const OPENING_SEEN_KEY = "egroup-outing:opening-seen:" + OPENING_VERSION;
 type OpeningStorage = Pick<Storage, "getItem" | "setItem">;
 

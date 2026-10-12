@@ -73,11 +73,11 @@ function streak(x1, y1, x2, y2, heat, w, hue) {
 }
 function drawSparks(t) {
   g.globalCompositeOperation = "lighter";
-  for (const [t0, x0, y0, n, power, hue] of sparkBursts) {
+  for (const [t0, x0, y0, n, power, hue, dir, spread] of sparkBursts) {
     const l = t - t0; if (l < 0 || l > 1.2) continue;
     for (let k = 0; k < n; k++) {
       const life = .35 + .8 * hash(k, t0); if (l > life) continue;
-      const ang = hash(k, t0 + 1) * Math.PI * 2, sp = (.2 + hash(k, t0 + 2)) * power * cqh;
+      const ang = dir == null ? hash(k, t0 + 1) * Math.PI * 2 : dir + (hash(k, t0 + 1) - .5) * spread, sp = (.2 + hash(k, t0 + 2)) * power * cqh;
       const vx = Math.cos(ang) * sp, vy = Math.sin(ang) * sp - power * .3 * cqh;
       const P = (u) => [x0 + vx * u, PY + y0 + vy * u + 60 * cqh * u * u], [x1, y1] = P(l), [x2, y2] = P(Math.max(0, l - .03));
       streak(x1, y1, x2, y2, 1 - l / life, .18 * cqh * (.5 + (1 - l / life)), hue);
@@ -125,12 +125,14 @@ function cord(x0, x1, y, burnt) {
   g.strokeStyle = grad; g.lineWidth = .2 * cqh; g.beginPath(); g.moveTo(burnt[1] - trail, y); g.lineTo(burnt[1], y); g.stroke();
 }
 const WIRE_Y = .3;   // the face-off wire of the last Bond card
+const WIRE_TO = TALL ? .58 : .56;   // where the wire burns down to: right above where the match will be struck
+let MATCH_HEAD = null;               // the match head in picture coordinates (set by the match shot)
 // Fuse 2: from the first montage cut to the white-out, a fuse burns along the bottom bar (in frame on 9:16)
 const BAR_Y = TALL ? SH * .955 : SH - PY / 2, M0 = T.montage[0].t;
-const fuse2 = (t) => { const u = clamp01((t - M0) / (T.blackout - .05 - M0)); return [SW * (.03 + .94 * (u < .8 ? u * .82 / .8 : .82 + .18 * ((u - .8) / .2) ** 1.5)), BAR_Y]; };
+const fuse2 = (t) => { const u = clamp01((t - M0) / (T.suckout - .02 - M0)); return [SW * (.03 + .94 * (u < .8 ? u * .82 / .8 : .82 + .18 * ((u - .8) / .2) ** 1.5)), BAR_Y]; };
 function drawFuses(t) {
   drawFuseRun(t);
-  if (t >= M0 && t < T.blackout) { const [x, y] = fuse2(t); cord(SW * .03, SW * .97, y, [SW * .03, x]); fuseHead(t, M0, fuse2, TALL ? .7 : .55, 120); }
+  if (t >= M0 && t < T.suckout) { const [x, y] = fuse2(t); cord(SW * .03, SW * .97, y, [SW * .03, x]); fuseHead(t, M0, fuse2, TALL ? .7 : .55, 120); }
 }
 
 // ── reusable bits ──
@@ -212,31 +214,33 @@ shot(T.irisOpen, T.titles[0], (el) => {
   const dripWrap = $("div", "layer", barrel);
   dripWrap.innerHTML = `<svg class="drip" viewBox="0 0 200 260" preserveAspectRatio="none"><defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a0010"/><stop offset=".7" stop-color="#b3001c"/><stop offset="1" stop-color="#d0102c"/></linearGradient></defs><path fill="url(#dg)" d="M0 0H200V196C193 196 191 214 186 230 183 240 175 240 173 229 170 214 170 199 163 199 156 199 156 210 152 216 148 222 142 220 141 211 140 200 136 196 128 196 120 196 121 228 116 246 113 256 104 256 102 244 99 222 100 199 91 198 83 198 83 207 79 212 75 217 69 214 68 206 67 199 63 197 55 197 47 197 47 222 42 236 39 245 31 245 29 234 27 220 28 199 20 198 12 198 9 206 6 210 3 214 0 211 0 206Z"/></svg>`;
   const drip = dripWrap.firstChild, bleed = $("i", "bleed", barrel), iris = $("i", "iris", el);
+  // on the music: he walks in on the intro, turns on the beat before the band, fires as it comes in
+  const LT = T.turn - T.irisOpen, LF = T.fire - T.irisOpen, LC = T.irisClose - T.irisOpen, LE = T.titles[0] - T.irisOpen;
   hit(T.fire, 2.2, .2); hit(T.fire + .02, 1, .12);
   return (t) => {
     const l = t - T.irisOpen;
-    const ir = l < 3.6 ? mix(dotR, R, p(l, 0, .55, E.outE)) : mix(R, dotR, p(l, 4.6, 4.92, E.inC));
-    const ix = kf(l, [[0, DOTX[4] * PW, E.ioC], [1.3, PW / 2]]);
-    const iy = kf(l, [[0, PH / 2], [3.0, PH / 2, E.inQ], [3.62, PH * .63]]);
+    const ir = l < LC ? mix(dotR, R, p(l, 0, .55, E.outE)) : mix(R, dotR, p(l, LC, LE - .04, E.inC));
+    const ix = kf(l, [[0, DOTX[4] * PW, E.ioC], [Math.min(1.3, LT * .75), PW / 2]]);
+    const iy = kf(l, [[0, PH / 2], [LF, PH / 2, E.inQ], [LF + .62, PH * .63]]);
     iris.style.webkitMaskImage = iris.style.maskImage = `radial-gradient(circle ${ir.toFixed(1)}px at ${ix.toFixed(1)}px ${iy.toFixed(1)}px, transparent ${(ir - 1.5).toFixed(1)}px, #000 ${ir.toFixed(1)}px)`;
-    const drop = p(l, 3.0, 3.6, E.inQ), push = kf(l, [[0, 1], [1.0, 1.04, E.ioQ], [2.0, 1.06, E.inQ], [3.0, 1.2, E.outE], [3.1, 1.17]]);
+    const drop = p(l, LF, LF + .6, E.inQ), push = kf(l, [[0, 1], [LT * .55, 1.04, E.ioQ], [LT, 1.06, E.inQ], [LF, 1.2, E.outE], [LF + .1, 1.17]]);
     css(barrel, { left: ix - (BARREL.cx - .5) * D + "px", top: iy - (BARREL.cy - .5) * D + "px" });
     tf(barrel, `rotate(${(-10 * drop).toFixed(2)}deg) scale(${push.toFixed(4)})`);
-    tf(bore, `rotate(${kf(l, [[0, -28, E.lin], [3.0, 18, E.outC], [4.6, 70]]).toFixed(2)}deg)`);
-    bore.style.filter = l > 3 && l < 3.25 ? `brightness(${(1 + 1.8 * (1 - p(l, 3, 3.25))).toFixed(2)})` : "none";
-    const walking = l < 2.0;
-    css(walk, { display: walking ? "block" : "none", left: (kf(l, [[0, -70, E.lin], [2.0, -12]]) + 50) + "%" });
+    tf(bore, `rotate(${kf(l, [[0, -28, E.lin], [LF, 18, E.outC], [LC, 70]]).toFixed(2)}deg)`);
+    bore.style.filter = l > LF && l < LF + .25 ? `brightness(${(1 + 1.8 * (1 - p(l, LF, LF + .25))).toFixed(2)})` : "none";
+    const walking = l < LT;
+    css(walk, { display: walking ? "block" : "none", left: (kf(l, [[0, -70, E.lin], [LT, -12]]) + 50) + "%" });
     walk.firstChild.style.translate = "-55% 0";
     tf(walk, `translateY(${(-1.4 * Math.abs(Math.sin(l * Math.PI * 2.2))).toFixed(2)}%) rotate(${(.6 * Math.sin(l * Math.PI * 2.2)).toFixed(2)}deg)`);
     css(aim, { display: walking ? "none" : "block", left: "50%", transformOrigin: "50% 22%" });
     aim.firstChild.style.translate = "-52% 0";
-    tf(aim, `scale(${kf(l, [[2.0, 1.1, E.outE], [2.15, 1, E.ioQ], [3.0, 1.32, E.outE], [3.12, 1.4, E.ioQ], [3.4, 1.36]]).toFixed(4)})`);
+    tf(aim, `scale(${kf(l, [[LT, 1.1, E.outE], [LT + .15, 1, E.ioQ], [LF, 1.32, E.outE], [LF + .12, 1.4, E.ioQ], [LF + .4, 1.36]]).toFixed(4)})`);
     const ab = aim.getBoundingClientRect(), wb = world.getBoundingClientRect(), sc = wb.width / world.offsetWidth || 1;
     const mx = (ab.left - wb.left) / sc + (AIM_MUZZLE[0] - .52) * ab.width / sc, my = (ab.top - wb.top) / sc + AIM_MUZZLE[1] * ab.height / sc;
-    bloomAt(muzzle, l, 3.0, mx, my, 1.6, .22);
-    op(wflash, l >= 3 ? .95 * Math.exp(-(l - 3) / .06) : 0);
-    drip.style.transform = `translateY(${kf(l, [[3.08, -101, (x) => x * x * (3 - 2 * x) * .4 + x * x * .6], [4.25, -12]]).toFixed(2)}%)`;
-    op(bleed, p(l, 4.25, 4.85));
+    bloomAt(muzzle, l, LF, mx, my, 1.6, .22);
+    op(wflash, l >= LF ? .95 * Math.exp(-(l - LF) / .06) : 0);
+    drip.style.transform = `translateY(${kf(l, [[LF + .08, -101, (x) => x * x * (3 - 2 * x) * .4 + x * x * .6], [LC - .1, -12]]).toFixed(2)}%)`;
+    op(bleed, p(l, LC - .25, LC + .2));
   };
 });
 
@@ -302,15 +306,57 @@ shot(T.titles[0], T.ignite, (el) => {
     tf(arena, `scale(${(1.12 + .22 * p(t, a3 - .2, a4, E.inQ)).toFixed(4)}) rotate(${(-1.5 + 2 * p(t, a3 - .2, a4)).toFixed(2)}deg)`);
     tf(smoke3, `scale(${(1.3 + .4 * p(t, a3 - .2, a4)).toFixed(3)}) translateX(${(-4 * p(t, a3 - .2, a4)).toFixed(2)}%)`);
     t3(t, a3);
-    tf(wire, `scaleX(${p(t, a4, a4 + .22, E.outE).toFixed(3)})`); op(wire, t > a4 + .85 ? .6 + .4 * Math.abs(Math.sin(t * 60)) : 1);
+    const B = T.button, gone = p(t, B, B + .3, E.inQ);
+    wire.style.transformOrigin = `${WIRE_TO * 100}% 50%`;
+    tf(wire, `scaleX(${(p(t, a4, a4 + .22, E.outE) * (1 - p(t, B + .05, B + .4, E.inC))).toFixed(3)})`);
+    op(wire, t >= B ? 1 : t > a4 + .85 ? .6 + .4 * Math.abs(Math.sin(t * 60)) : 1);
+    wire.style.filter = t >= B ? `brightness(${(1 + 2.4 * p(t, B, B + .2)).toFixed(2)})` : "none";
     tf(fA.wrap, `translateX(${(-6 * (1 - p(t, a4, a4 + 1, E.outE))).toFixed(2)}%)`); tf(fB.wrap, `translateX(${(6 * (1 - p(t, a4, a4 + 1, E.outE))).toFixed(2)}%)`);
-    t4(t, a4 + .05);
+    op(fA.wrap, 1 - gone); op(fB.wrap, 1 - gone);
+    t4(t, T.titleText); op(cards[3], 1 - gone);
   };
 });
 
+/** 007 hands over to the Mission in one light: the wire's last spark drifts down to where the match is struck */
+function drawBridge(t) {
+  const B = T.button, l = t - T.ignite;
+  if (MATCH_HEAD && l >= 0 && l < .3) {
+    // the strike: a hot flash right at the head, gone in a blink (the photo's flame stays dark until it takes)
+    const hx = MATCH_HEAD[0], hy = PY + MATCH_HEAD[1], a = Math.exp(-l / .06), R = 14 * cqh * (.7 + .3 * a);
+    g.globalCompositeOperation = "lighter";
+    const fl = g.createRadialGradient(hx, hy, 0, hx, hy, R); fl.addColorStop(0, `rgba(255,248,236,${(.95 * a).toFixed(3)})`); fl.addColorStop(.1, `rgba(255,214,150,${(.55 * a).toFixed(3)})`); fl.addColorStop(.4, `rgba(255,150,70,${(.14 * a).toFixed(3)})`); fl.addColorStop(1, "rgba(255,120,40,0)");
+    g.fillStyle = fl; g.beginPath(); g.arc(hx, hy, R, 0, Math.PI * 2); g.fill();
+    g.globalCompositeOperation = "source-over";
+  }
+  if (!MATCH_HEAD || t < B + .32 || t > T.ignite + .05) return;
+  const x0 = WIRE_TO * PW, y0 = PY + WIRE_Y * PH, x1 = MATCH_HEAD[0], y1 = PY + MATCH_HEAD[1];
+  const k = p(t, B + .38, T.ignite, E.ioC), x = mix(x0, x1, k) + Math.sin(k * Math.PI) * 2 * cqh, y = mix(y0, y1, k);
+  const flick = .78 + .22 * Math.sin(t * 71) * Math.sin(t * 23 + 1), fade = 1 - p(t, T.ignite - .03, T.ignite + .05);
+  const size = mix(1.25, .8, k) * flick * fade, R = 8 * cqh * size;
+  g.globalCompositeOperation = "lighter";
+  const glow = g.createRadialGradient(x, y, 0, x, y, R); glow.addColorStop(0, `rgba(255,240,232,${fade.toFixed(3)})`); glow.addColorStop(.07, `rgba(255,150,140,${(.85 * fade).toFixed(3)})`); glow.addColorStop(.2, `rgba(255,60,80,${(.42 * fade).toFixed(3)})`); glow.addColorStop(.5, `rgba(255,42,68,${(.12 * fade).toFixed(3)})`); glow.addColorStop(1, "rgba(255,42,68,0)");
+  g.fillStyle = glow; g.beginPath(); g.arc(x, y, R, 0, Math.PI * 2); g.fill();
+  g.fillStyle = `rgba(255,255,255,${fade.toFixed(3)})`; g.beginPath(); g.arc(x, y, .55 * cqh * size, 0, Math.PI * 2); g.fill();
+  // a comet tail of where it has been, and a few sparks shed on the way down
+  const at = (tt) => { const kk = p(tt, B + .38, T.ignite, E.ioC); return [mix(x0, x1, kk) + Math.sin(kk * Math.PI) * 2 * cqh, mix(y0, y1, kk)]; };
+  g.lineCap = "round";
+  for (let i = 0; i < 16; i++) {
+    const [ax, ay] = at(t - i * .012), [bx, by] = at(t - (i + 1) * .012), u = 1 - i / 16;
+    g.strokeStyle = `rgba(255,${Math.round(90 + 60 * u)},${Math.round(90 + 50 * u)},${(.55 * u * u * fade).toFixed(3)})`; g.lineWidth = .7 * cqh * u * size;
+    g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke();
+  }
+  for (let s = 0; s < 9; s++) {
+    const te = B + .4 + s * (T.ignite - B - .45) / 9, age = t - te, life = .3 + .2 * hash(s, 11); if (age < 0 || age > life) continue;
+    const ke = p(te, B + .38, T.ignite, E.ioC), ex = mix(x0, x1, ke) + Math.sin(ke * Math.PI) * 2 * cqh, ey = mix(y0, y1, ke);
+    const ang = (hash(s, 12) - .5) * 2.4 + Math.PI / 2, sp = (5 + 9 * hash(s, 13)) * cqh, u = age, P = (v) => [ex + Math.cos(ang) * sp * v, ey + Math.sin(ang) * sp * v * .4 + 40 * cqh * v * v];
+    const [ax, ay] = P(u), [bx, by] = P(Math.max(0, u - .025)); streak(ax, ay, bx, by, (1 - age / life) * fade, .16 * cqh);
+  }
+  g.globalCompositeOperation = "source-over";
+}
+
 // ════ ACT II — the mission ════
 // A match strikes in the dark, the fuse catches, and the camera chases the spark along the floor (10.0–12.0).
-const FLAME = T.ignite + .12, CATCH = T.typing[0][0];
+const FLAME = T.flame, CATCH = T.catch;
 /** a photo on an explicit box, so image coordinates map to the picture; frame() is a virtual camera: zoom k, image point (u, v) placed at picture fraction (x, y) */
 function rig(parent, src, ar) {
   const box = $("div", "", parent), im = img(src, "", box);
@@ -365,8 +411,9 @@ shot(T.ignite, T.mission, (el) => {
   const MATCH_AT = [.545, .44, TALL ? .58 : .56, .5];
   hit(FLAME, .45, .14, .18, "#ffb04a"); hit(CATCH, 1.1, .16, .24, "#ffe2bd");
   // the strike throws sparks before the flame takes; the catch bursts at the near end of the cord
-  match.frame(1, ...MATCH_AT); const [sx0, sy0] = match.at(.545, .475);
-  sparkBursts.push([T.ignite + .02, sx0, sy0, 14, 16, ""], [T.ignite + .08, sx0, sy0, 22, 22, ""]);
+  match.frame(1, ...MATCH_AT); const [sx0, sy0] = match.at(.545, .475); MATCH_HEAD = [sx0, sy0];
+  // the head is struck forwards: the sparks spray up and away from the hand
+  sparkBursts.push([T.ignite + .01, sx0, sy0, 44, 58, "", -.75, 2.1], [T.ignite + .07, sx0, sy0, 60, 72, "", -.85, 2.4], [FLAME - .02, sx0, sy0, 26, 34, "", -1.2, 2.8]);
   fuse.frame(1.08, ...fusePath.at(0).slice(0, 2), TALL ? .5 : .42, TALL ? .66 : .62); const [cx0, cy0] = fuse.at(...fusePath.at(.012).slice(0, 2));
   sparkBursts.push([CATCH, Math.max(4 * cqh, cx0), Math.min(PH - 4 * cqh, cy0), 46, TALL ? 70 : 56, ""]);
   return (t) => {
@@ -446,7 +493,8 @@ function drawFuseRun(t) {
   fuseHead(t, CATCH, (te) => { const q = fusePath.at(headS(Math.max(te, CATCH))); return toStage(q[0], q[1]); }, size, 220);
 }
 
-const PAGES = { a: [.355, .45], b: [.597, .45] };            // centres of the two blank pages in desk.webp
+const PAGES = { a: [.355, .49], b: [.597, .49] };              // where the photos land on the two pages of desk.webp
+const PAGE_BOX = { a: [.253, .291, .469, .8], b: [.494, .276, .716, .787] };   // the pages themselves (left, top, right, bottom)
 function bracket(e, c) {
   const l = `linear-gradient(${c}, ${c})`;
   e.style.background = [`${l} 0 0 / 22% 3px`, `${l} 0 0 / 3px 22%`, `${l} 100% 0 / 22% 3px`, `${l} 100% 0 / 3px 22%`, `${l} 0 100% / 22% 3px`, `${l} 0 100% / 3px 22%`, `${l} 100% 100% / 22% 3px`, `${l} 100% 100% / 3px 22%`].join(",");
@@ -455,29 +503,42 @@ function bracket(e, c) {
 shot(T.mission, T.montage[0].t + .4, (el) => {
   const desk = $("div", "layer", el); const deskImg = plate(desk, A("desk.webp")); css(deskImg, { objectFit: "fill" });
   const ratio = 1672 / 941, DW = TALL ? PH * ratio : Math.max(PW, PH * ratio), DH = DW / ratio;
-  css(desk, { width: DW + "px", height: DH + "px", left: (PW - DW) / 2 + "px", top: (PH - DH) / 2 + "px", inset: "auto" });
+  css(desk, { inset: "auto", width: DW + "px", height: DH + "px", left: (PW - DW) / 2 + "px", top: (PH - DH) / 2 + "px" });
   const photos = [["a", A("host-a.webp"), "代號　紅不讓", -4], ["b", A("host-b.webp"), "代號　刀槍Blue", 3]].map(([k, src, label, rot]) => {
     const ph = $("div", "desk-photo", desk); const inner = $("div", "", ph); img(src, "", inner);
     const lock = $("i", "lock", inner); bracket(lock, k === "a" ? "#ff2a44" : "#4d8dff");
     const tag = $("div", "", desk, { textContent: label }); css(tag, { position: "absolute", font: `500 ${(.011 * DW).toFixed(1)}px/1 "JetBrains Mono", monospace`, color: "#2a2622", letterSpacing: ".2em", whiteSpace: "nowrap", translate: "-50% 0", mixBlendMode: "multiply" });
-    css(ph, { width: .118 * DW + "px", left: PAGES[k][0] * 100 + "%", top: PAGES[k][1] * 100 + "%", translate: "-50% -50%" });
-    css(tag, { left: PAGES[k][0] * 100 + "%", top: (PAGES[k][1] + .2) * 100 + "%" });
+    // a print with a white border and a deeper foot (padding in px: CSS percentages would follow the desk, not the print)
+    css(ph, { width: .118 * DW + "px", padding: `${(.007 * DW).toFixed(1)}px ${(.007 * DW).toFixed(1)}px ${(.026 * DW).toFixed(1)}px`, left: PAGES[k][0] * 100 + "%", top: PAGES[k][1] * 100 + "%", translate: "-50% -50%" });
+    css(tag, { left: PAGES[k][0] * 100 + "%", top: (PAGES[k][1] + .17) * 100 + "%" });
     return { ph, tag, rot, k, lock };
   });
-  const scrim = $("i", "layer", el); css(scrim, { background: "linear-gradient(90deg, rgb(3 3 4 / .9) 0 38%, rgb(3 3 4 / .25) 70%, rgb(3 3 4 / 0))", opacity: 0 });
+  // the file printed on each page (it rides the camera with the desk): a stamp and the file line above the photo, redactions under it
+  const px = (v) => (v * DW).toFixed(1) + "px";
+  for (const [k, n, lead, rot] of [["a", "01", "RED LEADER", -5], ["b", "02", "BLUE LEADER", 4]]) {
+    const [u0, v0] = PAGE_BOX[k];
+    const head = $("div", "desk-ink", desk); css(head, { left: (u0 + .014) * 100 + "%", top: (v0 + .012) * 100 + "%", gap: px(.008), font: `500 ${px(.0072)}/1 "JetBrains Mono", monospace` });
+    const stamp = $("b", "stamp", head, { textContent: "機密" }); css(stamp, { fontSize: px(.0135), padding: `${px(.0012)} ${px(.005)}`, borderWidth: px(.0013), rotate: rot + "deg" });
+    $("span", "", head, { textContent: `FILE ${n} · ${lead}` });
+    const notes = $("div", "desk-ink notes", desk); css(notes, { left: (u0 + .03) * 100 + "%", top: (PAGES[k][1] + .21) * 100 + "%", gap: px(.0042), font: `500 ${px(.0062)}/1 "JetBrains Mono", monospace` });
+    notes.innerHTML = [`<span>STATUS ▸ ACTIVE · 10.29 · LAZERTREKS</span>`, [.06, .035, .075], [.045, .09]].map((r) => typeof r === "string" ? `<p>${r}</p>` : `<p>${r.map((w) => `<i style="width:${px(w)};height:${px(.0058)}"></i>`).join("")}</p>`).join("");
+    for (const i of notes.querySelectorAll("i")) i.style.marginRight = px(.006);
+  }
+  const scrim = $("i", "layer", el); css(scrim, { background: TALL ? "linear-gradient(0deg, rgb(3 3 4 / .92) 0 20%, rgb(3 3 4 / .3) 40%, rgb(3 3 4 / 0) 58%)" : "linear-gradient(90deg, rgb(3 3 4 / .9) 0 38%, rgb(3 3 4 / .25) 70%, rgb(3 3 4 / 0))", opacity: 0 });
   const line = $("div", "orders", el), l1 = $("div", "line", line);
   const typeChars = [..."你的任務，如果你選擇接受——"].map((c) => $("span", "", l1, { textContent: c }));
   const big = $("div", "orders", el), b1 = $("div", "big", big); b1.innerHTML = "10.29 攻佔<em>六度空間</em>";
   const sweep = $("i", "flare warm", el);
-  if (TALL) { css(line, { left: "7%", top: "8%" }); l1.style.fontSize = "4.6cqw"; css(big, { left: "7%", top: "62%" }); b1.style.fontSize = "15cqw"; }
+  if (TALL) { css(line, { left: "7%", top: "8%" }); l1.style.fontSize = "4.6cqw"; css(big, { left: "7%", top: "78%" }); b1.style.fontSize = "15cqw"; }
   else { css(line, { left: "6%", top: "10%" }); css(big, { left: "6%", top: "54%", translate: "0 -50%" }); }
   hit(T.cardA, .4, .1); hit(T.cardB, .4, .1); hit(T.missionLine, 1.4, .18, .3);
   return (t) => {
     const l = t - T.mission;
-    // close on page A, across to page B, then back so the file sits right of frame and the orders own the left
-    const end = TALL ? [.48, .62] : [.36, .5];
-    const focus = kf(l, [[0, PAGES.a, E.ioC], [.75, PAGES.a, E.ioC], [1.05, PAGES.b, E.ioC], [1.3, end]]);
-    const zoom = kf(l, [[0, 2.35, E.outC], [.4, 2.1, E.ioC], [1.05, 2.0, E.ioE], [1.3, TALL ? 1.0 : 1.18, E.lin], [2.4, TALL ? .97 : 1.12]]);
+    // opens on file A's head (the stamp), tilts down as its photo lands, across to file B, then back: on 16:9 the files sit right
+    // of frame and the orders own the left; on 9:16 the orders take the dark desk under the folder
+    const [h, a, b, end] = TALL ? [[.33, .38], [.355, .48], [.597, .48], [.476, .5]] : [[.355, .35], [.355, .41], [.597, .41], [.36, .4]];
+    const focus = kf(l, [[0, h, E.ioC], [.62, a, E.ioC], [.75, a, E.ioC], [1.05, b, E.ioC], [1.3, end]]);
+    const zoom = kf(l, [[0, 2.35, E.outC], [.4, 2.1, E.ioC], [1.05, 2.0, E.ioE], [1.3, TALL ? 1.03 : 1.18, E.lin], [2.4, TALL ? 1.0 : 1.12]]);
     tf(desk, `scale(${zoom.toFixed(4)}) translate(${((.5 - focus[0]) * DW).toFixed(1)}px, ${((.5 - focus[1]) * DH).toFixed(1)}px) rotate(${kf(l, [[0, -2], [2, 1]]).toFixed(2)}deg)`);
     photos.forEach(({ ph, tag, rot, k, lock }) => {
       const t0 = k === "a" ? T.cardA : T.cardB, x = p(t, t0, t0 + .22, E.outBack);
@@ -492,7 +553,7 @@ shot(T.mission, T.montage[0].t + .4, (el) => {
     op(scrim, p(t, T.missionLine - .04, T.missionLine + .12));
     const s = p(t, T.missionLine, T.missionLine + .35, E.outE); op(big, p(t, T.missionLine, T.missionLine + .08));
     tf(b1, `scale(${mix(1.25, 1, s).toFixed(4)})`); b1.style.filter = s < .6 ? `blur(${((.6 - s) * 2 * cqh).toFixed(2)}px)` : "none";
-    const sw = p(t, T.missionLine + .05, T.missionLine + .55, E.ioC); css(sweep, { left: mix(-20, 70, sw) + "%", top: TALL ? "64%" : "54%" }); op(sweep, Math.sin(Math.PI * sw) * .9);
+    const sw = p(t, T.missionLine + .05, T.missionLine + .55, E.ioC); css(sweep, { left: mix(-20, 70, sw) + "%", top: TALL ? "86%" : "54%" }); op(sweep, Math.sin(Math.PI * sw) * .9);
   };
 });
 
@@ -510,7 +571,7 @@ function applyWhips(t) {
 const byName = {};
 
 // ── the montage ──
-const M = Object.fromEntries(T.montage.map((m, i) => [m.shot, { t: m.t, end: (T.montage[i + 1]?.t ?? T.strobe[0]) }]));
+const M = Object.fromEntries(T.montage.map((m, i) => [m.shot, { t: m.t, end: (T.montage[i + 1]?.t ?? T.title) }]));
 function cut(name, end, build) { const m = M[name]; const s = shot(m.t, end ?? m.end, build); byName[name] = s; return s; }
 
 // into the arena behind a burning edge (the fuse's own wipe)
@@ -560,17 +621,17 @@ function duel(el, cutSrc, muzzle, color, tShots, capEn, capCn) {
 shot(M.fireA.t, M.target.t, (el) => {
   const u = duel(el, "cut-fire-a.webp", [.194, .439], "", [M.fireA.t + .01, M.fireA2.t], "VIP", "保護老闆");
   hit(M.fireA.t, 1.1, .12, .16, "#ff3a4f"); hit(M.fireA2.t, 1.1, .12, .16, "#ff3a4f");
-  return (t) => u(t, M.fireA.t, .8);
+  return (t) => u(t, M.fireA.t, M.target.t - M.fireA.t);
 });
 cut("target", null, (el) => {
   const bg = plate(el, A("target-hit.webp"));
   sparkBursts.push([M.target.t, PW * .6, PH * .5, 90, 60, "red"]); hit(M.target.t, 1.6, .16, .4, "#ffd0d0");
   return (t) => { const l = t - M.target.t; tf(bg, `scale(${mix(1.25, 1.08, p(l, 0, .4, E.outE)).toFixed(4)})`); };
 });
-shot(M.aimB.t, M.tea.t, (el) => {
+shot(M.aimB.t, M.vault.t, (el) => {
   const u = duel(el, "cut-aim-b.webp", [.144, .475], "blue", [M.aimB2.t], null);
   hit(M.aimB2.t, 1, .12, .16, "#9fc2ff");
-  return (t) => u(t, M.aimB.t, .4);
+  return (t) => u(t, M.aimB.t, M.vault.t - M.aimB.t);
 });
 cut("tea", null, (el) => {
   const bg = plate(el, A("tea.webp")); const fl = $("i", "flare warm", el); const cap = caption(el, "AFTER", "戰後・飯店下午茶");
@@ -616,30 +677,45 @@ cut("stuntA", null, (el) => {
   return (t) => {
     const l = t - M.stuntA.t, d = p(l, 0, .8, E.ioQ), k = T.rollBeats.reduce((n, b, i) => (t >= b ? i : n), 0);
     frames.forEach((f, i) => {
-      f.style.opacity = i === k ? "1" : "0";
+      const since = t - T.rollBeats[k];   // each frame dissolves in over the one before, on the eighth
+      f.style.opacity = i === k ? String(Math.min(1, Math.max(0, since) / .07)) : i === k - 1 && since < .07 ? "1" : "0";
       const dx = TALL ? 0 : FRAMES[i][1], tilt = i === 1 ? -1.5 : i === 0 ? -2.5 : 0;
       tf(f, `translateX(${(dx + mix(1, -1, d)).toFixed(2)}%) scale(${mix(1.12, 1.06, d).toFixed(4)}) rotate(${tilt}deg)`);
     });
     op(flash, t >= T.rollFire ? Math.max(0, 1 - (t - T.rollFire) / .22) : 0);
   };
 });
-cut("stuntB", null, (el) => {
-  const bg = plate(el, A("stunt-slide.webp"), TALL ? "60% 50%" : null); hit(M.stuntB.t, .7, .1, .22, "#9fc2ff");
-  return (t) => { const l = t - M.stuntB.t, d = p(l, 0, .4, E.outQ); tf(bg, `translateX(${mix(4, -3, d).toFixed(2)}%) scale(${mix(1.24, 1.1, d).toFixed(4)})`); };
+// the blue captain's knee slide: one plate the camera rides with, the spray kept flying off her (drawSpray), a shot on the beat
+const SLIDE_MUZZLE = [.4175, .317];
+let slideRig = null;
+cut("stuntB", T.suckout, (el) => {
+  const R = rig(el, A("stunt-slide.webp"), 1672 / 941); slideRig = R;
+  const shotBeam = beam(el, "blue"), bl = $("i", "bloom blue", el);
+  hit(M.stuntB.t, .7, .1, .22, "#9fc2ff"); hit(T.slideFire, .5, .1, .16, "#9fc2ff");
+  return (t) => {
+    const l = t - M.stuntB.t, d = p(l, 0, M.stuntB.end - M.stuntB.t, E.outQ);
+    R.frame(mix(1.24, 1.12, d), TALL ? .6 : .5, .5, TALL ? mix(.53, .47, d) : mix(.54, .46, d), .5);   // 9:16: her, gun hand to face
+    const [mx, my] = R.at(...SLIDE_MUZZLE);
+    fire(shotBeam, t, T.slideFire, mx, my, 183.6, 1.3 * Math.max(PW, PH), .3); bloomAt(bl, t, T.slideFire, mx, my, 1.3, .26);
+  };
 });
+/** droplets thrown up and back off her knees and heels, in the plate's own coordinates so they ride the camera move */
+function drawSpray(t) {
+  const s = M.stuntB; if (!slideRig || t < s.t || t >= T.suckout) return;
+  const R = slideRig, rate = 240, life = .55, fade = p(t, s.t, s.t + .08);
+  g.globalCompositeOperation = "lighter"; g.lineCap = "round";
+  for (let k = Math.floor((t - life) * rate); k <= Math.floor(t * rate); k++) {
+    const te = k / rate, age = t - te, lf = life * (.5 + .5 * hash(k, 21)); if (age < 0 || age > lf) continue;
+    const e = hash(k, 22), u0 = mix(.58, .82, e), v0 = mix(.7, .62, e) + .02 * hash(k, 23);
+    const vu = (.08 + .32 * hash(k, 24)) * (.6 + .6 * e), vv = -(.15 + .45 * hash(k, 25)) * (1.1 - .4 * e);
+    const P = (a) => R.at(u0 + vu * a, v0 + vv * a + 1.1 * a * a), [x1, y1] = P(age), [x2, y2] = P(Math.max(0, age - .03)), heat = 1 - age / lf;
+    g.strokeStyle = `rgba(${Math.round(200 + 40 * heat)},${Math.round(222 + 25 * heat)},255,${(.5 * heat * fade).toFixed(3)})`; g.lineWidth = (.08 + .12 * hash(k, 26)) * cqh;
+    g.beginPath(); g.moveTo(x1, PY + y1); g.lineTo(x2, PY + y2); g.stroke();
+  }
+  g.globalCompositeOperation = "source-over";
+}
 
-const STROBE = ["stunt-roll-4.webp", "aim-b.webp", "stunt-slide.webp", "key-art.webp"];
-T.strobe.forEach((t0, i) => {
-  byName["strobe" + i] = shot(t0, i < T.strobe.length - 1 ? T.strobe[i + 1] : T.blackout, (el) => {
-    const bg = plate(el, A(STROBE[i])); hit(t0, .7 + i * .12, .08, .25 + i * .04);
-    const white = $("i", "layer", el); white.style.background = "#fff";
-    return (t) => { const l = t - t0; tf(bg, `scale(${mix(1.35, 1.1, p(l, 0, .2, E.outE)).toFixed(4)})`); op(white, i === T.strobe.length - 1 ? p(l, 0, .2, E.inQ) : 0); };
-  });
-});
-shot(T.blackout, T.title, () => () => {});
-whip("gear", "teams", -1); whip("lockA", "lockB", -1, .07); whip("lockB", "stuntA", 1); whip("stuntA", "stuntB", 1, .07); whip("stuntB", "strobe0", -1);
-
-// ════ ACT III — the title lit by the fuse, the date, the stinger ════
+// ════ ACT III — the breath, the title, the date, the classic line, the self-destruct ════
 let titleFuse = null;
 /** The site's mark (components/title-mark.tsx, outlines from lib/title-mark-paths.ts): a 430 × 100 box, glyph i at x = 110 i. */
 const CENTRES = MARK_GLYPHS.map((_, i) => i * 110 + 50);
@@ -674,29 +750,45 @@ function titleMark(parent) {
   return { box, irises: q(".tm-iris"), dots: q(".tm-dot"), shot: box.querySelector(".tm-shot"), flash: box.querySelector(".tm-flash"), laser: box.querySelector(".tm-laser"), halo: box.querySelector(".tm-halo"), sheen: box.querySelector(".tm-sheen"),
     aim: q(".tm-pose-aim"), up: q(".tm-pose-up"), muzzle: box.querySelector(".tm-muzzle") };
 }
-shot(T.title, T.date + .3, (el) => {
-  const smoke = img(A("smoke.webp"), "smoke", el); css(smoke, { opacity: .45 });
-  const rakeR = $("i", "flare", el), rakeB = $("i", "flare blue", el);
-  const title = $("div", "title", el);
+// One frame on the 007 band's last phrase, every beat a hit: after the breath of black (T.suckout) the fuse's blast throws the
+// title out at full size (the slam), the agent in 遊 fires, the date drops in on the brass like a release-date card, the
+// classic line is typed, and on the band's last chord the self-destruct slams in where the line was — then the frame burns.
+shot(T.title, T.duration + 1, (el) => {
+  // what burns at the end: the whole frame; the smoke left behind stays
+  const frame = $("div", "layer", el), residue = img(A("smoke.webp"), "smoke", el); css(residue, { opacity: 0 });
+  const smoke = img(A("smoke.webp"), "smoke", frame); css(smoke, { opacity: 0 });
+  const rakeR = $("i", "flare", frame), rakeB = $("i", "flare blue", frame);
+  const title = $("div", "title finale", frame);
   const mark = titleMark(title);
   const rule = $("div", "rule", title), sub = $("div", "sub", title); sub.innerHTML = "<span>AUTUMN</span><i></i><span>AGENTS</span>";
-  const third = $("div", "third", title, { textContent: "MISSION  10.29" });
-  hit(T.title, 2.2, .3, .35);
-  const SHOT = 1.2, RAISE = SHOT + .46;   // the agent fires, the laser dot lands on 特 — then he raises his pistol
-  hit(T.title + SHOT, .6, .1, .22, "#ff8a96");
-  const tfb = (e, s) => { e.style.transformBox = "fill-box"; e.style.transformOrigin = "center"; e.style.transform = s; };
+  const date = $("div", "date", title); date.innerHTML = '<div class="d"><b>10.29</b><span>THU</span></div>';
+  const scan = $("i", "scan", date);
+  const where = $("div", "where", title); where.innerHTML = "12:00<b>・</b>六度空間 LAZERTREKS";
+  const VOW = "一如往常，若你被雷射擊中，主辦單位將否認知情。", HOT = VOW.indexOf("主辦單位將否認知情");
+  const vow = $("p", "disavow", frame), vowChars = [...VOW].map((c, i) => $("span", i >= HOT && i < HOT + 9 ? "hot" : "", vow, { textContent: c }));
+  const msg = $("div", "destruct", frame), msgLine = $("p", "", msg), msgEn = $("small", "", msg, { textContent: "THIS MESSAGE WILL SELF-DESTRUCT" });
+  [..."本訊息將自動銷毀"].forEach((c) => $("span", "", msgLine, { textContent: c }));
+  const msgCur = $("i", "cur", msgLine);
+  hit(T.title, 2.6, .3, 1);                          // the fuse reaches the end: the blast
+  const SHOT = T.laser - T.title, RAISE = SHOT + .46;   // the agent fires, the laser dot lands on 特 — then he raises his pistol
+  hit(T.laser, .6, .1, .22, "#ff8a96"); hit(T.date, 1.5, .2, .42, "#fff3e0"); hit(T.destruct, 1.4, .2, .38, "#ff8a96"); hit(T.burn, .8, .16, .22, "#ffb04a");
+  const tfb = (e, v) => { e.style.transformBox = "fill-box"; e.style.transformOrigin = "center"; e.style.transform = v; };
+  /** a slam: in large and hot, settled in a third of a second */
+  const slam = (e, l, from, dur = .3) => {
+    op(e, l >= 0 ? 1 : 0); if (l < 0) return;
+    tf(e, `scale(${mix(from, 1, p(l, 0, dur, E.outE)).toFixed(4)})`);
+    e.style.filter = l < .18 ? `blur(${((.18 - l) / .18 * 1.3 * cqh).toFixed(2)}px) brightness(${(1 + 2.2 * (.18 - l) / .18).toFixed(2)})` : "none";
+  };
+  mark.dots.forEach((d) => { d.style.opacity = "0"; });
   return (t) => {
     const l = t - T.title;
-    tf(smoke, `scale(${(1.25 + .12 * l / 3).toFixed(4)}) rotate(${(-3 + 2 * l).toFixed(2)}deg)`); op(smoke, .45 * p(l, 0, .6));
-    css(rakeR, { left: "30%", top: "22%" }); tf(rakeR, `rotate(-8deg) scaleX(${(.6 + .4 * p(l, 0, 1.2, E.outC)).toFixed(3)})`); op(rakeR, .35 * p(l, .5, 1));
-    css(rakeB, { left: "70%", top: "78%" }); tf(rakeB, `rotate(6deg) scaleX(${(.6 + .4 * p(l, 0, 1.2, E.outC)).toFixed(3)})`); op(rakeB, .35 * p(l, .5, 1));
-    // the 007 dots: each slides in, stops on its character and irises open into it
-    mark.dots.forEach((d, i) => {
-      const k = p(l, i * .1, i * .1 + .62), slide = E.ioQ(Math.min(1, k / .66)), pop = Math.max(0, (k - .66) / .34);
-      d.style.opacity = k <= 0 || k >= 1 ? "0" : String(1 - pop);
-      tfb(d, `translateX(${((1 - slide) * (-i * 110 - 90)).toFixed(2)}px) scale(${(1 + 1.4 * pop).toFixed(3)})`);
-    });
-    mark.irises.forEach((c, i) => tfb(c, `scale(${p(l, .38 + i * .1, .93 + i * .1, E.outC).toFixed(4)})`));
+    tf(frame, `scale(${(1 + .006 * l).toFixed(4)})`);   // a slow push over the whole end frame
+    tf(smoke, `scale(${(1.25 + .02 * l).toFixed(4)}) rotate(${(-3 + .6 * l).toFixed(2)}deg)`); op(smoke, .42 * p(l, .05, 1));
+    css(rakeR, { left: "30%", top: TALL ? "16%" : "9%" }); tf(rakeR, `rotate(-6deg) scaleX(${(.6 + .4 * p(l, 0, 1.2, E.outC)).toFixed(3)})`); op(rakeR, .3 * p(l, .3, .9));
+    css(rakeB, { left: "70%", top: TALL ? "80%" : "92%" }); tf(rakeB, `rotate(5deg) scaleX(${(.6 + .4 * p(l, 0, 1.2, E.outC)).toFixed(3)})`); op(rakeB, .3 * p(l, .3, .9));
+    // the title: out of the blast at once
+    slam(title, l, 1.32, .34);
+    mark.irises.forEach((c) => tfb(c, "scale(1)"));
     // the shot
     const s1 = p(l, SHOT, SHOT + .42);
     mark.shot.style.strokeDasharray = "1 1"; mark.shot.style.strokeDashoffset = (s1 < .45 ? 1 - s1 / .45 : -(s1 - .45) / .55).toFixed(3);
@@ -709,43 +801,21 @@ shot(T.title, T.date + .3, (el) => {
     for (const e of mark.aim) e.style.opacity = String(1 - p(l, RAISE, RAISE + .12));
     for (const e of mark.up) e.style.opacity = String(Math.min(1, up));   // opacity only: the rim copies keep their own offset transform
     op(mark.muzzle, m1 * (.85 + .15 * Math.sin(l * 3))); tfb(mark.muzzle, `scale(${(2.2 - 1.2 * m1).toFixed(3)})`);
-    mark.sheen.style.transform = `translateX(${mix(-140, 560, p(l, 1.5, 2.6, E.ioC)).toFixed(1)}px)`;
-    tf(title, `scale(${(1 + .03 * l).toFixed(4)})`);
-    tf(rule, `scaleX(${p(l, .7, 1.2, E.outE).toFixed(3)})`); reveal(sub, t, T.title + .9, .8, 1.4);
-    for (const w of sub.querySelectorAll("span")) w.style.letterSpacing = mix(1.3, .82, p(l, .9, 1.9, E.outC)).toFixed(3) + "em";
-    reveal(third, t, T.title + 1.25, .6, 1);
-    op(el, 1 - p(t, T.date - .1, T.date + .3));
-  };
-});
-shot(T.date - .1, T.stinger, (el) => {
-  const card = $("div", "datecard", el);
-  const d = $("div", "d", card); d.innerHTML = "10.29<small>（四）</small>";
-  const pl = $("div", "p", card); pl.innerHTML = "中午十二點　<b>六度空間</b>　LAZERTREKS";
-  const e = $("div", "e", card, { textContent: "Laser Tag · Afternoon Tea" });
-  const fl = $("i", "flare warm", el);
-  return (t) => {
-    const l = t - T.date; op(el, p(l, -.1, .3)); tf(card, `scale(${(1.02 + .03 * p(l, 0, 1.8)).toFixed(4)})`);
-    reveal(d, t, T.date, .6, 2); reveal(pl, t, T.date + .25, .6, 1.5); reveal(e, t, T.date + .5, .6, 1.2);
-    css(fl, { left: "50%", top: TALL ? "44%" : "38%" }); op(fl, .4 * p(l, 0, .6)); tf(fl, `scaleX(${(.5 + .5 * p(l, 0, 1.8)).toFixed(3)})`);
-  };
-});
-shot(T.stinger, T.cut, (el) => {
-  const bg = plate(el, A("arena.webp")); bg.style.filter = "blur(.6cqh) brightness(.6)";
-  const fog = img(A("smoke.webp"), "smoke", el); css(fog, { opacity: .3 });
-  const duo = img(A("cut-duo.webp"), "plate", el); duo.style.objectFit = "contain";
-  if (TALL) css(duo, { objectPosition: "50% 100%", transformOrigin: "50% 100%" });
-  const bR = beam(el), bB = beam(el, "blue"), gR = $("i", "bloom", el), gB = $("i", "bloom blue", el);
-  hit(T.stingerFire, 2, .22, .35);
-  return (t) => {
-    const l = t - T.stinger, d = p(l, 0, 1.2, E.outC);
-    tf(bg, `scale(${mix(1.14, 1.2, d).toFixed(4)})`); tf(fog, `scale(1.5) translateX(${mix(3, -6, d).toFixed(2)}%)`);
-    const s = TALL ? 1.6 : 1.12, y = TALL ? 0 : 6;   // 9:16 keeps both pistols in frame
-    tf(duo, `translateY(${y}%) scale(${mix(s, s * 1.07, d).toFixed(4)})`);
-    const r = duo.getBoundingClientRect(), pr = picBox(), iw = Math.min(r.width, r.height * 1672 / 941), ih = iw * 941 / 1672;
-    const at = (u, v) => [r.left - pr.left + (r.width - iw) / 2 + u * iw, r.top - pr.top + (TALL ? r.height - ih : (r.height - ih) / 2) + v * ih];
-    const [rx, ry] = at(.23, .216), [bx, by] = at(.778, .281);   // pistol tips in cut-duo.webp
-    fire(bR, t, T.stingerFire, rx, ry, -98, PH, .4); fire(bB, t, T.stingerFire + .03, bx, by, -82, PH, .4);
-    bloomAt(gR, t, T.stingerFire, rx, ry, .55, .3); bloomAt(gB, t, T.stingerFire + .03, bx, by, .55, .3);
+    mark.sheen.style.transform = `translateX(${mix(-140, 560, p(l, .3, 1.4, E.ioC)).toFixed(1)}px)`;
+    tf(rule, `scaleX(${p(l, .2, .7, E.outE).toFixed(3)})`); reveal(sub, t, T.title + .3, .7, 1.4);
+    for (const w of sub.querySelectorAll("span")) w.style.letterSpacing = mix(1.3, .82, p(l, .3, 1.4, E.outC)).toFixed(3) + "em";
+    // the date, on the brass: slammed in, a laser reads across it, then where and when
+    const ld = t - T.date; slam(date, ld, 1.55, .3);
+    const sc = p(ld, .1, .6, E.ioC); css(scan, { left: mix(-4, 104, sc).toFixed(2) + "%" }); op(scan, ld > .1 ? Math.sin(Math.PI * sc) : 0);
+    reveal(where, t, T.date + .26, .5, 1);
+    // the classic line, typed under the date; it gives its place to the self-destruct on the last chord
+    const [va, vb] = T.disavow, gone = p(t, T.destruct - .06, T.destruct + .08);
+    op(vow, p(t, va - .12, va) * (1 - gone)); vow.style.filter = gone > 0 ? `blur(${(gone * 1.4 * cqh).toFixed(2)}px)` : "none";
+    vowChars.forEach((c, i) => { c.style.visibility = t >= va + (vb - va) * i / vowChars.length ? "visible" : "hidden"; });
+    reveal(msgEn, t, T.destructEn, .35, 1); op(msg, t >= T.destructEn - .02 ? 1 : 0);
+    const lm = t - T.destruct; slam(msgLine, lm, 1.45, .28);
+    op(msgCur, lm < .3 ? 0 : Math.floor((lm - .3) / .22) % 2 ? 0 : 1);
+    op(residue, 0);
   };
 });
 const BURN = 1.8;
@@ -828,39 +898,6 @@ const endBurn = (() => {
   }
   return { draw, motes };
 })();
-shot(T.cut, T.duration + 1, (el) => {
-  // what burns: the end card, its smoke and the self-destruct line; what stays: the smoke the fire leaves behind
-  const frame = $("div", "layer", el), residue = img(A("smoke.webp"), "smoke", el); css(residue, { opacity: 0 });
-  const smoke = img(A("smoke.webp"), "smoke", frame); css(smoke, { opacity: 0 });
-  const card = $("div", "title endcard", frame), word = $("div", "word", card);
-  $("span", "chrome", word, { textContent: "全員出動" }); const sheen = $("span", "sheen", word, { textContent: "全員出動" }); css(sheen, { position: "absolute", inset: "0" });
-  const rule = $("div", "rule", card), third = $("div", "third", card, { textContent: "MISSION  10.29" });
-  // as always: the organisers disavow any knowledge — typed under the card, before the self-destruct line
-  const VOW = "一如往常，若你被雷射擊中，主辦單位將否認知情。", HOT = VOW.indexOf("主辦單位將否認知情");
-  const vow = $("p", "disavow", frame), vowChars = [...VOW].map((c, i) => $("span", i >= HOT && i < HOT + 9 ? "hot" : "", vow, { textContent: c }));
-  const msg = $("div", "destruct", frame), msgEn = $("small", "", msg, { textContent: "THIS MESSAGE WILL SELF-DESTRUCT" }), msgLine = $("p", "", msg);
-  const msgChars = [..."本訊息將自動銷毀"].map((c) => $("span", "", msgLine, { textContent: c })), msgCur = $("i", "cur", msgLine);
-  hit(T.burn, .8, .16, .22, "#ffb04a");
-  return (t) => {
-    const l = t - T.end, x = p(l, 0, 1.6, E.outC), out = 1;
-    const [va, vb] = T.disavow;
-    op(vow, p(t, va - .12, va)); vowChars.forEach((c, i) => { c.style.visibility = t >= va + (vb - va) * i / vowChars.length ? "visible" : "hidden"; });
-    const [da, db] = [T.destruct, T.destruct + .6];
-    op(msg, p(t, da - .15, da)); reveal(msgEn, t, da - .15, .4, 1);
-    let typed = 0; msgChars.forEach((c, i) => { const on = t >= da + (db - da) * i / msgChars.length; c.style.visibility = on ? "visible" : "hidden"; if (on) typed = i + 1; });
-    if (msgCur.previousSibling !== (msgChars[typed - 1] || null)) msgLine.insertBefore(msgCur, msgChars[typed] || null);
-    op(msgCur, t < db ? 1 : Math.floor((t - db) / .22) % 2 ? 0 : 1);
-    op(residue, 0);
-    tf(residue, `translateY(${(-10 * p(t, T.burn, T.duration)).toFixed(2)}%) scale(${(1.3 + .15 * p(t, T.burn, T.duration)).toFixed(4)})`);
-    op(card, p(l, 0, .45, E.outC) * out); op(smoke, .3 * p(l, 0, 1) * out); tf(smoke, `scale(${(1.3 + .08 * l).toFixed(4)}) rotate(${(2 - 2 * l).toFixed(2)}deg)`);
-    const ls = mix(.42, .2, x).toFixed(3); word.style.letterSpacing = ls + "em"; word.style.marginRight = "-" + ls + "em";
-    word.style.filter = l < .35 ? `blur(${((.35 - l) / .35 * 1.2 * cqh).toFixed(2)}px)` : "none";
-    sheen.style.backgroundPosition = `${mix(140, -40, p(l, .35, 1.3, E.ioC)).toFixed(1)}% 0`;
-    tf(rule, `scaleX(${p(l, .25, .8, E.outE).toFixed(3)})`); reveal(third, t, T.end + .45, .6, 1);
-    tf(card, `scale(${(1 + .015 * Math.max(0, l)).toFixed(4)})`);
-  };
-});
-
 // ── the clock ──
 function seek(t) {
   for (const s of shots) s.el.style.display = t >= s.a && t < s.b ? "block" : "none";
@@ -868,22 +905,22 @@ function seek(t) {
   applyWhips(t);
   camera(t);
   g.clearRect(0, 0, SW, SH);
-  drawFuses(t); drawBurns(t); drawSparks(t);
+  drawFuses(t); drawBridge(t); drawSpray(t); drawBurns(t); drawSparks(t);
   endBurn.draw(t); endBurn.motes(t);
   if (titleFuse) { const tp = titleFuse(t); if (tp) fuseHead(t, T.title, (te) => titleFuse(Math.max(te, T.title)) || tp, 1.1); }
-  embers(t, T.title, T.date + .3, 46, .7); embers(t, T.stinger, T.cut, 30, .5);
+  embers(t, T.title, T.burn + .2, 46, .7);
 }
-const fast = [[0, 1.3], [T.turn - .1, T.titles[0] + .5], [T.titles[3], T.titles[3] + .3], [T.ignite, T.mission], [T.cardA, T.cardB + .3], [T.missionLine, T.missionLine + .4], [T.montage[0].t, T.title + 1.2], [T.stingerFire - .1, T.cut + .05]];
+const fast = [[T.dots[0] - .05, T.irisOpen + .3], [T.turn - .1, T.titles[0] + .5], [T.titles[3], T.titles[3] + .3], [T.button, T.catch + .4], [T.cardA, T.cardB + .3], [T.missionLine, T.missionLine + .4], [T.montage[0].t, T.title + 1.2], [T.laser - .05, T.laser + .5], [T.date - .05, T.date + .5], [T.destruct - .05, T.destruct + .45]];
 const samplesAt = (t) => (fast.some(([a, b]) => t >= a && t <= b) ? 8 : 4);
 
-await document.fonts.load('900 100px "Noto Serif TC"', "今年秋天兩位老闆一個戰場只有一隊能贏秋遊特務全員出動四");
+await document.fonts.load('900 100px "Noto Serif TC"', "今年秋天兩位老闆一個戰場只有一隊能贏秋遊特務一如往常若你被雷射擊中主辦單位將否認知情");
 await document.fonts.load('900 100px "Noto Sans TC"', "任務簡報攻佔六度空間紅隊藍隊長不讓刀槍Blue");
 await document.fonts.load('700 100px "Noto Sans TC"', "你的任務如果你選擇接受中午十二點集合感應背心雷射槍週四戰後飯店下午茶保護老闆");
 await document.fonts.load('500 40px "Cinzel"', "THIS AUTUMN TWO BOSSES ONE BATTLEFIELD AUTUMN AGENTS");
 await document.fonts.load('700 40px "Cinzel"', "AUTUMN AGENTS");
-await document.fonts.load('600 40px "Oswald"', "AUTUMN AGENTS");
+await document.fonts.load('600 40px "Oswald"', "AUTUMN AGENTS 10.29 THU");
 await document.fonts.load('500 40px "JetBrains Mono"', "MISSION BRIEFING 10.29 代號紅不讓刀槍Blue隊長");
-await document.fonts.load('700 40px "JetBrains Mono"', "MISSION 10.29");
+await document.fonts.load('700 40px "JetBrains Mono"', "MISSION 10.29 THU 12:00 六度空間 LAZERTREKS・");
 await document.fonts.load('700 40px "JetBrains Mono"', "LOCATION GEAR VIP AFTER TARGET RED BLUE LEADER THU 12:00");
 await Promise.all([...document.images].map((i) => i.decode().catch(() => {})));
 seek(0);

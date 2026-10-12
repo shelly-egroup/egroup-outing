@@ -1,11 +1,9 @@
-/* Original trailer score for 秋遊特務, synthesised offline in the browser (Web Audio). No film theme is quoted.
-   Act I: spy-jazz cold open (E minor, 120 bpm, swung). Act II: a 5/4 mission ostinato (150 bpm, climbing D→E→F→G) with
-   bongos and flute flicks, montage hits, a strobe riser, silence. Act III: the title burns in on a braam and choir, the
-   date, the stinger's double shot and the last hit. Every cue comes from scripts/trailer/timeline.json.
-   window.composeScore({ sr, cues, overMusic }) resolves to a stereo AudioBuffer. Deterministic: seeded noise, no Math.random.
-   overMusic plays only the trailer's weight (stabs, drums, braams, impacts, risers, shot, match, fuse) to lay over the
-   supplied recordings, retuned to them (see below). */
-window.composeScore = async function composeScore({ sr = 48000, cues: C, overMusic = false }) {
+/* The trailer's sound design for 秋遊特務, synthesised offline in the browser (Web Audio). The music is the two supplied
+   recordings (007 and the Mission), laid by scripts/trailer/music.mjs; this is only what the picture does, on its own cues
+   from scripts/trailer/timeline.json: the dots, the shot, the last card's wire, the match, the fuse that burns under the
+   whole mission, the typing and the locks, the shots fired, the roll, the blast into the title, the agent's shot, the burn.
+   window.composeScore({ sr, cues }) resolves to a stereo AudioBuffer. Deterministic: seeded noise, no Math.random. */
+window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
   const DUR = C.duration + 0.15;
   const ctx = new OfflineAudioContext(2, Math.ceil(sr * DUR), sr);
   let seed = 1029;
@@ -22,8 +20,6 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C, overMus
   const limiter = ctx.createDynamicsCompressor(); limiter.threshold.value = -5; limiter.knee.value = 0; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.06;
   // The choke empties everything (tails included) for the blackout before the braam, and fades the very end.
   const choke = ctx.createGain();
-  choke.gain.setValueAtTime(1, C.blackout - 0.012); choke.gain.linearRampToValueAtTime(0, C.blackout + 0.004);
-  choke.gain.setValueAtTime(0, C.title - 0.2); choke.gain.linearRampToValueAtTime(1, C.title - 0.19);
   choke.gain.setValueAtTime(1, C.duration - 0.35); choke.gain.linearRampToValueAtTime(0, C.duration + 0.12);
   eq.reduce((a, b) => a.connect(b), master).connect(glue).connect(limiter).connect(choke).connect(ctx.destination);
   const duck = ctx.createGain(); duck.connect(master);
@@ -301,165 +297,61 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C, overMus
     for (const n of notes) for (const det of [-14, -5, 4, 13]) { const osc = ctx.createOscillator(); osc.type = "sawtooth"; osc.frequency.value = hz(n); osc.detune.value = det; const vib = ctx.createOscillator(); vib.frequency.value = 4.6 + rand(); const vd = ctx.createGain(); vd.gain.value = 9; vib.connect(vd).connect(osc.detune); vib.start(t); vib.stop(t + dur + 1.5); osc.connect(mixer); osc.start(t); osc.stop(t + dur + 1.5); }
   }
 
-  // Over the supplied recordings — 007 (F♯ minor) under Act I and the closing chord, the Mission (on D) under Acts II–III —
-  // the melodic instruments fall silent and only the trailer's weight plays: brass and piano stabs, timpani, taiko, crash,
-  // braam, impacts, risers, the shot, the match and the fuse. Act I moves up a tone (E → F♯), the ending to F♯; pitched drums
-  // land on the tonic underneath; past Act I the stabs are open fifths (no third against the melody) and the ostinato's
-  // climbing roots stay on D. The long fuse hiss under Act II sits lower.
-  if (overMusic) {
-    const mute = () => {};
-    guitar = bass = strings = stacc = synthBass = pluck = vibes = flute = choir = bongo = hat = ride = brush = tom = mute;
-    const act1 = (t) => t < C.ignite - 0.6, ending = (t) => t >= C.cut - 0.05;
-    const shift = (t) => (act1(t) ? 2 : ending(t) ? 4 : 0);
-    const tonic = (t) => (act1(t) || ending(t) ? "F#1" : "D1");
-    const snap = (t, n) => { const f = hz(n), r = hz(tonic(t)); return r * Math.pow(2, Math.round(Math.log2(f / r))); };
-    const fifths = (t, notes) => { const r = snap(t, notes.reduce((lo, n) => (hz(n) < hz(lo) ? n : lo))); return [r, r * 1.5, r * 2]; };
-    const brass0 = brass, piano0 = pianoHit, timp0 = timp, braam0 = braam;
-    brass = (t, notes, dur, o) => brass0(t, act1(t) ? notes.map((n) => semi(n, shift(t))) : fifths(t, notes), dur, o);
-    pianoHit = (t, n, vel, dur) => piano0(t, snap(t, n), vel, dur);
-    timp = (t, n, vel, dur) => timp0(t, snap(t, n), vel, dur);
-    braam = (t, root, dur) => braam0(t, snap(t, root || "D1"), dur, true);
-    riser = (t0, t1) => {
-      whoosh(t0, t1 - t0, { f0: 300, f1: 9000, vel: 0.9, p0: -0.3, p1: 0.3, q: 0.8 });
-      for (let t = t0; t < t1 - 0.02;) { taiko(t, 0.35 + 0.65 * ((t - t0) / (t1 - t0)), 1.3, 0); t += Math.max(0.05, 0.2 * (1 - (t - t0) / (t1 - t0))); }
-    };
-    const burning = fuse;
-    fuse = (t0, t1, levels) => burning(t0, t1, t1 - t0 > 2 ? levels.map(([t, v]) => [t, v * 0.4]) : levels);
-  }
-
-  // ═══ ACT I — cold open ═══
-  ["E4", "G4", "B4", "D5", "F#5"].forEach((n, i) => guitar(C.dots[i], n, 1.9 - i * 0.18, { vel: 0.78 + i * 0.05, pan: -0.55 + i * 0.27 }));
-  strings(C.irisOpen, ["E3", "B3", "D#4", "G4"], C.barrel - C.irisOpen, { attack: 0.9, tremolo: 11, vel: 0.5, release: 0.25, gain: 0.05 });
-  timpRoll(C.irisOpen + 0.25, C.barrel - 0.02, "E2", 0.08, 0.55);
-  revCymbal(C.barrel, 0.95, 0.22);
-  // the barrel finds him: walking bass, swung ride, brushes, a twangy riff
-  timp(C.barrel, "E2", 0.7); pianoHit(C.barrel, "E1", 0.55, 2.2);
-  bass(C.barrel, "E2", 0.46); bass(C.barrel + 0.5, "G2", 0.3); bass(C.barrel + 0.833, "A2", 0.16);
-  ride(C.barrel, 0.55); ride(C.barrel + 0.5, 0.4); ride(C.barrel + 0.833, 0.3); brush(C.barrel + 0.5, 0.6);
-  guitar(C.barrel, "E3", 0.32, { vel: 0.7, pan: -0.3 }); guitar(C.barrel + 0.333, "G3", 0.16, { vel: 0.55, pan: -0.3 }); guitar(C.barrel + 0.5, "B3", 0.32, { vel: 0.7, pan: -0.3 }); guitar(C.barrel + 0.833, "C4", 0.4, { vel: 0.75, pan: -0.3 });
-  // he turns
-  whoosh(C.turn - 0.32, 0.34, { f0: 600, f1: 5200, vel: 0.55, p0: 0.6, p1: -0.4 });
-  brass(C.turn, ["E3", "G3", "B3", "D#4", "F#4"], 0.2, { vel: 0.95, attack: 0.014, release: 0.2, gain: 0.08 });
-  snare(C.turn, 0.6); ride(C.turn, 0.45);
-  for (let k = 0; k < 4; k++) bass(C.turn + 0.25 * k, "B1", 0.2, 0.7 + 0.08 * k);
-  strings(C.turn, ["B2", "F3", "A3", "C4"], C.fire - C.turn - 0.06, { attack: 0.5, tremolo: 15, vel: 0.35, cresc: 1.9, release: 0.02, gain: 0.05 });
-  snareRoll(C.turn + 0.3, C.fire - 0.07, 0.08, 0.55, 0.045);
-  timpRoll(C.turn + 0.4, C.fire - 0.07, "B1", 0.08, 0.6);
-  revCymbal(C.fire - 0.06, 0.8, 0.3);
-  // FIRE — the shot, the orchestra, then the fall
-  gunshot(C.fire);
-  brass(C.fire, ["E2", "B2", "E3", "G3", "B3", "D#4", "F#4"], 1.3, { vel: 1, attack: 0.012, release: 1.1, bright: 1.15, gain: 0.075 });
-  strings(C.fire, ["E1", "E2", "B2"], 1.8, { attack: 0.02, vel: 0.6, release: 0.8, gain: 0.06, cutoff: 1400 });
-  timp(C.fire, "E2", 1.1, 2.4); crash(C.fire, 0.7, 2.8); pianoHit(C.fire, "E1", 0.9, 3);
-  brass(C.fire + 0.32, ["B3", "G3"], 1.05, { vel: 0.62, attack: 0.05, release: 0.35, glideTo: -7, glideAt: 0.18, gain: 0.06, pan: 0.15 });
-  whoosh(C.drop, 0.55, { f0: 2200, f1: 260, vel: 0.5, p0: 0.2, p1: -0.2 });
-  whoosh(C.irisClose - 0.05, 0.42, { f0: 4800, f1: 500, vel: 0.6, p0: -0.5, p1: 0.5 });
-  revCymbal(C.titles[0], 0.4, 0.2);
-  // title sequence: the theme
-  const chords = [["E2", "B2", "G3", "D#4"], ["C2", "G2", "E3", "B3", "F#4"], ["A1", "E2", "C3", "G3", "B3"], ["B1", "F#2", "D#3", "A3", "C4"]];
-  const bassLine = [["E2", "B1"], ["C2", "G2"], ["A1", "E2"], ["B1", "A#1"]];
-  const tune = [[0, "B4", 0.72], [0.75, "A4", 0.25], [1, "G4", 0.48], [1.5, "F#4", 0.48], [2, "E4", 0.72], [2.75, "G4", 0.25], [3, "F#4", 0.48], [3.5, "D#4", 0.45]];
-  C.titles.forEach((t, i) => {
-    strings(t, chords[i], 0.98, { attack: 0.06, vel: 0.5, release: 0.25, gain: 0.04 });
-    timp(t, chords[i][0].replace(/\d/, "2"), 0.8, 1.4); pianoHit(t, chords[i][0].replace(/\d/, "1"), 0.6, 1.8);
-    whoosh(t - 0.18, 0.2, { f0: 900, f1: 6000, vel: 0.35, p0: i % 2 ? 0.7 : -0.7, p1: i % 2 ? -0.7 : 0.7 });
-    bass(t, bassLine[i][0], 0.46, 0.85); bass(t + 0.5, bassLine[i][1], 0.46, 0.7);
-    ride(t, 0.45); ride(t + 0.5, 0.35); ride(t + 0.833, 0.28); brush(t + 0.5, 0.5); hat(t + 0.5, 0.3);
-  });
-  if (!overMusic) tune.forEach(([dt, n, len]) => { brass(C.titles[0] + dt, [n], len, { vel: 0.55, attack: 0.05, release: 0.18, gain: 0.07, bright: 0.7, pan: -0.15 }); vibes(C.titles[0] + dt, n.replace(/\d/, (d) => String(Number(d) + 1)), 1.2, 0.35, 0.3); });
-  revCymbal(C.ignite, 0.55, 0.3);
-  whoosh(C.ignite - 0.5, 0.5, { f0: 250, f1: 7000, vel: 0.5, p0: 0.5, p1: -0.6 });
-
-  // ═══ ACT II — the mission (5/4, eighths of 0.2s, bars of 2s) ═══
-  const E8 = 0.2, BAR = 2, roots = ["D2", "D2", "D2", "E2", "F2", "G2"];
-  const pat = [0, 0, 3, 0, 0, 5, 0, 6, 5, 3], accents = new Set([0, 2, 5, 7]);
-  const M0 = C.montage[0].t, S0 = C.strobe[0];
-  matchStrike(C.ignite);
-  whoosh(C.typing[0][0] - 0.06, 0.16, { f0: 1800, f1: 7500, vel: 0.5, p0: -0.5, p1: 0.2 }); impact(C.typing[0][0], 0.45);
-  fuse(C.ignite, C.blackout, [[C.ignite + 0.15, 0.22], [C.mission, 0.12], [M0, 0.06], [S0, 0.06], [C.blackout - 0.05, 0.4]]);
-  if (!overMusic) roots.forEach((root, b) => {
-    const t0 = C.ignite + b * BAR;
-    pat.forEach((s, i) => {
-      const t = t0 + i * E8, acc = accents.has(i), n = semi(root, s);
-      if (t >= C.blackout - 0.02) return;
-      stacc(t, n, { vel: acc ? 0.95 : 0.55, gain: 0.045 + b * 0.004, pan: -0.25, cutoff: 2600 });
-      stacc(t, n * 2, { vel: acc ? 0.85 : 0.5, gain: b ? 0.08 + b * 0.01 : 0.05, pan: 0.25, cutoff: 3800 });
-      if (b >= 1) pluck(t, n * 4, acc ? 0.9 : 0.55, b >= 3 ? 0.05 : 0.035);
-      if (b >= 1) synthBass(t, n / 2, acc ? 0.18 : 0.12, acc ? 0.95 : 0.6);
-      if (b === 0) tick(t, acc ? 0.6 : 0.35, acc ? 1500 : 1900);
-      if (b >= 1 && acc) taiko(t, 0.55 + b * 0.08 + (i === 0 ? 0.2 : 0), i === 0 ? 1 : 1.12, (i % 3 - 1) * 0.3);
-      if (b === 0 && i === 0) taiko(t, 0.5);
-      // the mission's own colour: bongos chatter in sixteenths, flutes flick the off-beats
-      if (b >= 1) { bongo(t, acc ? 0.85 : 0.5, i % 2 ? "hi" : "lo"); bongo(t + 0.1, 0.32 + 0.06 * b, (i + 1) % 3 ? "hi" : "lo"); }
-      if (b >= 2 && !acc && i % 2) flute(t + 0.1, semi(root, s + 36), 0.5);
-      if (b >= 2) { hat(t, acc ? 0.5 : 0.3); hat(t + 0.1, 0.22); if (i === 5) snare(t, 0.55 + b * 0.04); }
-      if (b >= 2) stacc(t + 0.1, semi(root, s + 24 + (i % 2 ? 7 : 0)), { vel: 0.45, gain: b >= 4 ? 0.055 : 0.04, len: 0.08, pan: 0.45, cutoff: 5200, send: 0.3 });
-      if (b >= 2 && acc) clap(t, 0.5 + b * 0.08);
-    });
-    if (b >= 2 && b < 5) { tom(t0 + 8 * E8, 160, 0.6, 0.3); tom(t0 + 8.5 * E8, 130, 0.65, 0); tom(t0 + 9 * E8, 105, 0.7, -0.3); tom(t0 + 9.5 * E8, 90, 0.75, -0.4); }
-    strings(t0, [semi(root, 12), semi(root, 19), semi(root, 24)], Math.min(BAR, C.blackout - t0) - 0.05, { attack: 0.4, vel: 0.35 + b * 0.05, gain: b ? 0.05 : 0.035, release: 0.1, cutoff: 2800 + b * 300 });
-    if (b >= 2) brass(t0, [semi(root, 12), semi(root, 19), semi(root, 24)], 0.75, { vel: 0.9, attack: 0.02, release: 0.25, gain: 0.085 });
-    if (b >= 1) whoosh(t0 - 0.3, 0.32, { f0: 500, f1: 6500, vel: 0.4, p0: b % 2 ? 0.7 : -0.7, p1: b % 2 ? -0.7 : 0.7 });
-  });
-  typing(...C.typing[0]); typing(...C.typing[1]);
-  shutter(C.cardA); shutter(C.cardB); lock(C.cardA + 0.12); lock(C.cardB + 0.12);
-  impact(C.mission, 0.8);
-  brass(C.missionLine, ["D3", "A3", "D4", "F4"], 0.3, { vel: 0.95, attack: 0.012, release: 0.2, gain: 0.08 }); pianoHit(C.missionLine, "D1", 0.7, 1.6); impact(C.missionLine, 1);
-  const rootAt = (t) => (overMusic ? "D2" : roots[Math.min(roots.length - 1, Math.max(0, Math.floor((t - C.ignite) / BAR)))]);
-  // a burst of crackle for the fuse's burn wipe and the target hit
+  // ═══ The sound design ═══
+  const M = Object.fromEntries(C.montage.map((m) => [m.shot, m.t])), M0 = C.montage[0].t;
   function crackle(t, len, vel = 0.5) { fuse(t, t + len, [[t + 0.01, vel], [t + len - 0.02, 0.0001]]); }
-  crackle(M0, 0.42, 0.5);
-  for (const { t, fx } of C.montage) {
-    const r = rootAt(t);
-    if (fx === "hit") { crash(t, 0.4, 1.6); pianoHit(t, r.replace(/\d/, "1"), 0.6, 1.6); impact(t, 1); brass(t, [semi(r, 12), semi(r, 19), semi(r, 24), semi(r, 27)], 0.4, { vel: 1, attack: 0.012, release: 0.3, gain: 0.075 }); }
-    if (fx === "stab") { brass(t, [semi(r, 12), semi(r, 15), semi(r, 19), semi(r, 24)], 0.18, { vel: 0.95, attack: 0.012, release: 0.15, gain: 0.095 }); taiko(t, 0.6, 1.05); clap(t, 0.8); impact(t, 0.7); }
-    if (fx === "zap") { zap(t, 1, (t * 7 % 2) - 1); snare(t, 0.45); impact(t, 0.55); }
-    if (fx === "impact") { impact(t, 1.3); taiko(t, 0.9, 0.9); crackle(t, 0.5, 0.55); zap(t, 0.6, 0.3); }
-    if (fx === "lock") { lock(t); taiko(t, 0.45, 1.2); impact(t, 0.55); }
-    if (fx === "roll") { whoosh(t - 0.05, 0.32, { f0: 260, f1: 2600, vel: 0.65, p0: -0.7, p1: 0.5 }); taiko(t, 0.55, 1.1, -0.4); impact(t, 0.5); }
+  /** a laser's thin electric hum, swelling a little, then gone */
+  function hum(t0, t1, vel = 0.5) {
+    const o = out(0, 0.25, 0.022 * vel);
+    for (const [f, a] of [[1975, 1], [2960, 0.45], [987, 0.35]]) {
+      const osc = ctx.createOscillator(); osc.frequency.value = f; const vib = ctx.createOscillator(); vib.frequency.value = 7; const vd = ctx.createGain(); vd.gain.value = f * 0.004; vib.connect(vd).connect(osc.frequency);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(a, t0 + 0.08); g.gain.setValueAtTime(a, t1 - 0.12); g.gain.linearRampToValueAtTime(0, t1);
+      osc.connect(g).connect(o); osc.start(t0); osc.stop(t1 + 0.05); vib.start(t0); vib.stop(t1 + 0.05);
+    }
   }
-  // the red captain's roll: his shoulder meets the floor, he swings up, he fires
-  if (C.rollBeats) { taiko(C.rollBeats[1], 0.8, 0.78, 0); whoosh(C.rollBeats[2] - 0.04, 0.16, { f0: 900, f1: 4200, vel: 0.45, p0: 0, p1: 0.6 }); }
-  if (C.rollFire) { zap(C.rollFire, 1, 0.45); impact(C.rollFire, 0.9); snare(C.rollFire, 0.5); }
-  C.titles.forEach((t) => impact(t, 0.6));
-  impact(C.fire, 1.2); impact(C.turn, 0.5);
-  // strobe: each flash cut is a drum, the riser climbs to the cut-off
-  C.strobe.forEach((t, i) => { taiko(t, 0.55 + i * 0.06, 1 + i * 0.03, (i % 2 ? 0.3 : -0.3)); impact(t, 0.35 + i * 0.05); });
-  snareRoll(S0, C.blackout - 0.02, 0.2, 0.95, 0.05);
-  riser(S0, C.blackout, "A2");
-  revCymbal(C.blackout, 0.6, 0.25);
 
-  // ═══ ACT III — the title burns in, the date, the stinger ═══
-  revCymbal(C.title, 0.19, 0.45); whoosh(C.title - 0.17, 0.17, { f0: 200, f1: 3000, vel: 0.55, p0: 0, p1: 0 });
-  braam(C.title, "D1", 3.6);
-  brass(C.title, ["D2", "A2", "D3", "F3", "A3", "D4"], 1.6, { vel: 1, attack: 0.015, release: 1.2, bright: 1.1, gain: 0.06 });
-  strings(C.title, ["D2", "A2", "F3"], 3.2, { attack: 0.05, vel: 0.5, release: 1.2, gain: 0.05, cutoff: 2200 });
-  choir(C.title + 0.05, ["D3", "A3", "F4", "A4"], C.date - C.title + 0.8, { vel: 0.6, attack: 0.6 });
-  // the 007 dots tick into the title, then the agent fires and the laser sight lands on 特
-  for (let i = 0; i < 4; i++) tick(C.title + 0.38 + i * 0.1, 0.9, 2300 + i * 180);
-  zap(C.title + 1.2, 0.75, 0.1);
-  vibes(C.title + 0.9, "D6", 2.4, 0.35, 0.3); vibes(C.title + 0.95, "A6", 2.2, 0.25, -0.3);
-  pianoHit(C.date, "D4", 0.5, 2.4); pianoHit(C.date, "A3", 0.35, 2.4); pianoHit(C.date, "D1", 0.6, 2.4); vibes(C.date + 0.05, "F5", 2.2, 0.35, -0.2);
-  strings(C.date, ["D3", "A3", "D4", "E4"], C.stinger - C.date + 0.2, { attack: 0.6, vel: 0.35, release: 0.3, gain: 0.04, cutoff: 3200 });
-  // the stinger: drums gather, both captains fire, the last hit, then the room rings out
-  for (let t = C.stinger, k = 0; t < C.stingerFire - 0.02; k++) { const x = (t - C.stinger) / (C.stingerFire - C.stinger); taiko(t, 0.45 + 0.5 * x, 1.05, k % 2 ? 0.25 : -0.25); bongo(t + 0.05, 0.4 + 0.4 * x, k % 2 ? "hi" : "lo"); t += 0.2 - 0.1 * x; }
-  strings(C.stinger, ["D3", "A3", "D4"], C.stingerFire - C.stinger, { attack: 0.3, vel: 0.3, tremolo: 14, cresc: 2.2, release: 0.02, gain: 0.05 });
-  revCymbal(C.stingerFire, 0.5, 0.3);
-  zap(C.stingerFire, 1.3, -0.4); zap(C.stingerFire + 0.03, 1.3, 0.4); impact(C.stingerFire, 1.3); brass(C.stingerFire, ["D3", "A3", "D4", "F4"], 0.25, { vel: 1, attack: 0.01, release: 0.2, gain: 0.08 });
-  revCymbal(C.cut, 0.3, 0.35);
-  braam(C.cut, "D1", 2.4); crash(C.cut, 0.9, 3); timp(C.cut, "D2", 1.2, 2.6); impact(C.cut, 1.6);
-  pianoHit(C.end, "D1", 0.55, 2.2); choir(C.end, ["D3", "A3", "D4"], C.duration - C.end - 0.6, { vel: 0.4, attack: 0.4, gain: 0.03 });
-  // self-destruct: the line types itself, a match strikes, the frame catches with a deep fwoomp, the fire runs through it
-  // crackling and roaring, and what is left drifts off as smoke
-  typing(C.disavow[0], C.disavow[1]);   // as always, the organisers will disavow any knowledge
-  typing(C.destruct, C.destruct + 0.6);
+  // ── Act I: the dots tick in, the shot rings out over the band's entrance, the last card's wire hums and burns down ──
+  C.dots.forEach((t, i) => tick(t, 0.32 + 0.06 * i, 2050 + i * 110));
+  gunshot(C.fire); impact(C.fire, 0.9);
+  hum(C.titles[3] + 0.05, C.button + 0.42, 0.9);
+  whoosh(C.button + 0.02, 0.5, { f0: 4200, f1: 900, vel: 0.22, p0: 0.25, p1: 0.05, q: 2.2 });
+
+  // ── Act II: the match struck in the dark, the flame taking, the fuse catching as the bass comes in and burning under
+  //    everything until the title ──
+  matchStrike(C.ignite);
+  whoosh(C.flame - 0.04, 0.42, { f0: 180, f1: 900, vel: 0.28, p0: 0.1, p1: 0.1, q: 0.8 });
+  revCymbal(C.catch, 1.1, 0.22); whoosh(C.catch - 0.45, 0.45, { f0: 300, f1: 2800, vel: 0.2, p0: -0.3, p1: 0.3, q: 0.9 });   // drawn in, into the bass
+  impact(C.catch, 0.7);
+  fuse(C.catch, C.suckout, [[C.catch + 0.12, 0.42], [C.mission - 0.2, 0.2], [C.mission + 0.3, 0.1], [M0, 0.09], [C.suckout - 0.35, 0.24]]);
+  typing(C.typing[0][0], C.typing[0][1]); typing(C.typing[1][0], C.typing[1][1]);
+  shutter(C.cardA); shutter(C.cardB); lock(C.cardA + 0.12); lock(C.cardB + 0.12);
+  impact(C.missionLine, 0.6);
+  crackle(M0, 0.42, 0.45);   // the burn wipe into the arena
+  // the montage: only what is seen — shots fired, the target hit, the locks, the roll, the slide
+  zap(M.fireA, 0.9, -0.2); zap(M.fireA2, 0.85, -0.1);
+  impact(M.target, 0.9); crackle(M.target, 0.4, 0.4);
+  zap(M.aimB2, 0.8, 0.25);
+  lock(M.lockA); lock(M.lockB);
+  if (C.rollBeats) { whoosh(C.rollBeats[0] - 0.05, 0.3, { f0: 260, f1: 2400, vel: 0.5, p0: -0.6, p1: 0.4 }); taiko(C.rollBeats[1], 0.7, 0.8, 0); whoosh(C.rollBeats[2] - 0.03, 0.16, { f0: 900, f1: 4000, vel: 0.35, p0: 0, p1: 0.5 }); }
+  if (C.rollFire) zap(C.rollFire, 0.95, 0.4);
+  whoosh(M.stuntB - 0.04, 0.5, { f0: 1200, f1: 300, vel: 0.3, p0: 0.5, p1: -0.3, q: 0.7 });
+  if (C.slideFire) zap(C.slideFire, 0.9, -0.3);
+
+  // ── Act III: the breath (the fuse gone, a swell drawn in), the title slammed out of the blast, the agent's shot, the date on
+  //    the brass, the classic line typed, a two-beep warning, the self-destruct slammed in on the band's last chord, the burn ──
+  revCymbal(C.title, C.title - C.suckout + 0.05, 0.42);
+  whoosh(C.suckout + 0.02, C.title - C.suckout - 0.02, { f0: 140, f1: 1600, vel: 0.2, p0: 0, p1: 0, q: 0.7 });
+  impact(C.title, 1.6); crash(C.title, 0.5, 2.8); braam(C.title, "G1", 2.8, true);
+  zap(C.laser, 0.7, 0.1);
+  revCymbal(C.date, 0.3, 0.2); impact(C.date, 1.15); crash(C.date, 0.32, 2.2);
+  typing(C.disavow[0], C.disavow[1]);
+  tick(C.destructEn, 0.3, 1700); tick(C.destructEn + 0.33, 0.3, 1700);
+  impact(C.destruct, 1.25); lock(C.destruct + 0.02); crash(C.destruct, 0.28, 2.4);
   matchStrike(C.burn - 0.1);
-  revCymbal(C.burn, 0.32, 0.22);
-  impact(C.burn + 0.02, 1.1); timp(C.burn + 0.02, "D1", 0.85, 2.4);
-  whoosh(C.burn + 0.04, 1.3, { f0: 160, f1: 2600, vel: 0.55, p0: -0.2, p1: 0.2, q: 0.7 });
-  crackle(C.burn, 1.9, 0.78);
-  whoosh(C.burn + 1.25, 1.0, { f0: 2600, f1: 240, vel: 0.34, p0: 0.5, p1: -0.5 });
-  impact(C.burn + 1.7, 0.45);
+  impact(C.burn + 0.02, 1.0);
+  whoosh(C.burn + 0.04, 1.3, { f0: 160, f1: 2600, vel: 0.5, p0: -0.2, p1: 0.2, q: 0.7 });
+  crackle(C.burn, 1.9, 0.72);
+  whoosh(C.burn + 1.25, 1.0, { f0: 2600, f1: 240, vel: 0.3, p0: 0.5, p1: -0.5 });
 
   return ctx.startRendering();
 };
