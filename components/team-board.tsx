@@ -1,33 +1,14 @@
 "use client";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { Face, SAMPLE } from "./mission-accept";
+import { Face } from "./mission-accept";
 import { useOuting } from "./outing-provider";
 import { useInView } from "./use-in-view";
 import { MARK_AGENT_WHOLE } from "@/lib/title-mark-paths";
-import { assignTeams, captainOf, drawOne, otherTeam, pickTurn, TEAM_LABEL, teamCounts, TEAMS, withCaptains, type Captain, type Team, type TeamConfig, type TeamDraw, type TeamMap } from "@/lib/teams";
+import { captainOf, otherTeam, pickTurn, TEAM_LABEL, teamCounts, TEAMS, withCaptains, type Captain, type Team, type TeamMap } from "@/lib/teams";
 import type { PublicVote } from "@/lib/trips";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const EN: Record<Team, string> = { red: "RED TEAM", blue: "BLUE TEAM" };
-type Board = { votes: Record<string, PublicVote>; teams: TeamMap; config: TeamConfig; me?: Team; admin: boolean; draw: TeamDraw | null | undefined };
-
-/* ── The local scenario demo (?teams=demo, development only): every situation the draft can be in, played on sample data ── */
-const demoVotes = Object.fromEntries(SAMPLE.concat([["demo7", { planId: "B", displayName: "周探員", photoURL: "", updatedAt: 7 } as PublicVote], ["demo8", { planId: "B", displayName: "吳特務", photoURL: "", updatedAt: 8 } as PublicVote]]));
-const demoCaptains = { red: { email: "egroup.james@gmail.com", uid: "demo0", name: "王特務" }, blue: { email: "egroup.ivy@gmail.com", uid: "demo2", name: "陳隊長" } };
-const base: TeamConfig = { published: true, picking: true, turns: true, firstPick: "red", captains: demoCaptains };
-type Scenario = { key: string; label: string; note: string; config: TeamConfig; teams: TeamMap; me?: Team; rival?: boolean; admin?: boolean };
-const SCENARIOS: Scenario[] = [
-  { key: "hidden", label: "尚未公開", note: "主辦還沒打開「前台顯示分隊」：首頁不會出現這個面板，探員的檔案寫「分隊公布後顯示」。（這裡為了示範才顯示）", config: { ...base, published: false, picking: false }, teams: {} },
-  { key: "draw", label: "主辦抽籤", note: "主辦分隊、你是主辦：按「抽一位」，燈在待分隊的卡片間跑、越跑越慢，停在被抽中的人，他飛進人數較少的一隊（一樣多就隨機）；按「一鍵隨機分隊」，剩下的人一個接一個飛進兩隊。也可以點一張卡片，在抽籤台直接指定紅隊或藍隊；隊上的人可以「放回」。看首頁的人都同步看到，抽籤台只有你看得到。", config: { ...base, picking: false, firstPick: null }, teams: {}, admin: true },
-  { key: "assigned", label: "主辦分好隊", note: "主辦在後台手動指定或隨機分配，並公開：大家看到兩隊名單，不能選人。", config: { ...base, picking: false }, teams: { demo1: "red", demo4: "red", demo6: "red", demo3: "blue", demo5: "blue", demo7: "blue", demo8: "red" } },
-  { key: "my-turn", label: "輪到你選", note: "你是紅隊隊長、輪到紅隊：你的抽籤台跟主辦一樣——「抽一位」幫自己隊抽、「一鍵隨機分隊」把剩下的人隨機分完；也可以點一張卡片，在抽籤台按「確認選入」。選完換藍隊（示範中藍隊會自動選）。FIRST PICK 抽中的隊伍先選，人數單數時也由它多選一位。", config: base, teams: { demo1: "red", demo3: "blue" }, me: "red", rival: true },
-  { key: "their-turn", label: "輪到對方", note: "你是紅隊隊長，但現在輪到藍隊：卡片暫時不能點，藍隊選完就換你。", config: base, teams: { demo1: "red", demo3: "blue", demo4: "red" }, me: "red" },
-  { key: "free", label: "不輪流", note: "主辦關掉「輪流選」：兩位隊長隨時都可以選（手動或抽籤），不用等對方。", config: { ...base, turns: false }, teams: { demo1: "red" }, me: "blue" },
-  { key: "organiser", label: "主辦（隊長選人中）", note: "隊長選人的時候，主辦一樣有隊長的所有功能：「抽一位」幫輪到的那隊抽，點卡片可以直接編入任一隊，隊上的人可以放回，也能一鍵把剩下的人隨機分完。", config: base, teams: { demo1: "red", demo3: "blue" }, admin: true },
-  { key: "spectator", label: "一般探員觀戰", note: "不是隊長：看得到即時的選人過程，被選走的卡片會飛進那一隊；自己的檔案會顯示隊伍。", config: { ...base, firstPick: "blue" }, teams: { demo1: "red", demo3: "blue", demo4: "blue" }, rival: true },
-  { key: "captain-away", label: "隊長還沒登入", note: "藍隊隊長還沒登入過：位子先放待命中的特務剪影，她第一次登入就自動就位。", config: { ...base, picking: false, captains: { red: demoCaptains.red, blue: { email: "egroup.ivy@gmail.com" } } }, teams: { demo1: "red" } },
-  { key: "done", label: "分隊完成", note: "每個人都有隊伍了：面板顯示「分隊完成」，雙方人數一樣（或差一人）。", config: base, teams: { demo1: "red", demo4: "red", demo6: "red", demo8: "red", demo3: "blue", demo5: "blue", demo7: "blue" } },
-];
 
 /** The agent from the mark: standing in for a captain who has not signed in yet, or a ghost in an empty slot. */
 function Silhouette({ className }: { className: string }) {
@@ -54,27 +35,16 @@ function FirstPick({ team, extra }: { team: Team; extra: boolean }) {
  * captain on the clock (in turn from the first pick, drawn by lot and played as a selector light, if the organisers want
  * turns) and the organisers, who can do everything a captain can for either team, any time. The desk draws one agent — a
  * light runs over the cards, slows and stops on the one drawn — or everyone left at once; a card clicked locks onto the
- * desk to be placed by hand. Every pick and draw plays on every open page. With ?teams=demo (development only) a switcher
- * plays every scenario on sample data (&scene=<key> opens one).
+ * desk to be placed by hand. Every pick and draw plays on every open page.
  */
 export default function TeamBoard() {
   const outing = useOuting();
-  const [scenario, setScenario] = useState<Scenario | null>(null), [demoTeams, setDemoTeams] = useState<TeamMap>({}), [demoDraw, setDemoDraw] = useState<TeamDraw | null>(null);
   const [armed, setArmed] = useState(""), [busy, setBusy] = useState(""), [problem, setProblem] = useState(""), [news, setNews] = useState("");
   const [spot, setSpot] = useState(""), [won, setWon] = useState(false), [revealed, setRevealed] = useState(0), [confirmAll, setConfirmAll] = useState(false);
   const [ref, seen, round] = useInView<HTMLDivElement>("0px 0px -12% 0px");
   const deskRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (process.env.NODE_ENV !== "development") return;
-    const query = new URLSearchParams(window.location.search), key = query.get("teams");
-    if (key !== "demo" && key !== "draft") return;
-    const first = SCENARIOS.find(s => s.key === query.get("scene")) || SCENARIOS[1];
-    setScenario(first); setDemoTeams(first.teams);
-  }, []);
-  const board: Board = scenario
-    ? { votes: demoVotes, teams: demoTeams, config: scenario.config, me: scenario.me, admin: !!scenario.admin, draw: demoDraw }
-    : { votes: outing.votes, teams: outing.teams, config: outing.teamConfig, me: outing.user ? captainOf(outing.teamConfig.captains, outing.user.uid, outing.user.email) : undefined, admin: outing.isAdmin, draw: outing.teamDraw };
-  const { votes, teams, config, me, admin, draw } = board, { captains, picking, turns } = config;
+  const { votes, teams, teamConfig: config, isAdmin: admin, teamDraw: draw, user } = outing, { captains, picking, turns } = config;
+  const me = user ? captainOf(captains, user.uid, user.email) : undefined;
   const uids = Object.keys(votes), placedNow = withCaptains(teams, captains);
 
   // a draw run before the board first heard from the database is not replayed; a newer one-agent draw keeps that agent in
@@ -145,12 +115,6 @@ export default function TeamBoard() {
     return () => { timers.forEach(clearTimeout); setSpot(""); setWon(false); };
   }, [pending?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // the demo's rival captain answers each pick after a beat
-  useEffect(() => {
-    if (!scenario?.rival || !turns || !turn || turn === me || !pool.length || rolling) return;
-    const timer = setTimeout(() => setDemoTeams(t => ({ ...t, [pool[(Math.random() * pool.length) | 0]]: turn })), 1500);
-    return () => clearTimeout(timer);
-  }, [scenario, turn, me, turns, pool.length, rolling]); // eslint-disable-line react-hooks/exhaustive-deps
   // a lock lifts when the turn passes or the card is taken; a lock brings the desk into view; the draw-everyone confirmation lapses
   useEffect(() => { if (armed && (!actor || !pool.includes(armed))) setArmed(""); }, [armed, actor, pool]);
   useEffect(() => { if (locked) deskRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }); }, [locked]);
@@ -163,33 +127,15 @@ export default function TeamBoard() {
     finally { setBusy(""); }
   }
   /** Onto a team (an organiser names the team; a captain takes for their own), or back to the pool (`null`). */
-  const act = (uid: string, team: Team | null) => { setArmed(""); return run(uid, () => scenario
-    ? setDemoTeams(t => { const next = { ...t }; if (team) next[uid] = team; else delete next[uid]; return next; })
-    : team ? outing.pickAgent(uid, admin ? team : undefined) : outing.releaseAgent(uid)); };
+  const act = (uid: string, team: Team | null) => { setArmed(""); return run(uid, () => team ? outing.pickAgent(uid, admin ? team : undefined) : outing.releaseAgent(uid)); };
   /** One at random: an organiser's to the team on the clock (captains picking in turn) or the smaller team; a captain's to their own. */
-  const drawNext = () => { setArmed(""); return run("draw", () => {
-    const into = admin ? (turn || undefined) : me;
-    if (!scenario) return outing.drawAgent(into);
-    const next = admin ? drawOne(uids, placedNow, captains) : pool.length && me ? { uid: pool[Math.floor(Math.random() * pool.length)], team: me } : null;
-    if (!next) return;
-    if (into) next.team = into;
-    setDemoTeams(t => ({ ...t, [next.uid]: next.team }));
-    setDemoDraw(d => ({ seq: (d?.seq || 0) + 1, uid: next.uid, team: next.team, at: Date.now() }));
-  }); };
+  const drawNext = () => { setArmed(""); return run("draw", () => outing.drawAgent(admin ? (turn || undefined) : me)); };
   /** Everyone left, at random, balanced (the one left over to either team). */
   const drawAll = () => {
     if (!confirmAll) { setConfirmAll(true); return; }
     setConfirmAll(false); setArmed("");
-    return run("all", () => {
-      if (!scenario) return outing.drawEveryone();
-      setDemoTeams(assignTeams(uids, placedNow, { keep: true, fixed: withCaptains({}, captains) }));
-      setDemoDraw(d => ({ seq: (d?.seq || 0) + 1, all: true, at: Date.now() }));
-    });
+    return run("all", () => outing.drawEveryone());
   };
-  function play(next: Scenario) {
-    setScenario(next); setDemoTeams(next.teams); setDemoDraw(null); setRevealed(0); baseline.current = null;
-    setArmed(""); setProblem(""); setConfirmAll(false); spots.current = new Map(); last.current = {};
-  }
 
   const status = rolling ? "抽籤中" : !pool.length ? "分隊完成" : !picking ? "主辦分隊中" : !turns ? "隊長自由選人中" : TEAM_LABEL[turn || "red"] + "選人中";
   const guide = actor || !me || !picking ? "" : !pool.length ? "你的隊伍已經到齊。" : rolling ? "抽籤中…" : "等" + TEAM_LABEL[otherTeam(me)] + "隊長選完就換你。";
@@ -231,11 +177,6 @@ export default function TeamBoard() {
   };
 
   return <div ref={ref} className="draft" data-seen={seen} data-picking={picking} data-lock={admin ? "admin" : me} data-rolling={rolling || undefined}>
-    {scenario && <div className="draft-demo" role="group" aria-label="情境示範">
-      <p><b>情境示範</b>只在本機預覽，不會寫入資料庫</p>
-      <div className="draft-demo-tabs">{SCENARIOS.map((s, i) => <button key={s.key} type="button" aria-pressed={scenario.key === s.key} onClick={() => play(s)}><span>{i + 1}</span>{s.label}</button>)}</div>
-      <p className="draft-demo-note">{scenario.note}</p>
-    </div>}
     <div key={round} className="draft-stage" data-hidden={!config.published || undefined}>
       <i className="draft-bg" aria-hidden="true" />
       <div className="draft-head">
@@ -275,10 +216,7 @@ export default function TeamBoard() {
   </div>;
 }
 
-/** Whether the board shows at all: the organisers published the teams (or the local demo is on). */
+/** Whether the board shows at all: the organisers published the teams. */
 export function useTeamBoardVisible() {
-  const { teamConfig } = useOuting();
-  const [demo, setDemo] = useState(false);
-  useEffect(() => { if (process.env.NODE_ENV !== "development") return; const key = new URLSearchParams(window.location.search).get("teams"); if (key === "demo" || key === "draft") setDemo(true); }, []);
-  return teamConfig.published || demo;
+  return useOuting().teamConfig.published;
 }

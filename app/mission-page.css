@@ -658,16 +658,6 @@ body:has(.mission-page), body:has(.mission-page)::before { background: #050506; 
 .ms-section .wrap > .ms-accept-term + .ms-teams-term { margin-top: 20px; }
 .ms-teams-term .term-body { padding: 0; }
 .draft { position: relative; }
-/* the local scenario demo */
-.draft-demo { display: grid; gap: 10px; padding: 16px clamp(16px, 2.6vw, 30px); border-bottom: 1px dashed rgb(255 176 74 / .4); background: rgb(255 176 74 / .06); }
-.draft-demo p { margin: 0; font: 600 12px/1.6 var(--ms-sans); color: var(--ms-dim); }
-.draft-demo p b { margin-right: 10px; font: 800 12px/1 var(--ms-mono); letter-spacing: .24em; color: var(--ms-amber); }
-.draft-demo-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
-.draft-demo-tabs button { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 0 12px; border: 1px solid rgb(242 237 228 / .25); background: transparent; color: var(--ms-dim); font: 700 12px/1 var(--ms-sans); letter-spacing: .06em; cursor: pointer; }
-.draft-demo-tabs button span { font: 700 11px/1 var(--ms-mono); color: var(--ms-amber); }
-.draft-demo-tabs button[aria-pressed="true"] { border-color: var(--ms-amber); background: rgb(255 176 74 / .14); color: var(--ms-paper); }
-.draft-demo .draft-demo-note { padding: 10px 12px; border-left: 3px solid var(--ms-amber); background: rgb(0 0 0 / .25); font-size: 13px; color: var(--ms-paper); }
-
 .draft-stage { position: relative; isolation: isolate; overflow: hidden; padding: clamp(26px, 3.2vw, 44px) clamp(14px, 2.4vw, 32px) clamp(26px, 3vw, 40px); }
 .draft-bg { position: absolute; inset: 0; z-index: -1; background: linear-gradient(105deg, rgb(255 42 74 / .16), rgb(255 42 74 / .04) 30%, transparent 44%, transparent 56%, rgb(61 125 255 / .04) 70%, rgb(61 125 255 / .18)), radial-gradient(60% 45% at 50% 0%, rgb(255 255 255 / .06), transparent 70%); }
 .draft-bg::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgb(255 255 255 / .018) 0 1px, transparent 1px 4px), radial-gradient(28% 60% at 50% 45%, rgb(255 255 255 / .045), transparent 70%); }
@@ -823,7 +813,7 @@ button.draft-card-face:hover { border-color: rgb(242 237 228 / .5); transform: t
 .draft-go[data-team="red"] { border-color: var(--ms-laser); background: var(--ms-laser); box-shadow: 0 0 18px rgb(255 42 74 / .5); }
 .draft-go[data-team="blue"] { border-color: var(--ms-blue); background: var(--ms-blue); box-shadow: 0 0 18px rgb(61 125 255 / .5); }
 .draft-cancel { min-height: 30px; border: 1px solid rgb(242 237 228 / .2); background: none; color: var(--ms-faint); font: 700 12px/1 var(--ms-sans); cursor: pointer; }
-:is(.draft-go, .draft-cancel, .draft-release, .draft-desk button, .draft-demo-tabs button):focus-visible { outline: 2px solid var(--ms-amber); outline-offset: 2px; }
+:is(.draft-go, .draft-cancel, .draft-release, .draft-desk button):focus-visible { outline: 2px solid var(--ms-amber); outline-offset: 2px; }
 .draft-done { display: grid; gap: 8px; margin: 0; padding: 26px 12px; border: 1px dashed rgb(93 242 166 / .4); font: 700 14px/1.6 var(--ms-sans); text-align: center; color: var(--ms-dim); }
 .draft-done b { font: 800 12px/1 var(--ms-mono); letter-spacing: .3em; color: var(--ms-green); }
 
