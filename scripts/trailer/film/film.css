@@ -93,6 +93,8 @@ img { display: block; max-width: none; user-select: none; }
 .tag { position: absolute; display: grid; gap: 1.4cqh; font: 700 2.8cqh/1 var(--mono); letter-spacing: .35em; color: var(--laser); white-space: nowrap; }
 .tag b { font: 900 7cqh/1 var(--sans); letter-spacing: .12em; color: #fff; }
 .tag.blue { color: #7aa6ff; }
+[data-ar="9x16"] .tag { font-size: 2cqh; letter-spacing: .3em; }
+[data-ar="9x16"] .tag b { font-size: 5.6cqh; }
 
 /* ── title ── */
 .title { position: absolute; left: 50%; top: 46%; translate: -50% -50%; display: flex; flex-direction: column; align-items: center; gap: 3cqh; }

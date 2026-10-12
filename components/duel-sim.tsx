@@ -10,7 +10,7 @@ type Side = "a" | "b";
 type Pose = keyof typeof SPRITES.a;
 type Mode = "cpu" | "duo";
 type Phase = "ready" | "intro" | "fight" | "over";
-const NAMES: Record<Side, string> = { a: "紅隊隊長", b: "藍隊隊長" };
+const NAMES: Record<Side, string> = { a: "紅不讓隊長", b: "刀槍Blue隊長" };
 const LIVES = 3, FIRE_GAP = .32, BOLT_SPEED = 1.05, COVER_MAX = 1.3, COVER_RECHARGE = 1.6, STAGGER = .34, PACE = .3;
 const src = (side: Side, pose: Pose) => "/assets/mission/duel/" + side + "-" + pose + ".webp";
 const other = (side: Side): Side => side === "a" ? "b" : "a";
@@ -259,14 +259,14 @@ export default function DuelSim() {
     </div>
     <div ref={stage} className="duel-stage">
       {(["a", "b"] as Side[]).map(side => <div key={side} className={"duel-hud is-" + side}>
-        <span className="duel-hud-name">{(mode === "cpu" ? (side === human ? "你・" : "電腦・") : "") + (side === "a" ? "紅隊" : "藍隊")}</span>
+        <span className="duel-hud-name">{(mode === "cpu" ? (side === human ? "你・" : "電腦・") : "") + (side === "a" ? "紅不讓" : "刀槍Blue")}</span>
         <span className="duel-lives" role="img" aria-label={NAMES[side] + " 剩 " + lives[side] + " 條命"}>{Array.from({ length: LIVES }, (_, i) => <i key={i} data-on={i < lives[side]} />)}</span>
         <span className="duel-meter" aria-hidden="true"><i ref={meter[side]} /></span>
       </div>)}
       {call && <p key={call} className="duel-call" aria-live="assertive">{call}</p>}
       {result && <p className="duel-result" role="status">{result}</p>}
-      <div ref={boss.a} className="duel-boss"><img ref={img.a} alt="紅隊隊長" draggable={false} /></div>
-      <div ref={boss.b} className="duel-boss"><img ref={img.b} alt="藍隊隊長" draggable={false} /></div>
+      <div ref={boss.a} className="duel-boss"><img ref={img.a} alt="紅不讓隊長" draggable={false} /></div>
+      <div ref={boss.b} className="duel-boss"><img ref={img.b} alt="刀槍Blue隊長" draggable={false} /></div>
       {(phase === "fight" || phase === "over") && <>
         <i className="duel-bunker is-a" style={{ left: ((.5 - reach + .07) * 100) + "%" }} aria-hidden="true" />
         <i className="duel-bunker is-b" style={{ left: ((.5 + reach - .07) * 100) + "%" }} aria-hidden="true" />
@@ -280,7 +280,7 @@ export default function DuelSim() {
       {mode === "duo" ? pad("b", ["L", "K"]) : <span className="duel-pad-gap" aria-hidden="true" />}
     </div>
     <p className="duel-rules">{mode === "cpu"
-      ? "每局隨機分配你是紅隊或藍隊隊長。轉身就開打：按 A 開槍、按住 S 躲到掩體後（雷射會從頭上飛過），手機用下面的按鈕。躲太久會被拉起來，每人 3 條命。"
-      : "紅隊 A 開槍、S 躲；藍隊 L 開槍、K 躲。手機兩人各按一邊。躲太久會被拉起來，每人 3 條命，先打光對方的贏。"}</p>
+      ? "每局隨機分配你是紅不讓或刀槍Blue隊長。轉身就開打：按 A 開槍、按住 S 躲到掩體後（雷射會從頭上飛過），手機用下面的按鈕。躲太久會被拉起來，每人 3 條命。"
+      : "紅不讓 A 開槍、S 躲；刀槍Blue L 開槍、K 躲。手機兩人各按一邊。躲太久會被拉起來，每人 3 條命，先打光對方的贏。"}</p>
   </div>;
 }

@@ -1,7 +1,8 @@
 export type Team = "red" | "blue";
 export type TeamMap = Record<string, Team>;
 export const TEAMS: Team[] = ["red", "blue"];
-export const TEAM_LABEL: Record<Team, string> = { red: "紅隊", blue: "藍隊" };
+/** The teams' names: red is 紅不讓, blue is 刀槍Blue. */
+export const TEAM_LABEL: Record<Team, string> = { red: "紅不讓", blue: "刀槍Blue" };
 export const otherTeam = (team: Team): Team => team === "red" ? "blue" : "red";
 
 /** Only well-formed entries survive: a uid key and one of the two team names. */

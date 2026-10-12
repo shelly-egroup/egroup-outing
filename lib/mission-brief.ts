@@ -17,7 +17,7 @@ export const TEA_WINNER = "晶華";
 
 export const ARENA_FACTS = [
   { label: "時長", value: "2 小時・5 場對戰", note: "遲到會少玩場次" },
-  { label: "流程", value: "裝備教學 → 暖身個人賽 → 團隊對抗", note: "教練全程帶領" },
+  { label: "流程", value: "裝備教學 → 團隊對抗", note: "教練全程帶領" },
   { label: "裝備", value: "感應背心＋雷射槍", note: "場館提供，不必穿護具" },
   { label: "戰場", value: "近 300 m² 霓虹迷宮", note: "碉堡與感應基地，對戰時整場只有我們這團" },
 ] as const;

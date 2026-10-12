@@ -22,7 +22,7 @@ function Silhouette({ className }: { className: string }) {
 function FirstPick({ team, extra }: { team: Team; extra: boolean }) {
   return <div className="draft-first" data-team={team}>
     <span className="draft-first-label">FIRST PICK・抽籤</span>
-    <span className="draft-first-track" aria-hidden="true"><span data-side="red">紅隊</span><span data-side="blue">藍隊</span><i className="draft-first-cursor" /></span>
+    <span className="draft-first-track" aria-hidden="true"><span data-side="red">{TEAM_LABEL.red}</span><span data-side="blue">{TEAM_LABEL.blue}</span><i className="draft-first-cursor" /></span>
     <b className="draft-first-result">{TEAM_LABEL[team]}先選</b>
     {extra && <small className="draft-first-note">人數單數：{TEAM_LABEL[team]}多選一位</small>}
   </div>;
@@ -181,10 +181,10 @@ export default function TeamBoard() {
       <i className="draft-bg" aria-hidden="true" />
       <div className="draft-head">
         <p className="draft-kicker"><i data-state={rolling || (picking && pool.length) ? "live" : "done"} />TEAM DRAFT<span>{status}</span></p>
-        <div className="draft-score" aria-label={"紅隊 " + counts.red + " 人，藍隊 " + counts.blue + " 人"}>
-          <span data-team="red"><b key={"r" + counts.red}>{pad(counts.red)}</b><small>紅隊</small></span>
+        <div className="draft-score" aria-label={TEAM_LABEL.red + " " + counts.red + " 人，" + TEAM_LABEL.blue + " " + counts.blue + " 人"}>
+          <span data-team="red"><b key={"r" + counts.red}>{pad(counts.red)}</b><small>{TEAM_LABEL.red}</small></span>
           <span className="draft-vs" aria-hidden="true">VS</span>
-          <span data-team="blue"><b key={"b" + counts.blue}>{pad(counts.blue)}</b><small>藍隊</small></span>
+          <span data-team="blue"><b key={"b" + counts.blue}>{pad(counts.blue)}</b><small>{TEAM_LABEL.blue}</small></span>
         </div>
         {picking && turns && config.firstPick && <FirstPick key={config.firstPick} team={config.firstPick} extra={extra} />}
         {picking && !turns && <span className="draft-tag">不輪流・隊長隨時可選</span>}

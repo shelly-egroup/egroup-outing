@@ -258,7 +258,7 @@ export default function MissionSections({ plan, planId, eventDate, now }: { plan
     <section id="arena" className="ms-section ms-arena" aria-labelledby="ms-arena-title">
       <div className="wrap">
         <SectionHead no="03" en="THE ARENA" id="ms-arena-title" title={<>作戰場地 <em>六度空間 LazerTreks</em></>}
-          lead="霓虹迷宮裡穿上感應背心、拿起雷射槍，分隊攻防、電腦即時計分；教練先教裝備，再從暖身個人賽打到團隊對抗。" />
+          lead="霓虹迷宮裡穿上感應背心、拿起雷射槍，分隊攻防、電腦即時計分；教練先教裝備，接著就是團隊對抗。" />
         <div className="ms-arena-grid">
           <Terminal name="RECON_FEED // CAM-01" status="LIVE" tone="red">
             <ReconFeed src={MISSION_IMAGES.arena} cam="CAM-01" label="LAZERTREKS B1" alt="雷射迷宮裡的紅藍霓虹燈、碉堡與感應基地" now={now} game />

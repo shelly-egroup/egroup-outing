@@ -456,7 +456,7 @@ shot(T.mission, T.montage[0].t + .4, (el) => {
   const desk = $("div", "layer", el); const deskImg = plate(desk, A("desk.webp")); css(deskImg, { objectFit: "fill" });
   const ratio = 1672 / 941, DW = TALL ? PH * ratio : Math.max(PW, PH * ratio), DH = DW / ratio;
   css(desk, { width: DW + "px", height: DH + "px", left: (PW - DW) / 2 + "px", top: (PH - DH) / 2 + "px", inset: "auto" });
-  const photos = [["a", A("host-a.webp"), "代號　紅隊隊長", -4], ["b", A("host-b.webp"), "代號　藍隊隊長", 3]].map(([k, src, label, rot]) => {
+  const photos = [["a", A("host-a.webp"), "代號　紅不讓", -4], ["b", A("host-b.webp"), "代號　刀槍Blue", 3]].map(([k, src, label, rot]) => {
     const ph = $("div", "desk-photo", desk); const inner = $("div", "", ph); img(src, "", inner);
     const lock = $("i", "lock", inner); bracket(lock, k === "a" ? "#ff2a44" : "#4d8dff");
     const tag = $("div", "", desk, { textContent: label }); css(tag, { position: "absolute", font: `500 ${(.011 * DW).toFixed(1)}px/1 "JetBrains Mono", monospace`, color: "#2a2622", letterSpacing: ".2em", whiteSpace: "nowrap", translate: "-50% 0", mixBlendMode: "multiply" });
@@ -598,13 +598,13 @@ function lock(name, src, color, en, cn) {
   return cut(name, null, (el) => {
     const bg = plate(el, A(src), TALL ? "46% 50%" : null); const ret = $("i", "reticle " + color, el); const tag = $("div", "tag " + color, el); tag.innerHTML = `${en}<b>${cn}</b>`;
     const fx = TALL ? 46 : 48, fy = TALL ? 40 : 38;
-    css(ret, { left: fx + "%", top: fy + "%" }); css(tag, TALL ? { left: "10%", bottom: "12%" } : { left: `calc(${fx}% + 24cqh)`, top: `calc(${fy}% - 14cqh)` });
+    css(ret, { left: fx + "%", top: fy + "%" }); css(tag, TALL ? { left: "8%", bottom: "12%" } : { left: `calc(${fx}% + 24cqh)`, top: `calc(${fy}% - 14cqh)` });
     hit(M[name].t, .8, .1, .2, color ? "#9fc2ff" : "#ff8a96");
     return (t) => { const l = t - M[name].t; tf(bg, `scale(${mix(1.3, 1.12, p(l, 0, .4, E.outE)).toFixed(4)})`); const r = p(l, 0, .3, E.outBack); tf(ret, `scale(${mix(2.4, 1, r).toFixed(3)}) rotate(${mix(70, 0, r).toFixed(2)}deg)`); op(ret, p(l, 0, .06)); reveal(tag, t, M[name].t + .08, .25, 1); };
   });
 }
-lock("lockA", "close-a.webp", "", "TARGET · RED LEADER", "紅隊隊長");
-lock("lockB", "close-b.webp", "blue", "TARGET · BLUE LEADER", "藍隊隊長");
+lock("lockA", "close-a.webp", "", "TARGET · RED LEADER", "紅不讓隊長");
+lock("lockB", "close-b.webp", "blue", "TARGET · BLUE LEADER", "刀槍Blue隊長");
 // the captains' stunts: the red captain's combat roll (the camera whips along with it), the blue captain's knee slide, firing
 cut("stuntA", null, (el) => {
   // dive, tucked roll, rising, up on one knee firing — one set-up, each frame nudged so he keeps travelling left to right
@@ -877,12 +877,12 @@ const fast = [[0, 1.3], [T.turn - .1, T.titles[0] + .5], [T.titles[3], T.titles[
 const samplesAt = (t) => (fast.some(([a, b]) => t >= a && t <= b) ? 8 : 4);
 
 await document.fonts.load('900 100px "Noto Serif TC"', "今年秋天兩位老闆一個戰場只有一隊能贏秋遊特務全員出動四");
-await document.fonts.load('900 100px "Noto Sans TC"', "任務簡報攻佔六度空間紅隊藍隊長");
+await document.fonts.load('900 100px "Noto Sans TC"', "任務簡報攻佔六度空間紅隊藍隊長不讓刀槍Blue");
 await document.fonts.load('700 100px "Noto Sans TC"', "你的任務如果你選擇接受中午十二點集合感應背心雷射槍週四戰後飯店下午茶保護老闆");
 await document.fonts.load('500 40px "Cinzel"', "THIS AUTUMN TWO BOSSES ONE BATTLEFIELD AUTUMN AGENTS");
 await document.fonts.load('700 40px "Cinzel"', "AUTUMN AGENTS");
 await document.fonts.load('600 40px "Oswald"', "AUTUMN AGENTS");
-await document.fonts.load('500 40px "JetBrains Mono"', "MISSION BRIEFING 10.29 代號");
+await document.fonts.load('500 40px "JetBrains Mono"', "MISSION BRIEFING 10.29 代號紅不讓刀槍Blue隊長");
 await document.fonts.load('700 40px "JetBrains Mono"', "MISSION 10.29");
 await document.fonts.load('700 40px "JetBrains Mono"', "LOCATION GEAR VIP AFTER TARGET RED BLUE LEADER THU 12:00");
 await Promise.all([...document.images].map((i) => i.decode().catch(() => {})));

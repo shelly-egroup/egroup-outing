@@ -70,7 +70,7 @@ function Briefing({ name, destroy, onDestroyed }: { name?: string; destroy: bool
     `${greeting()}，${name ? name + " " : ""}特務。`,
     "你的任務，如果你選擇接受：",
     "10 月 29 日（四）中午 12:00 潛入六度空間 LazerTreks，",
-    "與紅藍兩隊展開雷射對戰，戰後撤離至飯店下午茶補給。",
+    "與紅不讓、刀槍Blue 兩隊展開雷射對戰，戰後撤離至飯店下午茶補給。",
     "一如往常，若你被雷射擊中，主辦單位將否認知情。",
   ];
   const total = lines.join("").length;
@@ -131,14 +131,10 @@ function Briefing({ name, destroy, onDestroyed }: { name?: string; destroy: bool
   </div>;
 }
 
-/** Sample agents for the local preview (?agent=new): the database is not reachable on a development machine. */
-export const SAMPLE: [string, PublicVote][] = ["王特務", "林探員", "陳隊長", "張探員", "李特務", "黃探員", "測試探員"].map((name, i) => ["demo" + i, { planId: "B", displayName: name, photoURL: "", updatedAt: i } as PublicVote]);
-
 /** Everyone who has accepted, as dossier photos in the order they accepted; once the organisers publish the teams, each tile
  *  carries its team colour and the captains are marked (the team board under the console shows the teams themselves). */
-function AgentRoster({ me, demo = false }: { me?: string; demo?: boolean }) {
-  const { votes: live, votesReady: liveReady, votesError, catalogStatus, teams, teamConfig } = useOuting();
-  const votes = demo ? Object.fromEntries(SAMPLE) : live, votesReady = demo || liveReady;
+function AgentRoster({ me }: { me?: string }) {
+  const { votes, votesReady, votesError, catalogStatus, teams, teamConfig } = useOuting();
   const agents = Object.entries(votes).sort(([, a], [, b]) => (a.updatedAt || 0) - (b.updatedAt || 0));
   const shown = teamConfig.published, placed = shown ? withCaptains(teams, teamConfig.captains) : {};
   const offline = !votesReady && (catalogStatus === "error" || !!votesError);
@@ -202,15 +198,6 @@ export default function MissionAccept() {
   // your team only once the organisers publish the teams; captains are always on the team they lead
   const team: Team | undefined = user && teamConfig.published ? withCaptains(teams, teamConfig.captains)[user.uid] : undefined;
   const leading = !!user && teamConfig.published && !!captainOf(teamConfig.captains, user.uid, user.email);
-  const [demo, setDemo] = useState(false);
-  useEffect(() => {
-    if (process.env.NODE_ENV !== "development" || new URLSearchParams(window.location.search).get("agent") !== "new") return;
-    // the sample plays once the section is on screen
-    const el = document.getElementById("accept"); if (!el) { setDemo(true); return; }
-    const io = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setDemo(true); io.disconnect(); } }, { threshold: .35 });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
   async function accept() {
     if (saving || !countValid) return;
     setSaving(true); setFailed("");
@@ -222,8 +209,7 @@ export default function MissionAccept() {
   }
 
   let panel: React.ReactNode;
-  if (demo) panel = <AgentFile vote={{ planId: "B", displayName: "測試探員", photoURL: "", updatedAt: 0 } as PublicVote} name="測試探員" familyCount={1} note="（預覽）" fresh actions={null} />;
-  else if (!authReady || (user && (!profileReady || !detailsReady))) panel = <LoadingIndicator label="確認特務身分" />;
+  if (!authReady || (user && (!profileReady || !detailsReady))) panel = <LoadingIndicator label="確認特務身分" />;
   else if (!user) panel = <div className="accept-call">
     <Scanner mode="tap" label={signingIn ? "驗證中…" : "驗證身分，接受任務"} sub="以公司 Google 帳號（egroup. 開頭）登入" busy={signingIn} onConfirm={login} />
     <p className="accept-hint">登入後填上注意事項與同行家眷；之前填過的探員也可以隨時進來更新。</p>
@@ -267,9 +253,9 @@ export default function MissionAccept() {
   return <div className="accept">
     <div className="dossier">
       <div className="dossier-head"><span>AGENT BRIEFING</span><b>FILE 10.29</b><i className="dossier-classified">機密・TOP SECRET</i></div>
-      <Briefing name={user?.displayName || undefined} destroy={(justAccepted || demo) && !burnt} onDestroyed={() => setBurnt(true)} />
+      <Briefing name={user?.displayName || undefined} destroy={justAccepted && !burnt} onDestroyed={() => setBurnt(true)} />
       {panel}
     </div>
-    <AgentRoster me={demo ? "demo6" : user?.uid} demo={demo} />
+    <AgentRoster me={user?.uid} />
   </div>;
 }

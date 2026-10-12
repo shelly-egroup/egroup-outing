@@ -114,7 +114,7 @@ export default function AdminTeams({ votes, details, emails, ready }: { votes: R
     finally { setConfigSaving(false); }
   }
   const live = !teamConfig.published ? "不顯示分隊（探員看不到任何分隊資訊）" : !teamConfig.picking ? "顯示兩隊名單（主辦分隊）"
-    : "隊長選人進行中・" + (teamConfig.turns ? "輪流，" + (teamConfig.firstPick ? TEAM_LABEL[teamConfig.firstPick] : "紅隊") + "先選" : "不輪流");
+    : "隊長選人進行中・" + (teamConfig.turns ? "輪流，" + TEAM_LABEL[teamConfig.firstPick || "red"] + "先選" : "不輪流");
   if (!ready || !teamsReady || !teamConfigReady) return <section className="admin-teams"><LoadingIndicator label="讀取名單" /></section>;
   return <section className="admin-teams">
     <div className="admin-teams-head">
@@ -132,7 +132,7 @@ export default function AdminTeams({ votes, details, emails, ready }: { votes: R
         <span className="admin-step-no" aria-hidden="true">1</span>
         <div className="admin-step-body">
           <h3>隊長</h3>
-          <p className="quiet">預設紅隊 egroup.james、藍隊 egroup.ivy。本人登入網站就自動就位，也可以在這裡換人。</p>
+          <p className="quiet">預設紅隊「紅不讓」是 egroup.james、藍隊「刀槍Blue」是 egroup.ivy。本人登入網站就自動就位，也可以在這裡換人。</p>
           <div className="admin-captains">
             {TEAMS.map(team => <CaptainCard key={team + captains[team].email} team={team} captain={captains[team]} rival={captains[otherTeam(team)]} people={people} emails={emails}
               accepted={!!captains[team].uid && !!votes[captains[team].uid as string]} saving={configSaving || !connected}

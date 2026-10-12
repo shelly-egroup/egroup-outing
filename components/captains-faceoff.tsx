@@ -58,10 +58,10 @@ export default function CaptainsFaceOff({ red, blue, backdrop, smoke }: { red: s
     return () => { el.removeEventListener("pointermove", move); el.removeEventListener("pointerleave", leave); cancelAnimationFrame(frame); };
   }, [still]);
   const sides: Side[] = [
-    { key: "red", src: red, title: "紅隊隊長", en: "RED TEAM LEAD" },
-    { key: "blue", src: blue, title: "藍隊隊長", en: "BLUE TEAM LEAD" },
+    { key: "red", src: red, title: "紅不讓隊長", en: "RED TEAM LEAD" },
+    { key: "blue", src: blue, title: "刀槍Blue隊長", en: "BLUE TEAM LEAD" },
   ];
-  return <div ref={ref} className="faceoff" data-seen={seen} role="group" aria-label="紅隊隊長對決藍隊隊長" style={{ "--backdrop": `url(${backdrop})` } as React.CSSProperties}><Fragment key={round}>
+  return <div ref={ref} className="faceoff" data-seen={seen} role="group" aria-label="紅不讓隊長對決刀槍Blue隊長" style={{ "--backdrop": `url(${backdrop})` } as React.CSSProperties}><Fragment key={round}>
     {sides.map(side => <figure key={side.key} className={"fo-side is-" + side.key} data-side={side.key}>
       <i className="fo-bg" aria-hidden="true" />
       <img className="fo-cut" src={side.src} width={CUT[side.key].w} height={CUT[side.key].h} loading="lazy" decoding="async" alt={side.title + "舉著雷射槍瞄準對手"} />

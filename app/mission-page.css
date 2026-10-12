@@ -675,7 +675,7 @@ body:has(.mission-page), body:has(.mission-page)::before { background: #050506; 
 .draft-score b { display: block; font: 700 clamp(46px, 6.2vw, 84px)/.9 var(--ms-mono); animation: draft-tick .5s var(--ms-out) both; }
 .draft-score [data-team="red"] b { color: #ff5a72; text-shadow: 0 0 26px rgb(255 42 74 / .55); }
 .draft-score [data-team="blue"] b { color: #7aa4ff; text-shadow: 0 0 26px rgb(61 125 255 / .55); }
-.draft-score small { font: 800 13px/1 var(--ms-sans); letter-spacing: .3em; color: var(--ms-dim); }
+.draft-score small { font: 800 13px/1 var(--ms-sans); letter-spacing: .16em; white-space: nowrap; color: var(--ms-dim); }
 .draft-vs { font: 900 clamp(28px, 3.6vw, 48px)/1 var(--ms-serif); font-style: italic; background: linear-gradient(180deg, #fff, #c9ced4 45%, #8a919b 50%, #f6f7f8 56%, #6c737c); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 2px 8px rgb(0 0 0 / .85)); }
 @keyframes draft-tick { from { opacity: 0; transform: translateY(-35%); filter: blur(5px); } }
 .draft-tag { display: inline-flex; align-items: center; gap: 9px; padding: 8px 14px; border: 1px solid rgb(242 237 228 / .18); background: rgb(5 5 6 / .5); font: 700 12px/1 var(--ms-sans); letter-spacing: .16em; color: var(--ms-dim); }
@@ -683,8 +683,8 @@ body:has(.mission-page), body:has(.mission-page)::before { background: #050506; 
 /* who picks first: a selector light hops between the two teams, slows, settles; the winner lights up in its colour */
 .draft-first { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 16px; }
 .draft-first-label { font: 700 11px/1 var(--ms-mono); letter-spacing: .32em; color: var(--ms-faint); }
-.draft-first-track { position: relative; display: grid; grid-template-columns: 1fr 1fr; width: 200px; height: 36px; border: 1px solid rgb(242 237 228 / .2); background: rgb(5 5 6 / .72); }
-.draft-first-track > span { position: relative; z-index: 1; display: grid; place-items: center; padding-left: .3em; font: 800 13px/1 var(--ms-sans); letter-spacing: .3em; color: var(--ms-faint); }
+.draft-first-track { position: relative; display: grid; grid-template-columns: 1fr 1fr; width: 220px; height: 36px; border: 1px solid rgb(242 237 228 / .2); background: rgb(5 5 6 / .72); }
+.draft-first-track > span { position: relative; z-index: 1; display: grid; place-items: center; padding-left: .12em; font: 800 13px/1 var(--ms-sans); letter-spacing: .12em; white-space: nowrap; color: var(--ms-faint); }
 .draft-first-track > span[data-side="red"] { border-right: 1px solid rgb(242 237 228 / .12); }
 .draft-first-cursor { position: absolute; top: -3px; bottom: -3px; left: -1px; width: calc(50% + 2px); border: 2px solid #fff; box-shadow: 0 0 14px rgb(255 255 255 / .55), inset 0 0 12px rgb(255 255 255 / .2); }
 .draft-first[data-team="red"] .draft-first-cursor { animation: draft-first-red 1.9s .3s step-end both, draft-first-lit-r .7s 2.2s var(--ms-out) both; }
@@ -844,7 +844,7 @@ button.draft-card-face:hover { border-color: rgb(242 237 228 / .5); transform: t
   .draft-member strong { font-size: 12px; }
   .draft-member-badge { right: 6px; top: 6px; padding: 3px 5px; font-size: 8px; }
   .draft-desk { padding: 10px; } .draft-desk-label, .draft-desk-pick { width: 100%; margin: 0 0 4px; } .draft-desk button { flex: 1; }
-  .draft-first-track { width: 170px; }
+  .draft-first-track { width: 190px; }
 }
 .dossier-grid li[data-team="red"] { border-color: rgb(255 42 74 / .35); box-shadow: inset 0 2px 0 var(--ms-laser); }
 .dossier-grid li[data-team="blue"] { border-color: rgb(61 125 255 / .38); box-shadow: inset 0 2px 0 var(--ms-blue); }
