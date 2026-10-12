@@ -2,10 +2,7 @@
 import Link from "next/link";
 import TitleMark from "./title-mark";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
-import AccountMenu from "./account-menu";
 import { useScrollReveal } from "./use-scroll-reveal";
-import { getVoteCountdown } from "@/lib/vote-countdown";
-import type { VoteReminder } from "@/lib/vote-reminder";
 
 // On phones the quick nav only drops down while scrolling up, so it never covers what is being read.
 const MOBILE_NAV_IDLE_MS = 2000;
@@ -14,7 +11,13 @@ const INLINE_NAV_QUERY = "(min-width: 1101px)";
 
 type TickerItem = { key: string; text: string; content?: ReactNode };
 
-const pad = (value: number) => String(value).padStart(2, "0");
+/** The mission page's four parts; phones show the short labels. */
+const SECTIONS = [
+  { id: "mission", label: "任務流程", short: "流程" },
+  { id: "arena", label: "作戰場地", short: "場地" },
+  { id: "tea", label: "戰後下午茶", short: "下午茶" },
+  { id: "manual", label: "行前須知", short: "須知" },
+];
 const BOLT = "M25 2 3 41h15l-7 29 26-44H21l8-24z";
 
 function OutingTicker({ items }: { items: TickerItem[] }) {
@@ -63,9 +66,8 @@ function useMedia(query: string) {
   return matches;
 }
 
-export default function OutingHeader({ active, heroActions, vote, title, eventDate, closesAt, votingEnabled, now, hasVoted }: {
-  active: boolean; heroActions: RefObject<HTMLDivElement | null>; vote?: VoteReminder; title: string; eventDate: string;
-  closesAt: number; votingEnabled: boolean; now: number; hasVoted: boolean;
+export default function OutingHeader({ active, heroActions, title, eventDate }: {
+  active: boolean; heroActions: RefObject<HTMLDivElement | null>; title: string; eventDate: string;
 }) {
   const [compact, setCompact] = useState(false);
   const [section, setSection] = useState("");
@@ -100,7 +102,7 @@ export default function OutingHeader({ active, heroActions, vote, title, eventDa
       // A section counts once its top passes the upper 40% of the view, so entrance offsets do not delay it.
       const line = offset + (window.innerHeight - offset) * .4;
       let found = "";
-      for (const id of ["plans", "selection", "results"]) {
+      for (const { id } of SECTIONS) {
         const element = document.getElementById(id);
         if (element && element.getBoundingClientRect().top <= line) found = id;
       }
@@ -128,51 +130,28 @@ export default function OutingHeader({ active, heroActions, vote, title, eventDa
     return () => { observer.disconnect();window.removeEventListener("resize",sync);document.documentElement.style.removeProperty("--outing-header-offset"); };
   }, [active, compact]);
 
-  // The countdown only shows while a vote is actually open; a closed vote is not news on the mission page.
-  const open = getVoteCountdown(closesAt, now, votingEnabled);
-  const countdown = open && open.state !== "closed" ? open : null;
-  const votingLive = !!countdown;
   const [month, day] = eventDate.slice(5).split("-");
   const weekday = eventDate ? new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "Asia/Taipei" }).format(new Date(eventDate + "T12:00:00+08:00")).toUpperCase() : "";
   const ticker: TickerItem[] = [
     { key: "任務", text: (month && day ? Number(month) + "/" + Number(day) + " " : "") + "中午 12:00・六度空間 LazerTreks 雷射對戰" },
     { key: "戰後", text: "飯店下午茶 Buffet" },
   ];
-  if (countdown) ticker.push({ key: "倒數", text: countdown.days > 0 ? "截止還有 " + countdown.days + " 天 " + countdown.hours + " 小時" : "最後 " + countdown.hours + " 小時 " + countdown.minutes + " 分" });
   ticker.push({ key: "集合", text: title + "・台北市中山區中山北路二段 185 號 B1，自行前往" });
 
-  const links = [
-    { href: "#plans", label: "看任務行程", current: section === "plans" || section === "selection", todo: votingLive && !hasVoted },
-  ];
   const quickNavRetracted = compact && mobile && !quickNavRevealed;
   const hideQuickNav = !inlineNav && (!compact || quickNavRetracted);
   return <div className={"outing-header" + (compact ? " is-compact" : "") + (quickNavRetracted ? " is-nav-retracted" : "")} ref={bar}>
     <OutingTicker items={ticker} />
     <div className="topbar wrap">
       <Link href="/" className="brand" aria-label="秋遊特務 首頁"><TitleMark className="brand-mark" /></Link>
-      {/* Event facts sit together beside the logo: the date, then the vote countdown attached to it. */}
       <div className="header-event">
         {month && day && <span className="header-date" aria-label={"活動日期 " + Number(month) + " 月 " + Number(day) + " 日"}>{month}/{day} {weekday}</span>}
-        {countdown && <span className="header-countdown" data-state={countdown.state} role="timer"
-          aria-label={"投票倒數 " + countdown.days + " 天 " + countdown.hours + " 小時 " + countdown.minutes + " 分"}>
-          {<><i aria-hidden="true" /><span className="header-countdown-label" aria-hidden="true">投票倒數</span>
-            {/* Units, not colons: "12:52" alone reads as a clock time once phones drop the seconds. */}
-            <b aria-hidden="true">{countdown.days > 0 && <>{countdown.days}<small>天</small></>}{pad(countdown.hours)}<small>時</small>{pad(countdown.minutes)}<small>分</small><span className="header-countdown-sec">{pad(countdown.seconds)}<small>秒</small></span></b></>}
-        </span>}
       </div>
-      <nav ref={quickNav} className="outing-quick-nav" aria-label="秋遊導覽" aria-hidden={hideQuickNav} inert={hideQuickNav}>
-        {links.map(link => <a key={link.href} href={link.href} className={"header-link" + (link.current ? " is-current" : "")} aria-current={link.current ? "location" : undefined}>
-          {link.label}{link.todo && <><i className="header-link-dot" aria-hidden="true" /><span className="sr-only">（你還沒投票）</span></>}
+      <nav ref={quickNav} className="outing-quick-nav" aria-label="任務導覽" aria-hidden={hideQuickNav} inert={hideQuickNav}>
+        {SECTIONS.map(({ id, label, short }) => <a key={id} href={"#" + id} aria-label={label} className={"header-link" + (section === id ? " is-current" : "")} aria-current={section === id ? "location" : undefined}>
+          <span className="header-link-full">{label}</span><span className="header-link-short" aria-hidden="true">{short}</span>
         </a>)}
       </nav>
-      <div className="header-actions">
-        {vote && <a className="header-vote" href={vote.target} data-tone={vote.tone} data-pending={vote.pending} title={"我的投票：" + vote.label + " · " + vote.status} aria-label={"我的投票，" + vote.label + "，" + vote.status + "。查看你的選擇"}>
-          <span className="header-vote-code" aria-hidden="true">{vote.code}</span>
-          <span className="header-vote-copy"><small>{vote.pending ? "變更未儲存" : "我的投票"}</small><strong>{vote.label}</strong></span>
-          <span className="sr-only" role="status">{vote.status}</span>
-        </a>}
-        <AccountMenu organizerInMenu />
-      </div>
     </div>
   </div>;
 }

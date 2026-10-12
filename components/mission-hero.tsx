@@ -38,7 +38,7 @@ export default function MissionHero({ eventDate, plan, ready, cued, actionsRef, 
         <div><dt>戰後</dt><dd>飯店下午茶 Buffet</dd></div>
       </dl>
       <div className="mh-actions" ref={actionsRef}>
-        <a ref={primaryRef} href="#plans" className={"mh-cta" + (cued ? " is-cued" : "")}>看任務行程</a>
+        <a ref={primaryRef} href="#mission" className={"mh-cta" + (cued ? " is-cued" : "")}>看任務流程</a>
         <button type="button" className="mh-replay" onClick={onReplay}>
           <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" /></svg>
           重播預告

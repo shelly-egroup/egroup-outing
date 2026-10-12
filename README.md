@@ -59,6 +59,18 @@ Firebase Google 登入提供者須啟用，Auth 授權網域須包含實際使�
 
 首頁主視覺（`components/mission-hero.tsx`、`app/mission-hero.css`）與頂端導覽列沿用預告片風格：黑底電影海報、兩位老闆持雷射槍的主視覺照、雷射紅藍光、取景框與《秋遊特務》鉻銀字樣（`components/title-mark.tsx`）。左側列出集合時間、地點與戰後下午茶，集合時間與地址讀取方案 B 行程的第一站。
 
+## 行程頁
+
+首頁只放這次要去玩的內容，投票、方案比較與戰況都已拿掉（後台 /admin 仍可用）。主視覺下方是不可能的任務風格的電腦終端機畫面（`components/mission-sections.tsx`、`app/mission-page.css`）：
+
+- **任務流程**：開機字幕逐字打出，接著是方案 B 的行程紀錄，右上角倒數到集合時間。
+- **作戰場地**：六度空間的監視器畫面（即時時間戳）、場地情報、紅藍隊長的臉部辨識、任務模式與捷運步行路線。場地說明、任務模式、交通與須知整理自六度空間官網（`lib/mission-brief.ts`）。
+- **戰後補給**：飯店下午茶的候選飯店、Google 評分與連結。
+- **行前須知**：可逐項打勾的裝備檢查，勾選只存在這台裝置。
+- **頁尾**：加入 Google 日曆、重播預告。
+
+頁面最底下藏了一個 `> run duel.exe` 彩蛋（`components/duel-sim.tsx`）：兩位隊長背對背走三步、轉身，聽到「開槍！」後紅隊按 A、藍隊按 L（手機直接點按鈕），先開槍的一方獲勝、另一位中彈倒地；搶先開槍會走火判輸。人物動作圖在 `public/assets/mission/duel/`。
+
 ### 製作預告片
 
 每個鏡頭由 `scripts/trailer/film/` 的 HTML／CSS／JS 合成（`FILM.seek(t)` 依時間擺好每一層），素材在 `scripts/trailer/film/assets/`，人物以兩位老闆照片為參考生成。所有切點寫在 `scripts/trailer/timeline.json`，畫面與配樂共用。配樂為原創合成（沒有使用任何電影原曲），由 `scripts/trailer/score.js` 在瀏覽器以 Web Audio 離線合成。需要 Chrome（`CHROME_PATH`，預設為 Windows 安裝路徑）與 ffmpeg：
@@ -92,8 +104,9 @@ npm start -- --port 3008
 ## 主要檔案
 
 - `components/opening-animation.tsx`：預告片海報封面與播放。
+- `components/mission-sections.tsx`：行程頁的終端機區塊與頁尾；`components/duel-sim.tsx`：隊長決鬥彩蛋。
 - `scripts/trailer/`：預告片合成、配樂與輸出。
-- `components/trip-showdown.tsx`：看方案、選偏好與投票確認。
+- `components/trip-showdown.tsx`：首頁：預告片、主視覺與行程頁。
 - `components/outing-provider.tsx`：登入、使用者資料與即時同步。
 - `components/admin-dashboard.tsx`：方案管理。
 - `lib/firebase.ts`：環境變數及 Firebase 初始化。

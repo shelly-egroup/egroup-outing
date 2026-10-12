@@ -667,11 +667,11 @@ shot(T.stinger, T.cut, (el) => {
   return (t) => {
     const l = t - T.stinger, d = p(l, 0, 1.2, E.outC);
     tf(bg, `scale(${mix(1.14, 1.2, d).toFixed(4)})`); tf(fog, `scale(1.5) translateX(${mix(3, -6, d).toFixed(2)}%)`);
-    const s = TALL ? 2.05 : 1.12, y = TALL ? 0 : 6;
+    const s = TALL ? 1.6 : 1.12, y = TALL ? 0 : 6;   // 9:16 keeps both pistols in frame
     tf(duo, `translateY(${y}%) scale(${mix(s, s * 1.07, d).toFixed(4)})`);
     const r = duo.getBoundingClientRect(), pr = picBox(), iw = Math.min(r.width, r.height * 1672 / 941), ih = iw * 941 / 1672;
     const at = (u, v) => [r.left - pr.left + (r.width - iw) / 2 + u * iw, r.top - pr.top + (TALL ? r.height - ih : (r.height - ih) / 2) + v * ih];
-    const [rx, ry] = at(.357, .155), [bx, by] = at(.765, .275);
+    const [rx, ry] = at(.23, .216), [bx, by] = at(.778, .281);   // pistol tips in cut-duo.webp
     fire(bR, t, T.stingerFire, rx, ry, -98, PH, .4); fire(bB, t, T.stingerFire + .03, bx, by, -82, PH, .4);
     bloomAt(gR, t, T.stingerFire, rx, ry, .55, .3); bloomAt(gB, t, T.stingerFire + .03, bx, by, .55, .3);
   };

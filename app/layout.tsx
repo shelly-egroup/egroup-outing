@@ -7,6 +7,7 @@ import "./showdown.css";
 import "./opening-film.css";
 import "./showdown-page.css";
 import "./mission-hero.css";
+import "./mission-page.css";
 
 // Runs with the HTML, before any bundle: the trailer cover's poster (the vertical one on portrait phones, first visit only)
 // and the key visual start downloading ahead of the Chinese font slices.

@@ -2,15 +2,10 @@
 import { useEffect } from "react";
 
 const TARGETS = [
-  ".journey > li",
-  "#plans .section-heading",
-  ".plan-grid > .plan-card",
-  "#selection .section-heading",
-  ".quick-plan-option",
-  ".plan-draw-panel",
-  ".selection-hint",
-  "#results",
-  ".site-footer-inner > *",
+  ".ms-head",
+  ".ms-section .term",
+  ".ms-source",
+  ".ms-footer-inner > *",
 ].join(",");
 
 /** Staggered entrance as content scrolls in; content stays visible if this never runs. */
