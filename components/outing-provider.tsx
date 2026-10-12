@@ -25,7 +25,7 @@ import {
   serverTimestamp,
   runTransaction,
 } from "firebase/database";
-import { captainOf, DEFAULT_TEAM_CONFIG, normalEmail, parseTeamConfig, parseTeams, pickTurn, withCaptains, type Team, type TeamConfig, type TeamMap } from "@/lib/teams";
+import { assignTeams, captainOf, DEFAULT_TEAM_CONFIG, drawOne, normalEmail, parseTeamConfig, parseTeamDraw, parseTeams, pickTurn, withCaptains, type Team, type TeamConfig, type TeamDraw, type TeamMap } from "@/lib/teams";
 import { adminEmails, getFirebase } from "@/lib/firebase";
 import { defaultStoreDirectory, mergeStoreDirectory, nextReviewRecord, parseStoreDirectory, parseStoreInfo, seedMissingStores, type StoreDirectory } from "@/lib/store-directory";
 import type { StoreInfo } from "@/lib/store-references";
@@ -71,9 +71,18 @@ type ContextValue = {
   teamConfig: TeamConfig;
   teamConfigReady: boolean;
   saveTeamConfig: (config: TeamConfig) => Promise<void>;
-  /** The signed-in captain takes someone for their team (in turn), or puts back someone they took. */
-  pickAgent: (uid: string) => Promise<void>;
+  /** Taking someone onto a team: a signed-in captain for their own team (in turn, if the organisers want turns); an
+   *  organiser for either team (`team`), any time. Putting back: a captain, someone on their own team; an organiser, anyone
+   *  but a captain. */
+  pickAgent: (uid: string, team?: Team) => Promise<void>;
   releaseAgent: (uid: string) => Promise<void>;
+  /** Draws, by an organiser or the captain on the clock: one agent at a time — a captain's into their own team, an
+   *  organiser's into `team` or the smaller team — or everyone still to be placed at once, balanced, the one left over to
+   *  either team. `teamDraw` is the last draw run (null if none, undefined until the database has answered); every open
+   *  page plays it. */
+  teamDraw: TeamDraw | null | undefined;
+  drawAgent: (team?: Team) => Promise<{ uid: string; team: Team } | null>;
+  drawEveryone: () => Promise<number>;
   saveCatalog: (catalog: Catalog, version: number | null, acceptedImpacts?: string) => Promise<void>;
   stores: StoreDirectory;
   storedStores: StoreDirectory;
@@ -115,6 +124,7 @@ export function OutingProvider({ children }: { children: ReactNode }) {
   const [votesError, setVotesError] = useState("");
   const [teams, setTeams] = useState<TeamMap>({}), [teamsReady, setTeamsReady] = useState(false);
   const [teamConfig, setTeamConfig] = useState<TeamConfig>(DEFAULT_TEAM_CONFIG), [teamConfigReady, setTeamConfigReady] = useState(false);
+  const [teamDraw, setTeamDraw] = useState<TeamDraw | null | undefined>(undefined);
   const [myDetails, setMyDetails] = useState<VoteDetails | null>(null),
     [detailsReady, setDetailsReady] = useState(false);
   const [connected, setConnected] = useState(false),
@@ -247,6 +257,11 @@ export function OutingProvider({ children }: { children: ReactNode }) {
     try {
       return onValue(ref(getFirebase().database, "outing/teamConfig"), (snap) => { setTeamConfig(parseTeamConfig(snap.val())); setTeamConfigReady(true); }, () => setTeamConfigReady(false));
     } catch { setTeamConfigReady(false); }
+  }, [authReady, user?.uid]);
+  // The organisers' last draw, played on every open page.
+  useEffect(() => {
+    if (!authReady) return;
+    try { return onValue(ref(getFirebase().database, "outing/teamDraw"), (snap) => setTeamDraw(parseTeamDraw(snap.val())), () => {}); } catch {}
   }, [authReady, user?.uid]);
   // A captain who signs in claims their slot: their uid, name and photo go on the record, so the roster can mark them.
   useEffect(() => {
@@ -413,18 +428,64 @@ export function OutingProvider({ children }: { children: ReactNode }) {
     if (!teamConfig.published || !teamConfig.picking) throw new Error("主辦人還沒有開放隊長選人。");
     return team;
   }
-  async function pickAgent(uid: string) {
-    const team = pickingTeam(), placed = withCaptains(teams, teamConfig.captains);
+  async function pickAgent(uid: string, into?: Team) {
+    const placed = withCaptains(teams, teamConfig.captains), organiser = isAdmin && !!into;
     if (!votes[uid]) throw new Error("這位特務還沒有接受任務。");
     if (placed[uid]) throw new Error("這位特務已經有隊伍了。");
-    if (teamConfig.turns && pickTurn(Object.keys(votes), placed, teamConfig.captains, teamConfig.firstPick || "red") !== team) throw new Error("現在輪到對方隊長選人。");
-    // a transaction, so two captains cannot take the same person at once
+    const team = organiser ? into as Team : pickingTeam();
+    if (!organiser && teamConfig.turns && pickTurn(Object.keys(votes), placed, teamConfig.captains, teamConfig.firstPick || "red") !== team) throw new Error("現在輪到對方隊長選人。");
+    // a transaction, so two people cannot place the same agent at once
     const result = await runTransaction(ref(getFirebase().database, "outing/teams/" + uid), (current) => current ? undefined : team);
-    if (!result.committed) throw new Error("這位特務剛被另一隊選走了。");
+    if (!result.committed) throw new Error("這位特務剛被分到另一隊了。");
+  }
+  /**
+   * One agent at a time, at random. An organiser's draw goes to `team` or the smaller team (either on a tie), the
+   * assignment and the draw event written together. A captain's draw goes to their own team, on their turn: the draw event
+   * goes out first and the agent is then taken in a transaction (so a captain cannot take someone just placed) — every page
+   * starts the light once the agent shows up on that team.
+   */
+  async function drawAgent(into?: Team) {
+    const uids = Object.keys(votes), placed = withCaptains(teams, teamConfig.captains), db = getFirebase().database, seq = (teamDraw?.seq || 0) + 1;
+    if (isAdmin) {
+      const next = drawOne(uids, placed, teamConfig.captains);
+      if (!next) return null;
+      if (into) next.team = into;
+      try { await update(ref(db, "outing"), { ["teams/" + next.uid]: next.team, teamDraw: { seq, uid: next.uid, team: next.team, at: serverTimestamp() } }); }
+      catch { throw new Error("這次抽籤沒有寫入，請確認連線後再試。"); }
+      return next;
+    }
+    const team = pickingTeam();
+    if (teamConfig.turns && pickTurn(uids, placed, teamConfig.captains, teamConfig.firstPick || "red") !== team) throw new Error("現在輪到對方隊長選人。");
+    const pool = uids.filter(uid => !placed[uid]);
+    if (!pool.length) return null;
+    const uid = pool[Math.floor(Math.random() * pool.length)];
+    try { await set(ref(db, "outing/teamDraw"), { seq, uid, team, at: serverTimestamp() }); }
+    catch { throw new Error("這次抽籤沒有寫入，請確認連線後再試。"); }
+    const result = await runTransaction(ref(db, "outing/teams/" + uid), (current) => current ? undefined : team);
+    if (!result.committed) throw new Error("抽中的人剛被分到另一隊了，再抽一次。");
+    return { uid, team };
+  }
+  /** Everyone still to be placed, drawn at once into the two teams — balanced, the one left over to either team; captains
+   *  and earlier placements stay. An organiser any time, a captain on their turn; only the people placed are written. */
+  async function drawEveryone() {
+    const uids = Object.keys(votes), placed = withCaptains(teams, teamConfig.captains);
+    if (!isAdmin) {
+      const team = pickingTeam();
+      if (teamConfig.turns && pickTurn(uids, placed, teamConfig.captains, teamConfig.firstPick || "red") !== team) throw new Error("現在輪到對方隊長選人。");
+    }
+    const open = uids.filter(uid => !placed[uid]);
+    if (!open.length) return 0;
+    const next = assignTeams(uids, placed, { keep: true, fixed: withCaptains({}, teamConfig.captains) });
+    const changes: Record<string, unknown> = { teamDraw: { seq: (teamDraw?.seq || 0) + 1, all: true, at: serverTimestamp() } };
+    for (const uid of open) changes["teams/" + uid] = next[uid];
+    try { await update(ref(getFirebase().database, "outing"), changes); }
+    catch { throw new Error("這次抽籤沒有寫入，請確認連線後再試。"); }
+    return open.length;
   }
   async function releaseAgent(uid: string) {
-    const team = pickingTeam();
     if (captainOf(teamConfig.captains, uid)) throw new Error("隊長不能被放回。");
+    if (isAdmin) { await set(ref(getFirebase().database, "outing/teams/" + uid), null); return; }
+    const team = pickingTeam();
     const result = await runTransaction(ref(getFirebase().database, "outing/teams/" + uid), (current) => current === team ? null : undefined);
     if (!result.committed) throw new Error("只能放回自己隊上的人。");
   }
@@ -485,6 +546,9 @@ export function OutingProvider({ children }: { children: ReactNode }) {
         saveTeamConfig,
         pickAgent,
         releaseAgent,
+        teamDraw,
+        drawAgent,
+        drawEveryone,
         saveCatalog,
         stores,
         storedStores,

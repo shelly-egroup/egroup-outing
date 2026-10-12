@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import TitleMark from "./title-mark";
 import StoreLinks from "./store-links";
 import DuelSim from "./duel-sim";
@@ -34,17 +34,32 @@ function Terminal({ name, status, tone = "amber", className = "", children }: { 
 }
 
 
-/** T-minus to the meet-up, ticking with the page clock; once the day starts it says where the mission stands. */
+/**
+ * T-minus to the meet-up as a mission clock, ticking with the page clock: four cells whose digits roll in as they change,
+ * blinking separators, the meet-up underneath. Under a day to go it turns red and pulses; once the day starts it says where
+ * the mission stands.
+ */
 function MissionCountdown({ eventDate, start, now }: { eventDate: string; start: string; now: number }) {
   const clock = missionClock(eventDate, start, now);
   if (!clock) return null;
-  if (clock.state !== "counting") return <p className="ms-countdown" data-state={clock.state}><span className="ms-countdown-label"><i aria-hidden="true" />{clock.state === "live" ? "任務進行中" : "任務完成"}</span></p>;
-  return <p className="ms-countdown" role="timer" aria-label={"距離集合還有 " + clock.days + " 天 " + clock.hours + " 小時 " + clock.minutes + " 分"}>
-    <span className="ms-countdown-label" aria-hidden="true"><i />T-MINUS・距離集合</span>
-    <span className="ms-countdown-digits" aria-hidden="true">
-      <b>{clock.days}</b><small>天</small><b>{pad(clock.hours)}</b><small>時</small><b>{pad(clock.minutes)}</b><small>分</small><b className="ms-countdown-sec">{pad(clock.seconds)}</b><small className="ms-countdown-sec">秒</small>
-    </span>
-  </p>;
+  const when = eventDate.slice(5).replace("-", ".") + " " + (/^\d{1,2}:\d{2}/.exec(start)?.[0] || "12:00");
+  if (clock.state !== "counting") return <div className="ms-clock" data-state={clock.state}>
+    <p className="ms-clock-head"><i aria-hidden="true" />{clock.state === "live" ? "MISSION LIVE・任務進行中" : "MISSION COMPLETE・任務完成"}</p>
+  </div>;
+  const cells: [string, string, string][] = [[pad(clock.days), "天", "DAYS"], [pad(clock.hours), "時", "HRS"], [pad(clock.minutes), "分", "MIN"], [pad(clock.seconds), "秒", "SEC"]];
+  return <div className="ms-clock" data-state={clock.days < 1 ? "close" : "counting"} role="timer" aria-label={"距離集合還有 " + clock.days + " 天 " + clock.hours + " 小時 " + clock.minutes + " 分"}>
+    <p className="ms-clock-head" aria-hidden="true"><i />T-MINUS<span>距離集合</span></p>
+    <div className="ms-clock-cells" aria-hidden="true">
+      {cells.map(([value, unit, en], i) => <Fragment key={en}>
+        {i > 0 && <span className="ms-clock-sep">:</span>}
+        <span className="ms-clock-cell" data-unit={en}>
+          <span className="ms-clock-num">{[...value].map((digit, k) => <b key={k + digit}>{digit}</b>)}</span>
+          <small>{unit}<em>{en}</em></small>
+        </span>
+      </Fragment>)}
+    </div>
+    <p className="ms-clock-foot" aria-hidden="true">{when}・六度空間 LAZERTREKS</p>
+  </div>;
 }
 
 /** A photo shown as a live surveillance feed: camera id, REC, a Taipei timestamp from the page clock, scanlines.

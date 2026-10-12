@@ -87,3 +87,45 @@ test("with turns the first pick opens and the picks alternate; captains are not 
 test("the coin toss lands on either team", () => {
   assert.equal(drawFirstPick(() => .1), "red"); assert.equal(drawFirstPick(() => .9), "blue");
 });
+
+const { drawOne, parseTeamDraw } = await import("data:text/javascript;base64," + Buffer.from(compiled).toString("base64"));
+
+test("one at a time: someone still to be placed, to the smaller team, either team on a tie", () => {
+  const captains = { red: { email: "r@x.co", uid: "R" }, blue: { email: "b@x.co", uid: "B" } };
+  const uids = ["R", "B", "a", "b", "c"];
+  const one = drawOne(uids, { R: "red", B: "blue", a: "red" }, captains, () => .5);
+  assert.equal(one.team, "blue"); assert.ok(["b", "c"].includes(one.uid));
+  assert.equal(drawOne(uids, { R: "red", B: "blue" }, captains, () => .1).team, "red");
+  assert.equal(drawOne(uids, { R: "red", B: "blue" }, captains, () => .9).team, "blue");
+  assert.equal(drawOne(uids, { R: "red", B: "blue", a: "red", b: "blue", c: "red" }, captains), null);
+  // drawn one by one to the end, the teams stay within one
+  let teams = { R: "red", B: "blue" };
+  for (let next; (next = drawOne(uids, teams, captains, seeded(5))); ) teams = { ...teams, [next.uid]: next.team };
+  const { red, blue, open } = teamCounts(uids, teams);
+  assert.equal(open, 0); assert.ok(Math.abs(red - blue) <= 1);
+});
+
+test("the draw event reads back one agent or everyone, and nothing else", () => {
+  assert.deepEqual(parseTeamDraw({ seq: 3, uid: "a", team: "blue", at: 9 }), { seq: 3, uid: "a", team: "blue", at: 9 });
+  assert.deepEqual(parseTeamDraw({ seq: 4, all: true, at: 10 }), { seq: 4, all: true, at: 10 });
+  assert.equal(parseTeamDraw({ seq: 5, uid: "a", team: "green" }), null);
+  assert.equal(parseTeamDraw({ uid: "a", team: "red" }), null);
+  assert.equal(parseTeamDraw(null), null); assert.equal(parseTeamDraw([1]), null);
+});
+
+test("an odd number of agents: taking turns, the first pick also takes the one left over", () => {
+  const captains = { red: { email: "r@x.co", uid: "R" }, blue: { email: "b@x.co", uid: "B" } };
+  const uids = ["R", "B", "a", "b", "c", "d", "e", "f", "g"];
+  for (const first of ["red", "blue"]) {
+    let teams = { R: "red", B: "blue" };
+    for (let turn; (turn = pickTurn(uids, teams, captains, first)); ) teams = { ...teams, [uids.find(u => !teams[u])]: turn };
+    const counts = teamCounts(uids, teams);
+    assert.equal(counts[first], 5, first + " picks first"); assert.equal(counts[first === "red" ? "blue" : "red"], 4);
+  }
+});
+
+test("drawing everyone at once settles the odd one at random", () => {
+  const uids = ["R", "B", "a", "b", "c"], fixed = { R: "red", B: "blue" }, sizes = new Set();
+  for (let seed = 1; seed < 40; seed++) { const { red } = teamCounts(uids, assignTeams(uids, fixed, { keep: true, fixed, random: seeded(seed) })); sizes.add(red); }
+  assert.deepEqual([...sizes].sort(), [2, 3]);
+});

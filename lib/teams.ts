@@ -97,5 +97,28 @@ export function pickTurn(uids: string[], teams: TeamMap, captains: Captains, fir
   return counts.red === counts.blue ? first : counts.red < counts.blue ? "red" : "blue";
 }
 
+/** The last draw the organisers ran, so every open page can play it: one agent (`uid`, `team`) or everyone at once (`all`). */
+export type TeamDraw = { seq: number; uid?: string; team?: Team; all?: boolean; at: number };
+export function parseTeamDraw(value: unknown): TeamDraw | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  if (typeof v.seq !== "number" || !Number.isFinite(v.seq)) return null;
+  const draw: TeamDraw = { seq: v.seq, at: typeof v.at === "number" ? v.at : 0 };
+  if (v.all === true) draw.all = true;
+  else if (typeof v.uid === "string" && v.uid && (v.team === "red" || v.team === "blue")) { draw.uid = v.uid; draw.team = v.team; }
+  else return null;
+  return draw;
+}
+/**
+ * A one-at-a-time draw: anyone still to be placed, at random, to the smaller team — counting everyone already placed,
+ * captains included — and to either team, at random, on a tie. `teams` should already hold the captains (withCaptains).
+ */
+export function drawOne(uids: string[], teams: TeamMap, captains: Captains, random = Math.random): { uid: string; team: Team } | null {
+  const pool = uids.filter(uid => !teams[uid] && !captainOf(captains, uid));
+  if (!pool.length) return null;
+  const { red, blue } = teamCounts(uids, teams), uid = pool[Math.floor(random() * pool.length)];
+  return { uid, team: red < blue ? "red" : blue < red ? "blue" : random() < .5 ? "red" : "blue" };
+}
+
 /** A coin toss for the first pick. */
 export const drawFirstPick = (random = Math.random): Team => random() < .5 ? "red" : "blue";

@@ -95,15 +95,28 @@ body:has(.mission-page), body:has(.mission-page)::before { background: #050506; 
 
 /* ── 01 The day, as a log ── */
 .ms-timeline { padding-top: clamp(64px, 7vw, 104px); border-top: 0; background: radial-gradient(60% 50% at 85% 0%, rgb(255 42 74 / .07), transparent 70%), radial-gradient(50% 40% at 0% 100%, rgb(61 125 255 / .06), transparent 70%); }
-.ms-countdown { display: grid; gap: 14px; margin: 0; padding: 20px 24px 22px; border: 1px solid var(--ms-rule); background: rgb(242 237 228 / .02); }
-.ms-countdown-label { display: flex; align-items: center; gap: 10px; font: 600 11px/1 var(--ms-mono); letter-spacing: .3em; color: var(--ms-laser); }
-.ms-countdown-label i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; animation: ms-blink 1s step-end infinite; }
-.ms-countdown-digits { display: flex; align-items: baseline; font: 600 clamp(34px, 3.4vw, 52px)/1 var(--ms-mono); font-variant-numeric: tabular-nums; }
-.ms-countdown-digits small { margin: 0 14px 0 6px; font: 700 13px/1 var(--ms-sans); color: var(--ms-dim); }
-.ms-countdown-digits small:last-child { margin-right: 0; }
-.ms-countdown[data-state] { padding-block: 18px; }
-.ms-countdown[data-state="done"] .ms-countdown-label { color: var(--ms-amber); }
-.ms-countdown[data-state="done"] .ms-countdown-label i { animation: none; }
+/* the mission clock: four cells, rolling digits, a laser sweeping the minute */
+.ms-clock { position: relative; display: grid; gap: 12px; margin: 0; padding: 18px 20px 16px; border: 1px solid rgb(255 42 74 / .35); background: linear-gradient(180deg, rgb(255 42 74 / .07), rgb(5 5 6 / .6)), #07080a; box-shadow: 0 0 0 1px rgb(0 0 0 / .6), 0 24px 50px -30px rgb(255 42 74 / .5); }
+.ms-clock::before, .ms-clock::after { content: ""; position: absolute; width: 14px; height: 14px; border: 0 solid var(--ms-laser); }
+.ms-clock::before { left: -1px; top: -1px; border-width: 2px 0 0 2px; } .ms-clock::after { right: -1px; bottom: -1px; border-width: 0 2px 2px 0; }
+.ms-clock-head { display: flex; align-items: center; gap: 10px; margin: 0; font: 700 11px/1 var(--ms-mono); letter-spacing: .34em; color: var(--ms-laser); }
+.ms-clock-head i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 10px currentColor; animation: ms-blink 1s step-end infinite; }
+.ms-clock-head span { margin-left: auto; font: 700 12px/1 var(--ms-sans); letter-spacing: .2em; color: var(--ms-dim); }
+.ms-clock-cells { display: flex; align-items: flex-start; gap: 6px; }
+.ms-clock-cell { display: grid; justify-items: center; gap: 8px; }
+.ms-clock-num { display: flex; gap: 3px; }
+.ms-clock-num b { display: grid; place-items: center; width: clamp(30px, 2.6vw, 40px); height: clamp(44px, 3.8vw, 58px); overflow: hidden; border: 1px solid rgb(242 237 228 / .1); background: linear-gradient(180deg, #15171b 0 49%, #0a0b0d 51% 100%); font: 700 clamp(28px, 2.6vw, 40px)/1 var(--ms-mono); color: var(--ms-paper); text-shadow: 0 0 14px rgb(255 255 255 / .25); box-shadow: inset 0 1px 0 rgb(255 255 255 / .06), inset 0 -10px 18px rgb(0 0 0 / .5); animation: ms-clock-roll .5s var(--ms-out) both; }
+.ms-clock-cell[data-unit="SEC"] .ms-clock-num b { color: #ff6a7e; text-shadow: 0 0 16px rgb(255 42 74 / .7); }
+@keyframes ms-clock-roll { from { transform: translateY(-45%); opacity: 0; filter: blur(4px); } }
+.ms-clock-cell small { display: flex; align-items: baseline; gap: 5px; font: 700 12px/1 var(--ms-sans); color: var(--ms-dim); }
+.ms-clock-cell small em { font: 600 9px/1 var(--ms-mono); font-style: normal; letter-spacing: .2em; color: var(--ms-faint); }
+.ms-clock-sep { align-self: flex-start; margin-top: clamp(8px, .8vw, 12px); font: 700 clamp(22px, 2vw, 30px)/1 var(--ms-mono); color: var(--ms-laser); animation: ms-blink 1s step-end infinite; }
+.ms-clock-foot { margin: 0; font: 600 11px/1 var(--ms-mono); letter-spacing: .26em; color: var(--ms-faint); }
+.ms-clock[data-state="close"] { animation: ms-clock-alarm 1.6s ease-in-out infinite; }
+.ms-clock[data-state="close"] .ms-clock-num b { color: #ff6a7e; text-shadow: 0 0 16px rgb(255 42 74 / .7); }
+@keyframes ms-clock-alarm { 50% { box-shadow: 0 0 0 1px var(--ms-laser), 0 0 36px rgb(255 42 74 / .45); } }
+.ms-clock:not([role]) { padding-block: 16px; }
+.ms-clock[data-state="done"] .ms-clock-head { color: var(--ms-amber); } .ms-clock[data-state="done"] .ms-clock-head i { animation: none; }
 .ms-log { position: relative; display: grid; margin: 0; padding: 0; list-style: none; }
 .ms-log::before { content: ""; position: absolute; left: 6px; top: 34px; bottom: 34px; width: 1px; background: linear-gradient(var(--ms-blue), var(--ms-laser)); box-shadow: 0 0 8px rgb(255 42 74 / .5); }
 .ms-log-row { position: relative; display: grid; grid-template-columns: 14px minmax(120px, 168px) 128px minmax(0, 1fr); align-items: baseline; gap: 0 22px; padding: 20px 0; border-bottom: 1px solid rgb(242 237 228 / .08); }
@@ -642,14 +655,16 @@ body:has(.mission-page), body:has(.mission-page)::before { background: #050506; 
 .draft-demo-tabs button span { font: 700 11px/1 var(--ms-mono); color: var(--ms-amber); }
 .draft-demo-tabs button[aria-pressed="true"] { border-color: var(--ms-amber); background: rgb(255 176 74 / .14); color: var(--ms-paper); }
 .draft-demo .draft-demo-note { padding: 10px 12px; border-left: 3px solid var(--ms-amber); background: rgb(0 0 0 / .25); font-size: 13px; color: var(--ms-paper); }
-/* the stage: red and blue halves meeting on a laser seam */
-.draft-stage { position: relative; isolation: isolate; overflow: hidden; padding: clamp(22px, 3vw, 40px) clamp(14px, 2.4vw, 32px) clamp(26px, 3vw, 40px); }
-.draft-bg { position: absolute; inset: 0; z-index: -1; background: linear-gradient(105deg, rgb(255 42 74 / .17), rgb(255 42 74 / .05) 32%, transparent 45%, transparent 55%, rgb(61 125 255 / .05) 68%, rgb(61 125 255 / .19)), radial-gradient(60% 45% at 50% 0%, rgb(255 255 255 / .06), transparent 70%); }
+
+.draft-stage { position: relative; isolation: isolate; overflow: hidden; padding: clamp(26px, 3.2vw, 44px) clamp(14px, 2.4vw, 32px) clamp(26px, 3vw, 40px); }
+.draft-bg { position: absolute; inset: 0; z-index: -1; background: linear-gradient(105deg, rgb(255 42 74 / .16), rgb(255 42 74 / .04) 30%, transparent 44%, transparent 56%, rgb(61 125 255 / .04) 70%, rgb(61 125 255 / .18)), radial-gradient(60% 45% at 50% 0%, rgb(255 255 255 / .06), transparent 70%); }
+.draft-bg::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgb(255 255 255 / .018) 0 1px, transparent 1px 4px); }
 .draft-bg::after { content: ""; position: absolute; left: 50%; top: -5%; bottom: -5%; width: 1px; background: linear-gradient(transparent, rgb(255 255 255 / .4) 18%, rgb(255 255 255 / .4) 82%, transparent); box-shadow: 0 0 14px rgb(255 255 255 / .35); transform: skewX(-12deg); }
 .draft-stage[data-hidden] .draft-field, .draft-stage[data-hidden] .draft-head { filter: grayscale(1) brightness(.45); }
 .draft-stage[data-hidden]::after { content: "首頁目前不顯示分隊・主辦尚未公開"; position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; background: rgb(5 5 6 / .5); font: 800 15px/1.5 var(--ms-sans); letter-spacing: .16em; color: var(--ms-paper); }
-/* head: status, the scoreboard with VS, the first-pick coin */
-.draft-head { display: grid; justify-items: center; gap: 12px; margin-bottom: clamp(20px, 2.4vw, 30px); text-align: center; }
+
+/* the head: what is happening, the scoreboard, how the teams are being made */
+.draft-head { display: grid; justify-items: center; gap: 16px; margin-bottom: clamp(24px, 2.8vw, 36px); text-align: center; }
 .draft-kicker { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 12px; margin: 0; font: 700 12px/1 var(--ms-mono); letter-spacing: .4em; color: var(--ms-dim); }
 .draft-kicker i { width: 8px; height: 8px; border-radius: 50%; background: var(--ms-green); box-shadow: 0 0 10px var(--ms-green); }
 .draft-kicker i[data-state="live"] { background: var(--ms-laser); box-shadow: 0 0 10px var(--ms-laser); animation: ms-blink 1s step-end infinite; }
@@ -662,73 +677,115 @@ body:has(.mission-page), body:has(.mission-page)::before { background: #050506; 
 .draft-score small { font: 800 13px/1 var(--ms-sans); letter-spacing: .3em; color: var(--ms-dim); }
 .draft-vs { font: 900 clamp(28px, 3.6vw, 48px)/1 var(--ms-serif); font-style: italic; background: linear-gradient(180deg, #fff, #c9ced4 45%, #8a919b 50%, #f6f7f8 56%, #6c737c); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 2px 8px rgb(0 0 0 / .85)); }
 @keyframes draft-tick { from { opacity: 0; transform: translateY(-35%); filter: blur(5px); } }
-.draft-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-.draft-coin, .draft-tag { display: inline-flex; align-items: center; gap: 9px; padding: 6px 12px; border: 1px solid rgb(242 237 228 / .25); font: 700 12px/1 var(--ms-sans); letter-spacing: .12em; color: var(--ms-paper); }
-.draft-coin { padding-left: 6px; }
-.draft-tag { color: var(--ms-dim); }
-.draft-coin i { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 2px rgb(255 255 255 / .55), 0 0 12px rgb(255 255 255 / .2); animation: draft-coin 1.8s var(--ms-out) both; }
-.draft-coin[data-team="red"] { border-color: rgb(255 42 74 / .6); } .draft-coin[data-team="red"] i { background: radial-gradient(circle at 35% 35%, #ffa3b0, var(--ms-laser) 58%, #8a0a1f); }
-.draft-coin[data-team="blue"] { border-color: rgb(61 125 255 / .6); } .draft-coin[data-team="blue"] i { background: radial-gradient(circle at 35% 35%, #b8d0ff, var(--ms-blue) 58%, #13306e); }
-@keyframes draft-coin { 0% { transform: rotateY(0) scale(.5); } 75% { transform: rotateY(1800deg) scale(1.2); } 100% { transform: rotateY(1800deg) scale(1); } }
-/* the field: red | to be placed | blue */
-.draft-field { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; gap: clamp(12px, 1.6vw, 20px); }
-.draft-side { position: relative; display: grid; gap: 14px; padding: 16px 14px; border: 1px solid rgb(242 237 228 / .14); background: rgb(5 5 6 / .58); }
-.draft-side[data-team="red"] { border-color: rgb(255 42 74 / .4); box-shadow: inset 0 3px 0 var(--ms-laser); }
-.draft-side[data-team="blue"] { border-color: rgb(61 125 255 / .45); box-shadow: inset 0 3px 0 var(--ms-blue); }
-.draft-side[data-team="red"][data-active] { border-color: var(--ms-laser); animation: draft-glow-r 1.6s ease-in-out infinite; }
-.draft-side[data-team="blue"][data-active] { border-color: var(--ms-blue); animation: draft-glow-b 1.6s ease-in-out infinite; }
-@keyframes draft-glow-r { 0%, 100% { box-shadow: inset 0 3px 0 var(--ms-laser), 0 0 0 1px var(--ms-laser), 0 0 40px rgb(255 42 74 / .4); } 50% { box-shadow: inset 0 3px 0 var(--ms-laser), 0 0 0 1px var(--ms-laser), 0 0 16px rgb(255 42 74 / .18); } }
-@keyframes draft-glow-b { 0%, 100% { box-shadow: inset 0 3px 0 var(--ms-blue), 0 0 0 1px var(--ms-blue), 0 0 40px rgb(61 125 255 / .4); } 50% { box-shadow: inset 0 3px 0 var(--ms-blue), 0 0 0 1px var(--ms-blue), 0 0 16px rgb(61 125 255 / .18); } }
-/* the captain, in a spotlight */
-.draft-captain { display: grid; justify-items: center; gap: 6px; padding: 34px 8px 12px; text-align: center; background: radial-gradient(60% 70% at 50% 32%, rgb(255 255 255 / .08), transparent 72%); }
-.draft-captain-photo { position: relative; display: grid; place-items: center; min-height: 100px; }
-.draft-captain-photo .agent-face { width: 92px; height: 92px; font-size: 24px; }
-.draft-side[data-team="red"] .draft-captain-photo .agent-face { box-shadow: 0 0 0 2px var(--ms-laser), 0 0 30px rgb(255 42 74 / .55); }
-.draft-side[data-team="blue"] .draft-captain-photo .agent-face { box-shadow: 0 0 0 2px var(--ms-blue), 0 0 30px rgb(61 125 255 / .55); }
-.draft-standin { width: 58px; height: 100px; fill: #23262c; stroke: #aab0b8; stroke-width: .5; filter: drop-shadow(0 0 12px rgb(255 255 255 / .18)); animation: ms-breathe 2.4s ease-in-out infinite; }
-.draft-captain-badge { margin: 10px 0 0; padding: 4px 10px; font: 800 11px/1 var(--ms-mono); letter-spacing: .2em; color: #fff; }
-.draft-side[data-team="red"] .draft-captain-badge { background: var(--ms-laser); } .draft-side[data-team="blue"] .draft-captain-badge { background: var(--ms-blue); }
-.draft-captain strong { max-width: 100%; overflow: hidden; font: 900 clamp(18px, 1.6vw, 22px)/1.25 var(--ms-serif); letter-spacing: .06em; text-overflow: ellipsis; white-space: nowrap; }
-.draft-captain small { font: 600 12px/1.4 var(--ms-sans); color: var(--ms-faint); }
-.draft-side[data-mine] .draft-captain small { color: var(--ms-amber); }
-/* numbered slots: 01 is the captain; the rest fill as the picks land */
-.draft-slots { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.draft-slot { position: relative; display: grid; grid-template-columns: 24px auto minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 54px; padding: 6px 10px; border: 1px solid rgb(242 237 228 / .1); background: rgb(242 237 228 / .03); }
-.draft-slot-no { font: 700 12px/1 var(--ms-mono); color: var(--ms-faint); }
-.draft-slot .hat-wrap { margin-top: 12px; }
-.draft-slot .agent-face { width: 32px; height: 32px; font-size: 11px; }
-.draft-slot-name { overflow: hidden; font: 700 14px/1.2 var(--ms-sans); text-overflow: ellipsis; white-space: nowrap; color: var(--ms-paper); }
-.draft-slot.is-empty { grid-template-columns: 24px minmax(0, 1fr); min-height: 44px; border-style: dashed; background: none; }
-.draft-slot.is-empty .draft-slot-name { font: 600 12px/1 var(--ms-mono); letter-spacing: .3em; color: var(--ms-faint); }
-.draft-slot.is-landed { animation: draft-land 1s var(--ms-out); }
-.draft-slot.is-landed::after { content: "ASSIGNED"; position: absolute; right: 8px; top: 50%; padding: 3px 7px; border: 2px solid currentColor; font: 900 10px/1 var(--ms-mono); letter-spacing: .2em; translate: 0 -50%; rotate: -8deg; animation: draft-stamp 1.6s var(--ms-out) both; pointer-events: none; }
-.draft-side[data-team="red"] .draft-slot.is-landed::after { color: #ff7d92; background: rgb(40 6 12 / .85); } .draft-side[data-team="blue"] .draft-slot.is-landed::after { color: #8fb2ff; background: rgb(6 14 40 / .85); }
-@keyframes draft-land { 0% { background: rgb(255 255 255 / .35); } 100% { background: rgb(242 237 228 / .03); } }
+.draft-tag { display: inline-flex; align-items: center; gap: 9px; padding: 8px 14px; border: 1px solid rgb(242 237 228 / .18); background: rgb(5 5 6 / .5); font: 700 12px/1 var(--ms-sans); letter-spacing: .16em; color: var(--ms-dim); }
+.draft-tag::before { content: ""; width: 6px; height: 6px; background: var(--ms-amber); box-shadow: 0 0 8px var(--ms-amber); }
+/* who picks first: a selector light hops between the two teams, slows, settles; the winner lights up in its colour */
+.draft-first { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 16px; }
+.draft-first-label { font: 700 11px/1 var(--ms-mono); letter-spacing: .32em; color: var(--ms-faint); }
+.draft-first-track { position: relative; display: grid; grid-template-columns: 1fr 1fr; width: 200px; height: 36px; border: 1px solid rgb(242 237 228 / .2); background: rgb(5 5 6 / .72); }
+.draft-first-track > span { position: relative; z-index: 1; display: grid; place-items: center; padding-left: .3em; font: 800 13px/1 var(--ms-sans); letter-spacing: .3em; color: var(--ms-faint); }
+.draft-first-track > span[data-side="red"] { border-right: 1px solid rgb(242 237 228 / .12); }
+.draft-first-cursor { position: absolute; top: -3px; bottom: -3px; left: -1px; width: calc(50% + 2px); border: 2px solid #fff; box-shadow: 0 0 14px rgb(255 255 255 / .55), inset 0 0 12px rgb(255 255 255 / .2); }
+.draft-first[data-team="red"] .draft-first-cursor { animation: draft-first-red 1.9s .3s step-end both, draft-first-lit-r .7s 2.2s var(--ms-out) both; }
+.draft-first[data-team="blue"] .draft-first-cursor { animation: draft-first-blue 1.9s .3s step-end both, draft-first-lit-b .7s 2.2s var(--ms-out) both; }
+.draft-first[data-team="red"] [data-side="red"], .draft-first[data-team="blue"] [data-side="blue"] { animation: draft-first-text .3s 2.2s both; }
+.draft-first-result { font: 900 16px/1 var(--ms-serif); letter-spacing: .14em; animation: draft-first-result .6s 2.3s var(--ms-out) both; }
+.draft-first[data-team="red"] .draft-first-result { color: #ff7d92; text-shadow: 0 0 16px rgb(255 42 74 / .6); }
+.draft-first[data-team="blue"] .draft-first-result { color: #8fb2ff; text-shadow: 0 0 16px rgb(61 125 255 / .6); }
+@keyframes draft-first-red { 0% { left: -1px; } 6% { left: calc(50% - 1px); } 12% { left: -1px; } 19% { left: calc(50% - 1px); } 27% { left: -1px; } 36% { left: calc(50% - 1px); } 47% { left: -1px; } 60% { left: calc(50% - 1px); } 77% { left: -1px; } 100% { left: -1px; } }
+@keyframes draft-first-blue { 0% { left: -1px; } 6% { left: calc(50% - 1px); } 12% { left: -1px; } 19% { left: calc(50% - 1px); } 27% { left: -1px; } 36% { left: calc(50% - 1px); } 47% { left: -1px; } 60% { left: calc(50% - 1px); } 74% { left: -1px; } 92% { left: calc(50% - 1px); } 100% { left: calc(50% - 1px); } }
+@keyframes draft-first-lit-r { 0% { border-color: #fff; background: rgb(255 255 255 / .6); } 35% { box-shadow: 0 0 0 7px rgb(255 42 74 / .3), 0 0 34px rgb(255 42 74 / .9); } 100% { border-color: var(--ms-laser); background: rgb(255 42 74 / .78); box-shadow: 0 0 0 0 rgb(255 42 74 / 0), 0 0 22px rgb(255 42 74 / .7); } }
+@keyframes draft-first-lit-b { 0% { border-color: #fff; background: rgb(255 255 255 / .6); } 35% { box-shadow: 0 0 0 7px rgb(61 125 255 / .3), 0 0 34px rgb(61 125 255 / .9); } 100% { border-color: var(--ms-blue); background: rgb(61 125 255 / .78); box-shadow: 0 0 0 0 rgb(61 125 255 / 0), 0 0 22px rgb(61 125 255 / .7); } }
+.draft-first-note { flex-basis: 100%; font: 600 12px/1 var(--ms-sans); letter-spacing: .12em; color: var(--ms-faint); animation: draft-first-result .6s 2.5s var(--ms-out) both; }
+@keyframes draft-first-text { to { color: #fff; } }
+@keyframes draft-first-result { from { opacity: 0; transform: translateX(-10px); filter: blur(4px); } }
+
+/* the two teams: a nameplate, the captain under a spotlight, the roster below */
+.draft-field { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr); align-items: start; gap: clamp(12px, 1.6vw, 22px); }
+.draft-side { --team: var(--ms-laser); --team-soft: #ff7d92; --team-rgb: 255 42 74; position: relative; display: grid; border: 1px solid rgb(var(--team-rgb) / .3); border-top: 3px solid var(--team); background: linear-gradient(180deg, rgb(var(--team-rgb) / .17), rgb(var(--team-rgb) / .04) 38%, rgb(5 5 6 / .66) 62%); }
+.draft-side[data-team="blue"] { --team: var(--ms-blue); --team-soft: #8fb2ff; --team-rgb: 61 125 255; }
+.draft-side[data-active] { animation: draft-glow 1.6s ease-in-out infinite; }
+@keyframes draft-glow { 0%, 100% { box-shadow: 0 0 0 1px var(--team), 0 0 44px rgb(var(--team-rgb) / .42); } 50% { box-shadow: 0 0 0 1px var(--team), 0 0 16px rgb(var(--team-rgb) / .16); } }
+.draft-side-name { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 10px; margin: 0; padding: 16px 18px 0; }
+.draft-side-name span { font: 900 clamp(22px, 2vw, 28px)/1 var(--ms-serif); letter-spacing: .16em; color: var(--team-soft); text-shadow: 0 0 22px rgb(var(--team-rgb) / .55); }
+.draft-side-name em { font: 700 10px/1 var(--ms-mono); font-style: normal; letter-spacing: .32em; color: rgb(var(--team-rgb) / .9); }
+/* each team as one squad: the captain's tile first and largest (on the outer edge, facing the other team), the people taken
+   beside it as tiles like the cards they came from, empty slots waiting with a ghost of the agent */
+.draft-roster { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: dense; gap: 8px; margin: 0; padding: 16px 16px 18px; list-style: none; }
+.draft-member { position: relative; display: grid; justify-items: center; align-content: center; gap: 8px; min-width: 0; min-height: 128px; padding: 28px 6px 10px; border: 1px solid rgb(var(--team-rgb) / .22); background: linear-gradient(180deg, rgb(var(--team-rgb) / .1), rgb(5 5 6 / .55)); text-align: center; }
+.draft-member .agent-face { width: 48px; height: 48px; font-size: 14px; }
+.draft-member strong { max-width: 100%; overflow: hidden; font: 800 13px/1.2 var(--ms-sans); text-overflow: ellipsis; white-space: nowrap; color: var(--ms-paper); }
+.draft-member-no { position: absolute; left: 7px; top: 7px; font: 700 10px/1 var(--ms-mono); letter-spacing: .1em; color: var(--team-soft); }
+.draft-member.is-captain { grid-column: 1 / span 2; grid-row: 1 / span 2; gap: 10px; padding: 34px 10px 16px; border-color: var(--team); background: radial-gradient(70% 55% at 50% 40%, rgb(var(--team-rgb) / .4), transparent 75%), linear-gradient(180deg, rgb(var(--team-rgb) / .24), rgb(5 5 6 / .62)); box-shadow: 0 0 28px rgb(var(--team-rgb) / .28), inset 0 0 0 1px rgb(255 255 255 / .06); }
+.draft-side[data-team="blue"] .draft-member.is-captain { grid-column: 2 / span 2; }
+.draft-member.is-captain .agent-face { width: 92px; height: 92px; font-size: 24px; border-color: transparent; box-shadow: 0 0 0 2px var(--team), 0 0 30px rgb(var(--team-rgb) / .6); }
+.draft-member.is-captain strong { font: 900 clamp(18px, 1.6vw, 22px)/1.2 var(--ms-serif); letter-spacing: .06em; }
+.draft-member.is-captain small { font: 600 11px/1.4 var(--ms-sans); color: var(--ms-faint); }
+.draft-side[data-mine] .draft-member.is-captain small { color: var(--ms-amber); }
+.draft-member-badge { position: absolute; right: 8px; top: 8px; padding: 4px 7px; background: var(--team); font: 800 9px/1 var(--ms-mono); letter-spacing: .22em; color: #fff; box-shadow: 0 0 14px rgb(var(--team-rgb) / .5); }
+.draft-standin { width: 54px; height: 92px; fill: #23262c; stroke: #aab0b8; stroke-width: .5; filter: drop-shadow(0 0 12px rgb(255 255 255 / .18)); animation: ms-breathe 2.4s ease-in-out infinite; }
+.draft-member.is-empty { border-style: dashed; border-color: rgb(242 237 228 / .13); background: none; }
+.draft-member.is-empty .draft-member-no { color: rgb(242 237 228 / .3); }
+.draft-ghost { width: 28px; height: 48px; fill: rgb(242 237 228 / .05); stroke: rgb(242 237 228 / .18); stroke-width: .5; }
+.draft-member.is-empty strong { font: 600 10px/1 var(--ms-mono); letter-spacing: .32em; color: rgb(242 237 228 / .32); }
+.draft-member.is-landed { animation: draft-land 1.1s var(--ms-out); }
+.draft-member.is-landed::after { content: "ASSIGNED"; position: absolute; left: 50%; top: 50%; padding: 3px 6px; border: 2px solid currentColor; background: rgb(5 5 6 / .88); font: 900 10px/1 var(--ms-mono); letter-spacing: .18em; color: var(--team-soft); translate: -50% -50%; rotate: -12deg; animation: draft-stamp 1.6s var(--ms-out) both; pointer-events: none; }
+@keyframes draft-land { 0% { background: rgb(var(--team-rgb) / .6); border-color: #fff; box-shadow: 0 0 30px rgb(var(--team-rgb) / .8); } 100% { background: linear-gradient(180deg, rgb(var(--team-rgb) / .1), rgb(5 5 6 / .55)); } }
 @keyframes draft-stamp { 0% { opacity: 0; scale: 2.4; } 16% { opacity: 1; scale: 1; } 78% { opacity: 1; } 100% { opacity: 0; } }
-.draft-release { padding: 6px 9px; border: 1px solid rgb(242 237 228 / .25); background: none; color: var(--ms-faint); font: 700 11px/1 var(--ms-sans); cursor: pointer; }
+.draft-release { position: absolute; right: 4px; top: 4px; padding: 4px 6px; border: 1px solid rgb(242 237 228 / .22); background: rgb(5 5 6 / .6); color: var(--ms-faint); font: 700 10px/1 var(--ms-sans); cursor: pointer; }
 .draft-release:hover:not(:disabled) { border-color: var(--ms-paper); color: var(--ms-paper); }
-/* the pool: dossier cards */
-.draft-pool { display: grid; gap: 14px; padding: 16px 14px; border: 1px solid rgb(255 176 74 / .3); background: rgb(5 5 6 / .62); }
-.draft-pool-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin: 0; font: 900 15px/1 var(--ms-sans); letter-spacing: .2em; color: var(--ms-amber); }
-.draft-pool-head b { font: 700 28px/1 var(--ms-mono); letter-spacing: 0; color: var(--ms-paper); }
+
+/* the agents still to be placed, as dossier cards; organisers and the captain on the clock get a draw desk on top */
+.draft-pool { position: relative; display: grid; gap: 14px; padding: 18px 16px; border: 1px solid rgb(242 237 228 / .12); background: rgb(5 5 6 / .6); }
+.draft-pool::before, .draft-pool::after { content: ""; position: absolute; width: 14px; height: 14px; border: 0 solid var(--ms-amber); pointer-events: none; }
+.draft-pool::before { left: -1px; top: -1px; border-width: 2px 0 0 2px; } .draft-pool::after { right: -1px; bottom: -1px; border-width: 0 2px 2px 0; }
+.draft-pool-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin: 0; font: 900 14px/1 var(--ms-sans); letter-spacing: .22em; color: var(--ms-amber); }
+.draft-pool-head b { font: 700 26px/1 var(--ms-mono); letter-spacing: 0; color: var(--ms-paper); }
 .draft-arrow { margin-left: auto; font: 800 12px/1 var(--ms-mono); font-style: normal; letter-spacing: .14em; animation: draft-arrow 1s ease-in-out infinite; }
 .draft-arrow[data-team="red"] { --dir: -1; color: #ff7d92; } .draft-arrow[data-team="blue"] { --dir: 1; color: #8fb2ff; }
 @keyframes draft-arrow { 50% { transform: translateX(calc(var(--dir) * 6px)); } }
 .draft-guide { margin: 0; padding: 10px 12px; border-left: 3px solid var(--ms-faint); background: rgb(242 237 228 / .04); font: 700 13px/1.6 var(--ms-sans); color: var(--ms-dim); }
-.draft-guide[data-go][data-team="red"] { border-color: var(--ms-laser); background: rgb(255 42 74 / .1); color: #ffd1d8; }
-.draft-guide[data-go][data-team="blue"] { border-color: var(--ms-blue); background: rgb(61 125 255 / .1); color: #d3e0ff; }
-.draft-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.draft-desk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 10px 10px 14px; scroll-margin: 170px 0 24px; border: 1px solid rgb(255 176 74 / .42); background: linear-gradient(90deg, rgb(255 176 74 / .13), rgb(255 176 74 / .03)); }
+.draft-desk[data-team="red"] { border-color: rgb(255 42 74 / .5); background: linear-gradient(90deg, rgb(255 42 74 / .14), rgb(255 42 74 / .03)); }
+.draft-desk[data-team="blue"] { border-color: rgb(61 125 255 / .55); background: linear-gradient(90deg, rgb(61 125 255 / .15), rgb(61 125 255 / .03)); }
+.draft-desk-label { display: grid; gap: 6px; margin-right: auto; font: 900 14px/1 var(--ms-sans); letter-spacing: .14em; color: var(--ms-paper); }
+.draft-desk-label small { font: 700 10px/1 var(--ms-mono); letter-spacing: .2em; color: var(--ms-amber); }
+.draft-desk[data-team="red"] .draft-desk-label small { color: #ff7d92; } .draft-desk[data-team="blue"] .draft-desk-label small { color: #8fb2ff; }
+.draft-desk button { min-height: 40px; padding: 0 16px; font: 900 13px/1 var(--ms-sans); letter-spacing: .12em; cursor: pointer; transition: transform .15s, box-shadow .15s, background .15s, border-color .15s; }
+.draft-desk-one { border: 1px solid var(--ms-amber); background: var(--ms-amber); color: #140d02; box-shadow: 0 0 20px rgb(255 176 74 / .35); }
+.draft-desk[data-team="red"] .draft-desk-one { border-color: var(--ms-laser); background: var(--ms-laser); color: #fff; box-shadow: 0 0 20px rgb(255 42 74 / .45); }
+.draft-desk[data-team="blue"] .draft-desk-one { border-color: var(--ms-blue); background: var(--ms-blue); color: #fff; box-shadow: 0 0 20px rgb(61 125 255 / .45); }
+.draft-desk-one:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.1); }
+.draft-desk-all { border: 1px solid rgb(242 237 228 / .45); background: rgb(5 5 6 / .55); color: var(--ms-paper); }
+.draft-desk-all:hover:not(:disabled) { border-color: var(--ms-paper); }
+.draft-desk-all[data-confirm] { border-color: var(--ms-laser); background: var(--ms-laser); color: #fff; animation: draft-confirm .9s ease-in-out infinite; }
+@keyframes draft-confirm { 0%, 100% { box-shadow: 0 0 22px rgb(255 42 74 / .6); } 50% { box-shadow: 0 0 6px rgb(255 42 74 / .25); } }
+.draft-desk button:disabled { opacity: .4; cursor: default; box-shadow: none; transform: none; filter: none; }
+.draft-desk-hint { flex-basis: 100%; margin: 2px 0 0; font: 600 12px/1.5 var(--ms-sans); color: var(--ms-faint); }
+/* a card locked: the desk turns into the place to put it */
+.draft-desk[data-locked] { border-color: rgb(242 237 228 / .55); background: linear-gradient(90deg, rgb(242 237 228 / .1), rgb(242 237 228 / .02)); animation: draft-desk-lock .35s var(--ms-out); }
+@keyframes draft-desk-lock { from { box-shadow: 0 0 0 2px var(--ms-amber), 0 0 26px rgb(255 176 74 / .45); } }
+.draft-desk-pick { display: flex; align-items: center; gap: 12px; min-width: 0; margin-right: auto; }
+.draft-desk-pick .hat-wrap { margin-top: 10px; }
+.draft-desk-pick .agent-face { width: 38px; height: 38px; font-size: 12px; }
+.draft-desk-pick > span:last-child { display: grid; gap: 6px; min-width: 0; font: 900 16px/1 var(--ms-sans); letter-spacing: .08em; color: var(--ms-paper); }
+.draft-desk-pick small { font: 700 10px/1 var(--ms-mono); letter-spacing: .18em; color: var(--ms-amber); }
+.draft-desk[data-locked] .draft-desk-pick { flex-basis: 100%; margin: 0 0 4px; }
+.draft-desk[data-locked] button { flex: 1; }
+.draft-desk .draft-go { min-height: 40px; padding: 0 14px; }
+.draft-desk .draft-cancel { min-height: 40px; padding: 0 12px; }
+.draft-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(106px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
 .draft-card { position: relative; }
-.draft-card-face { position: relative; display: grid; justify-items: center; gap: 8px; width: 100%; padding: 34px 6px 12px; border: 1px solid rgb(242 237 228 / .14); background: linear-gradient(180deg, rgb(242 237 228 / .06), rgb(242 237 228 / .01)); color: var(--ms-paper); font: inherit; text-align: center; }
-button.draft-card-face { cursor: pointer; transition: border-color .15s, transform .15s, background .15s; }
-button.draft-card-face:hover { border-color: rgb(242 237 228 / .5); background: linear-gradient(180deg, rgb(242 237 228 / .1), rgb(242 237 228 / .02)); transform: translateY(-2px); }
+.draft-card-face { position: relative; display: grid; justify-items: center; gap: 9px; width: 100%; padding: 32px 6px 12px; border: 1px solid rgb(242 237 228 / .13); background: linear-gradient(180deg, #14161b, #0b0c0f); box-shadow: inset 0 2px 0 rgb(242 237 228 / .07); color: var(--ms-paper); font: inherit; text-align: center; transition: opacity .12s, filter .12s, border-color .12s, transform .15s; }
+button.draft-card-face { cursor: pointer; }
+button.draft-card-face:hover { border-color: rgb(242 237 228 / .5); transform: translateY(-2px); }
 .draft-card-face:focus-visible { outline: 2px solid var(--ms-amber); outline-offset: 2px; }
-.draft-card-no { position: absolute; left: 6px; top: 6px; font: 700 9px/1 var(--ms-mono); letter-spacing: .14em; color: var(--ms-faint); }
-.draft-card-face .agent-face { width: 52px; height: 52px; font-size: 15px; }
+.draft-card-no { position: absolute; left: 7px; top: 7px; font: 700 9px/1 var(--ms-mono); letter-spacing: .14em; color: var(--ms-faint); }
+.draft-card-face .agent-face { width: 54px; height: 54px; font-size: 15px; }
 .draft-card-face strong { max-width: 100%; overflow: hidden; font: 800 13px/1.2 var(--ms-sans); text-overflow: ellipsis; white-space: nowrap; }
-/* the lock that snaps onto the card a captain picks, in their colour */
-.draft-lock { position: absolute; inset: -5px; color: var(--ms-paper); opacity: 0; pointer-events: none; transition: opacity .15s; }
-.draft[data-me="red"] .draft-lock { color: var(--ms-laser); } .draft[data-me="blue"] .draft-lock { color: #6f9bff; }
+/* a lock on a card: in the captain's colour, amber for an organiser */
+.draft-lock { position: absolute; inset: -5px; color: var(--ms-paper); opacity: 0; pointer-events: none; transition: opacity .12s; }
+.draft[data-lock="red"] .draft-lock { color: var(--ms-laser); } .draft[data-lock="blue"] .draft-lock { color: #6f9bff; } .draft[data-lock="admin"] .draft-lock { color: var(--ms-amber); }
 .draft-lock i { position: absolute; width: 12px; height: 12px; border: 0 solid currentColor; filter: drop-shadow(0 0 4px currentColor); }
 .draft-lock i:nth-child(1) { left: 0; top: 0; border-width: 2px 0 0 2px; } .draft-lock i:nth-child(2) { right: 0; top: 0; border-width: 2px 2px 0 0; }
 .draft-lock i:nth-child(3) { left: 0; bottom: 0; border-width: 0 0 2px 2px; } .draft-lock i:nth-child(4) { right: 0; bottom: 0; border-width: 0 2px 2px 0; }
@@ -736,40 +793,59 @@ button.draft-card-face:hover { border-color: rgb(242 237 228 / .5); background: 
 .draft-card[data-armed] { z-index: 3; }
 .draft-card[data-armed] .draft-lock { opacity: 1; animation: draft-lock .32s cubic-bezier(.2, 1.6, .3, 1) both; }
 @keyframes draft-lock { from { opacity: 0; scale: 1.3; } }
-.draft-confirm { position: absolute; left: -6px; right: -6px; top: calc(100% + 8px); z-index: 4; display: grid; gap: 6px; padding: 8px; border: 1px solid rgb(242 237 228 / .3); background: #0b0c0f; box-shadow: 0 18px 34px rgb(0 0 0 / .75); animation: draft-pop .22s var(--ms-out) both; }
+/* a draw: the light runs over the cards while the rest dim, and stops on the one drawn, who lights up in their new colour */
+.draft[data-rolling] .draft-card:not([data-spot]) .draft-card-face { opacity: .4; filter: grayscale(.8); }
+.draft-card[data-spot] { z-index: 2; }
+.draft-card[data-spot] .draft-card-face { border-color: #fff; background: linear-gradient(180deg, #2c2f36, #16181c); box-shadow: 0 0 0 1px #fff, 0 0 28px rgb(255 255 255 / .35); transform: scale(1.05); transition: none; }
+.draft-card[data-spot] .draft-lock { opacity: 1; color: #fff; transition: none; }
+.draft-card[data-won] { --won: var(--ms-laser); --won-rgb: 255 42 74; z-index: 3; }
+.draft-card[data-won="blue"] { --won: var(--ms-blue); --won-rgb: 61 125 255; }
+.draft-card[data-won] .draft-card-face { border-color: var(--won); background: linear-gradient(180deg, rgb(var(--won-rgb) / .6), rgb(var(--won-rgb) / .2)); box-shadow: 0 0 0 1px var(--won), 0 0 36px rgb(var(--won-rgb) / .75); animation: draft-won .6s var(--ms-out) both; }
+.draft-card[data-won] .draft-lock { color: var(--won); animation: draft-lock .32s cubic-bezier(.2, 1.6, .3, 1) both; }
+@keyframes draft-won { 0% { background: #fff; transform: scale(1.16); } 100% { transform: scale(1.05); } }
+.draft-drawn { position: absolute; left: 50%; bottom: -11px; z-index: 4; display: inline-flex; align-items: center; gap: 7px; padding: 5px 10px; white-space: nowrap; background: var(--won); font: 900 12px/1 var(--ms-sans); letter-spacing: .12em; color: #fff; box-shadow: 0 6px 18px rgb(0 0 0 / .6), 0 0 18px rgb(var(--won-rgb) / .6); translate: -50% 0; animation: draft-pop .28s var(--ms-out) both; }
+.draft-drawn b { font: 800 10px/1 var(--ms-sans); letter-spacing: .2em; opacity: .85; }
 @keyframes draft-pop { from { opacity: 0; transform: translateY(-6px); } }
-.draft-go { min-height: 40px; border: 1px solid; color: #fff; font: 900 13px/1 var(--ms-sans); letter-spacing: .1em; cursor: pointer; }
+.draft-go { min-height: 40px; padding: 0 6px; border: 1px solid; color: #fff; font: 900 13px/1 var(--ms-sans); letter-spacing: .1em; cursor: pointer; }
 .draft-go[data-team="red"] { border-color: var(--ms-laser); background: var(--ms-laser); box-shadow: 0 0 18px rgb(255 42 74 / .5); }
 .draft-go[data-team="blue"] { border-color: var(--ms-blue); background: var(--ms-blue); box-shadow: 0 0 18px rgb(61 125 255 / .5); }
 .draft-cancel { min-height: 30px; border: 1px solid rgb(242 237 228 / .2); background: none; color: var(--ms-faint); font: 700 12px/1 var(--ms-sans); cursor: pointer; }
-:is(.draft-go, .draft-cancel, .draft-release, .draft-demo-tabs button):focus-visible { outline: 2px solid var(--ms-amber); outline-offset: 2px; }
+:is(.draft-go, .draft-cancel, .draft-release, .draft-desk button, .draft-demo-tabs button):focus-visible { outline: 2px solid var(--ms-amber); outline-offset: 2px; }
 .draft-done { display: grid; gap: 8px; margin: 0; padding: 26px 12px; border: 1px dashed rgb(93 242 166 / .4); font: 700 14px/1.6 var(--ms-sans); text-align: center; color: var(--ms-dim); }
 .draft-done b { font: 800 12px/1 var(--ms-mono); letter-spacing: .3em; color: var(--ms-green); }
-/* the laser a picked card rides across on */
+
 .draft-fx { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
 .draft-trail { position: absolute; height: 3px; margin-top: -1.5px; border-radius: 2px; transform-origin: 0 50%; }
 .draft-trail[data-team="red"] { background: linear-gradient(90deg, transparent, var(--ms-laser) 40%, #fff); box-shadow: 0 0 16px var(--ms-laser); }
 .draft-trail[data-team="blue"] { background: linear-gradient(90deg, transparent, var(--ms-blue) 40%, #fff); box-shadow: 0 0 16px var(--ms-blue); }
 .draft-problem { margin: 0; padding: 10px clamp(14px, 2.4vw, 32px); border-top: 1px solid rgb(255 42 74 / .5); font: 700 13px/1.5 var(--ms-sans); color: #ff9aa8; }
-/* entrance — replays each time: the sides slide in from their edges, VS slams down, the cards are dealt */
-.draft[data-seen="true"] .draft-side[data-team="red"]:not([data-active]) { animation: draft-in-l .8s var(--ms-out) both; }
-.draft[data-seen="true"] .draft-side[data-team="blue"]:not([data-active]) { animation: draft-in-r .8s var(--ms-out) both; }
-.draft[data-seen="true"] .draft-side[data-team="red"][data-active] { animation: draft-in-l .8s var(--ms-out) both, draft-glow-r 1.6s .8s ease-in-out infinite; }
-.draft[data-seen="true"] .draft-side[data-team="blue"][data-active] { animation: draft-in-r .8s var(--ms-out) both, draft-glow-b 1.6s .8s ease-in-out infinite; }
+/* coming on screen: the teams slide in from either side, VS slams down, the cards are dealt */
+.draft[data-seen="true"] .draft-side[data-team="red"] { animation: draft-in-l .8s var(--ms-out) both; }
+.draft[data-seen="true"] .draft-side[data-team="blue"] { animation: draft-in-r .8s var(--ms-out) both; }
+.draft[data-seen="true"] .draft-side[data-team="red"][data-active] { animation: draft-in-l .8s var(--ms-out) both, draft-glow 1.6s .8s ease-in-out infinite; }
+.draft[data-seen="true"] .draft-side[data-team="blue"][data-active] { animation: draft-in-r .8s var(--ms-out) both, draft-glow 1.6s .8s ease-in-out infinite; }
 .draft[data-seen="true"] .draft-vs { animation: draft-vs .6s .3s cubic-bezier(.2, 1.6, .3, 1) both; }
 .draft[data-seen="true"] .draft-card { animation: draft-deal .5s calc(.35s + var(--i) * .05s) var(--ms-out) both; }
 @keyframes draft-in-l { from { opacity: 0; transform: translateX(-48px); } }
 @keyframes draft-in-r { from { opacity: 0; transform: translateX(48px); } }
 @keyframes draft-vs { from { opacity: 0; transform: scale(2.6); filter: blur(6px) drop-shadow(0 2px 8px rgb(0 0 0 / .85)); } }
 @keyframes draft-deal { from { opacity: 0; transform: translateY(18px) rotate(-3deg); } }
+@media (prefers-reduced-motion: reduce) { .draft-first-cursor, .draft-first-track > span, .draft-first-result { animation-duration: 1ms !important; animation-delay: 0s !important; } }
 /* phones: the pool on top, then red and blue side by side */
 @media (max-width: 900px) { .draft-field { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .draft-pool { grid-column: 1 / -1; order: -1; } }
 @media (max-width: 560px) {
   .draft-cards { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
-  .draft-captain-photo .agent-face { width: 70px; height: 70px; font-size: 19px; }
-  .draft-side { padding: 12px 10px; }
-  .draft-slot { grid-template-columns: 20px auto minmax(0, 1fr); gap: 8px; padding: 6px 8px; }
-  .draft-slot .draft-release { grid-column: 1 / -1; }
+  .draft-side-name { padding: 12px 12px 0; }
+  .draft-roster { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 12px 10px 12px; }
+  .draft-member.is-captain, .draft-side[data-team="blue"] .draft-member.is-captain { grid-column: 1 / -1; grid-row: auto; padding: 38px 8px 12px; }
+  .draft-member.is-captain .agent-face { width: 64px; height: 64px; font-size: 18px; }
+  .draft-member.is-captain strong { font-size: 17px; }
+  .draft-member { min-height: 112px; padding: 26px 4px 8px; }
+  .draft-member .agent-face { width: 40px; height: 40px; font-size: 12px; }
+  .draft-member strong { font-size: 12px; }
+  .draft-member-badge { right: 6px; top: 6px; padding: 3px 5px; font-size: 8px; }
+  .draft-desk { padding: 10px; } .draft-desk-label, .draft-desk-pick { width: 100%; margin: 0 0 4px; } .draft-desk button { flex: 1; }
+  .draft-first-track { width: 170px; }
 }
 .dossier-grid li[data-team="red"] { border-color: rgb(255 42 74 / .35); box-shadow: inset 0 2px 0 var(--ms-laser); }
 .dossier-grid li[data-team="blue"] { border-color: rgb(61 125 255 / .38); box-shadow: inset 0 2px 0 var(--ms-blue); }
@@ -925,9 +1001,8 @@ button.draft-card-face:hover { border-color: rgb(242 237 228 / .5); background: 
   .ms-head { gap: 28px; }
   .ms-title em { gap: 12px; letter-spacing: .14em; }
   .ms-title em::before { width: 22px; }
-  .ms-countdown { width: 100%; }
-  .ms-countdown-digits small { margin: 0 9px 0 4px; }
-  .ms-countdown-sec { display: none; }
+  .ms-clock { width: 100%; }
+  .ms-clock-cells { justify-content: space-between; }
   .term-bar { gap: 10px; padding: 0 12px; letter-spacing: .14em; }
   .term-lights { display: none; }
   .term-body { padding: 18px 16px; }

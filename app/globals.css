@@ -2965,6 +2965,9 @@ body:has(dialog[open]) .plan-switch-dock { visibility: hidden; }
 .admin-method button:focus-visible { outline: 3px solid #f5c842; outline-offset: 2px; }
 .admin-method button:disabled { cursor: progress; }
 .admin-method-options { display: grid; gap: 12px; padding: 14px 16px; border: 2px dashed #c9c4b8; background: #fff; }
+.admin-draws { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.admin-draws > span { color: #5b6470; font-size: 13px; font-weight: 800; }
+.admin-draws .button-danger { border-color: #d11a3a; background: #e8203f; color: #fff; }
 @media (max-width: 600px) { .admin-step { grid-template-columns: minmax(0, 1fr); } }
 
 /* ─── Boot screen (components/outing-loading.tsx): the IMF console coming on while the page loads ─── */

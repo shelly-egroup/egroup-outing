@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Avatar } from "./account-menu";
 import LoadingIndicator from "./loading-indicator";
 import { useOuting } from "./outing-provider";
-import { assignTeams, drawFirstPick, isEmail, normalEmail, otherTeam, TEAM_LABEL, TEAMS, teamCounts, withCaptains, type Captain, type Team, type TeamConfig, type TeamMap } from "@/lib/teams";
+import { assignTeams, drawFirstPick, isEmail, normalEmail, otherTeam, pickTurn, TEAM_LABEL, TEAMS, teamCounts, withCaptains, type Captain, type Team, type TeamConfig, type TeamMap } from "@/lib/teams";
 import { familyCount } from "@/lib/vote-summary";
 import type { PublicVote, VoteDetails } from "@/lib/trips";
 
@@ -71,15 +71,18 @@ function CaptainCard({ team, captain, rival, people, emails, accepted, saving, o
 /**
  * The teams, in the back office, as three steps: the captains (by default egroup.james for red and egroup.ivy for blue,
  * changeable here); how the teams are made — by the organisers, or by the captains picking on the front page, in turn from a
- * first pick drawn by lot or named, or freely; and going public. A line on top says what the front page shows right now. The
+ * first pick drawn by lot or named, or freely; going public; and, any time, live draws — one agent or everyone left — that
+ * go straight onto the team sheet and play on the front page. A line on top says what the front page shows right now. The
  * team sheet below holds everyone who has accepted, picked by hand or drawn at random, the captains fixed to their teams.
  */
 export default function AdminTeams({ votes, details, emails, ready }: { votes: Record<string, PublicVote>; details: Record<string, VoteDetails>; emails: Record<string, string | null>; ready: boolean }) {
-  const { teams, teamsReady, saveTeams, teamConfig, teamConfigReady, saveTeamConfig, connected } = useOuting();
+  const { teams, teamsReady, saveTeams, teamConfig, teamConfigReady, saveTeamConfig, connected, drawAgent, drawEveryone } = useOuting();
   const [draft, setDraft] = useState<TeamMap>({}), [dirty, setDirty] = useState(false), [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(""), [failed, setFailed] = useState("");
   const [configSaving, setConfigSaving] = useState(false), [configMessage, setConfigMessage] = useState(""), [configFailed, setConfigFailed] = useState("");
+  const [drawing, setDrawing] = useState(false), [confirmAll, setConfirmAll] = useState(false), [drawNote, setDrawNote] = useState(""), [drawFailed, setDrawFailed] = useState("");
   useEffect(() => { if (!dirty) setDraft(teams); }, [teams, dirty]);
+  useEffect(() => { if (!confirmAll) return; const timer = setTimeout(() => setConfirmAll(false), 4000); return () => clearTimeout(timer); }, [confirmAll]);
   const { captains } = teamConfig;
   const people = Object.entries(votes).sort(([, a], [, b]) => (a.displayName || "").localeCompare(b.displayName || "", "zh-Hant"));
   const uids = people.map(([uid]) => uid), fixed = withCaptains({}, captains), placed = withCaptains(draft, captains), counts = teamCounts(uids, placed);
@@ -92,6 +95,17 @@ export default function AdminTeams({ votes, details, emails, ready }: { votes: R
     try { await saveTeams(draft); setDirty(false); setMessage(teamConfig.published ? "分隊已儲存，首頁的特務名單同步更新。" : "分隊已儲存。首頁目前不顯示分隊，打開「前台顯示分隊」後才會公布。"); }
     catch (error) { setFailed(error instanceof Error ? error.message : "分隊沒有儲存，請稍後再試。"); }
     finally { setSaving(false); }
+  }
+  // the team on the clock, while the captains pick in turn: a live draw is made for them
+  const onClock = teamConfig.picking && teamConfig.turns && counts.open ? pickTurn(uids, placed, captains, teamConfig.firstPick || "red") || undefined : undefined;
+  async function liveDraw(all: boolean) {
+    if (all && !confirmAll) { setConfirmAll(true); return; }
+    setConfirmAll(false); setDrawing(true); setDrawNote(""); setDrawFailed("");
+    try {
+      if (all) { const placedNow = await drawEveryone(); setDrawNote(placedNow ? "剩下的 " + placedNow + " 人已隨機分進兩隊。" : "每個人都已經有隊伍了。"); }
+      else { const next = await drawAgent(onClock); setDrawNote(next ? "抽中 " + (votes[next.uid]?.displayName || "探員") + "，編入" + TEAM_LABEL[next.team] + "。" : "每個人都已經有隊伍了。"); }
+    } catch (error) { setDrawFailed(error instanceof Error ? error.message : "抽籤沒有完成，請稍後再試。"); }
+    finally { setDrawing(false); }
   }
   async function saveConfig(next: TeamConfig, done: string) {
     setConfigSaving(true); setConfigFailed(""); setConfigMessage("");
@@ -142,7 +156,7 @@ export default function AdminTeams({ votes, details, emails, ready }: { votes: R
             <Toggle label="輪流選" hint={teamConfig.turns ? "兩隊輪流：從先選的隊伍開始，一隊選一個。" : "不輪流：兩位隊長隨時都可以選人。"} on={teamConfig.turns} disabled={configSaving || !connected}
               onChange={on => { const firstPick = on && !teamConfig.firstPick ? drawFirstPick() : teamConfig.firstPick; saveConfig({ ...teamConfig, turns: on, firstPick }, on ? "已改為兩隊輪流選。" : "已改為隨時都可以選。"); }} />
             {teamConfig.turns && <div className="admin-teams-first">
-              <span><strong>誰先選</strong><small>{teamConfig.firstPick ? TEAM_LABEL[teamConfig.firstPick] + "先選，之後兩隊輪流。" : "還沒決定。"}</small></span>
+              <span><strong>誰先選</strong><small>{teamConfig.firstPick ? TEAM_LABEL[teamConfig.firstPick] + "先選，之後兩隊輪流；人數單數時也由" + TEAM_LABEL[teamConfig.firstPick] + "多選一位。" : "還沒決定。"}</small></span>
               <div className="admin-teams-switch" role="group" aria-label="先選的隊伍">
                 {TEAMS.map(team => <button key={team} type="button" data-team={team} aria-pressed={teamConfig.firstPick === team} disabled={configSaving || !connected} onClick={() => saveConfig({ ...teamConfig, firstPick: team }, "已指定" + TEAM_LABEL[team] + "先選。")}>{TEAM_LABEL[team]}先選</button>)}
               </div>
@@ -157,6 +171,21 @@ export default function AdminTeams({ votes, details, emails, ready }: { votes: R
           <h3>公開到首頁</h3>
           <Toggle label="前台顯示分隊" hint={teamConfig.published ? (teamConfig.picking ? "首頁出現分隊面板，隊長登入後就能選人。" : "首頁出現分隊面板，顯示兩隊名單。") : "關閉中：首頁不顯示任何分隊資訊。"} on={teamConfig.published} disabled={configSaving || !connected}
             onChange={on => saveConfig({ ...teamConfig, published: on }, on ? "已公開到首頁。" : "已從首頁收回。")} />
+        </div>
+      </li>
+      <li className="admin-step">
+        <span className="admin-step-no" aria-hidden="true">4</span>
+        <div className="admin-step-body">
+          <h3>現場抽籤</h3>
+          <p className="quiet">可選。結果直接寫進隊伍名單{teamConfig.published ? "，首頁分隊面板上的每個人同步看到抽籤動畫" : "；公開到首頁後，大家會在分隊面板上看到抽籤動畫"}。首頁的分隊面板上也有同樣的抽籤台，輪到的隊長也有。{onClock ? "現在輪到" + TEAM_LABEL[onClock] + "，抽一位會抽給" + TEAM_LABEL[onClock] + "。" : ""}</p>
+          <div className="admin-draws">
+            <button type="button" className="button button-dark" disabled={drawing || dirty || !connected || !counts.open} onClick={() => liveDraw(false)}>{onClock ? "幫" + TEAM_LABEL[onClock] + "抽一位" : "抽一位"}</button>
+            <button type="button" className={"button " + (confirmAll ? "button-danger" : "button-white")} disabled={drawing || dirty || !connected || !counts.open} onClick={() => liveDraw(true)}>{confirmAll ? "再按一次確認" : "一鍵隨機分隊"}</button>
+            <span>未分隊 {counts.open} 人</span>
+          </div>
+          {dirty && <p className="notice">下方隊伍名單有尚未儲存的變更，先儲存再抽籤。</p>}
+          {drawNote && <p className="notice" role="status">{drawNote}</p>}
+          {drawFailed && <p className="notice notice-error" role="alert">{drawFailed}</p>}
         </div>
       </li>
     </ol>
