@@ -126,7 +126,9 @@ function cord(x0, x1, y, burnt) {
 }
 const WIRE_Y = .3;   // the face-off wire of the last Bond card
 const WIRE_TO = TALL ? .58 : .56;   // where the wire's two burning ends meet
-const WIRE_BURN = .45;               // how long the wire burns before the button
+const LEAN = .22;                    // how far the camera leans in on the burning wire
+/** how much of the wire has burnt: from 007's last accent to the Mission's bass, quickening as the ends close in */
+const burnAt = (t) => { const x = clamp01((t - T.button) / (T.catch - T.button)); return mix(x, x * x, .55); };
 // Fuse 2: from the first montage cut to the white-out, a fuse burns along the bottom bar (in frame on 9:16)
 const BAR_Y = TALL ? SH * .955 : SH - PY / 2, M0 = T.montage[0].t;
 const fuse2 = (t) => { const u = clamp01((t - M0) / (T.title - .02 - M0)); return [SW * (.03 + .94 * (u < .8 ? u * .82 / .8 : .82 + .18 * ((u - .8) / .2) ** 1.5)), BAR_Y]; };
@@ -259,7 +261,7 @@ function titleCard(parent, en, cn, align) {
     n.style.filter = x < .5 ? `blur(${((.5 - x) * 2.4 * cqh).toFixed(2)}px)` : "none";
   };
 }
-shot(T.titles[0], T.button, (el) => {
+shot(T.titles[0], T.catch, (el) => {
   const c1 = $("div", "layer", el), red = $("div", "redfield", c1);
   const smoke1 = img(A("smoke.webp"), "smoke", c1); css(smoke1, { mixBlendMode: "multiply", opacity: .85 });
   const silA = silhouette(c1, A("agent-a-walk.webp"), 592 / 1200, "#050001");
@@ -291,7 +293,7 @@ shot(T.titles[0], T.button, (el) => {
     css(fA.s, { position: "absolute", left: "4%", bottom: "-36%", height: "132%" }); css(fB.s, { position: "absolute", right: "8%", bottom: "-36%", height: "132%" }); place(cards[3], "50%", "64%", .5);
   }
   const [a1, a2, a3, a4] = T.titles;
-  hit(a4, .6, .14);
+  hit(a4, .6, .14); hit(T.button, .5, .12, .2, "#ff8a96");   // the wire catches on 007's last accent
   return (t) => {
     const o1 = 1 - p(t, a2 - .12, a2 + .1), o2 = p(t, a2 - .12, a2 + .1) * (1 - p(t, a3 - .12, a3 + .1)), o3 = p(t, a3 - .12, a3 + .1) * (t < a4 ? 1 : 0);
     css(c1, { display: o1 > 0 ? "block" : "none" }); op(c1, o1); css(c2, { display: o2 > 0 ? "block" : "none" }); op(c2, o2); css(c3, { display: o3 > 0 ? "block" : "none" }); op(c3, o3);
@@ -306,23 +308,27 @@ shot(T.titles[0], T.button, (el) => {
     tf(arena, `scale(${(1.12 + .22 * p(t, a3 - .2, a4, E.inQ)).toFixed(4)}) rotate(${(-1.5 + 2 * p(t, a3 - .2, a4)).toFixed(2)}deg)`);
     tf(smoke3, `scale(${(1.3 + .4 * p(t, a3 - .2, a4)).toFixed(3)}) translateX(${(-4 * p(t, a3 - .2, a4)).toFixed(2)}%)`);
     t3(t, a3);
-    // the wire is a fuse: it catches at both ends and burns in to one point (drawWireBurn), which blows on the beat
-    const B = T.button, burn = p(t, B - WIRE_BURN, B, E.inQ);
+    // the wire is a fuse: on 007's last accent it catches at both ends and burns in to one point (drawWireBurn) while the
+    // Mission builds underneath; the camera leans in on it and the card sinks back into the dark until the ends meet
+    const B = T.button, burn = burnAt(t), lean = p(t, B, T.catch, E.inQ);
     wire.style.transformOrigin = `${WIRE_TO * 100}% 50%`;
     tf(wire, `scaleX(${(p(t, a4, a4 + .22, E.outE) * (1 - burn)).toFixed(3)})`);
-    op(wire, burn > 0 ? 1 : t > a4 + .85 ? .6 + .4 * Math.abs(Math.sin(t * 60)) : 1);
-    wire.style.filter = burn > 0 ? `brightness(${(1 + 2.2 * burn).toFixed(2)}) saturate(${(1 - .5 * burn).toFixed(2)})` : "none";
+    op(wire, t >= B ? 1 : t > a4 + .85 ? .6 + .4 * Math.abs(Math.sin(t * 60)) : 1);
+    wire.style.filter = t >= B ? `brightness(${(1 + 2.2 * burn).toFixed(2)}) saturate(${(1 - .5 * burn).toFixed(2)})` : "none";
+    c4.style.transformOrigin = `${WIRE_TO * 100}% ${WIRE_Y * 100}%`; tf(c4, `scale(${(1 + LEAN * lean).toFixed(4)})`);
     tf(fA.wrap, `translateX(${(-6 * (1 - p(t, a4, a4 + 1, E.outE))).toFixed(2)}%)`); tf(fB.wrap, `translateX(${(6 * (1 - p(t, a4, a4 + 1, E.outE))).toFixed(2)}%)`);
-    t4(t, T.titleText);
+    const dim = 1 - .62 * p(t, B + .3, T.catch - .2); op(fA.wrap, dim); op(fB.wrap, dim);
+    t4(t, T.titleText); op(cards[3], 1 - .55 * p(t, B + .6, T.catch - .1));
   };
 });
 
 /** 007 hands over to the Mission in one light: the last card's wire burns in from both ends like a fuse */
 function drawWireBurn(t) {
-  const B = T.button; if (t < B - WIRE_BURN || t >= B) return;
-  const X = WIRE_TO * PW, Y = PY + WIRE_Y * PH, sc = (te) => 1 - E.inQ(clamp01((te - (B - WIRE_BURN)) / WIRE_BURN));
-  fuseHead(t, B - WIRE_BURN, (te) => [X - X * sc(te), Y], .85, 170);
-  fuseHead(t, B - WIRE_BURN, (te) => [X + (PW - X) * sc(te), Y], .85, 170);
+  const B = T.button; if (t < B || t >= T.catch) return;
+  // the card leans in around the meeting point, so the two burning ends ride the same zoom
+  const X = WIRE_TO * PW, Y = PY + WIRE_Y * PH, s = 1 + LEAN * p(t, B, T.catch, E.inQ), size = .85 + .55 * burnAt(t);
+  fuseHead(t, B, (te) => [X - X * (1 - burnAt(te)) * s, Y], size, 170);
+  fuseHead(t, B, (te) => [X + (PW - X) * (1 - burnAt(te)) * s, Y], size, 170);
 }
 
 // ════ ACT II — the mission ════
@@ -480,7 +486,7 @@ shot(T.mission, T.montage[0].t + .4, (el) => {
   }
   const scrim = $("i", "layer", el); css(scrim, { background: TALL ? "linear-gradient(0deg, rgb(3 3 4 / .92) 0 20%, rgb(3 3 4 / .3) 40%, rgb(3 3 4 / 0) 58%)" : "linear-gradient(90deg, rgb(3 3 4 / .9) 0 38%, rgb(3 3 4 / .25) 70%, rgb(3 3 4 / 0))", opacity: 0 });
   const line = $("div", "orders", el), l1 = $("div", "line", line);
-  const typeChars = [..."你的任務，如果你選擇接受——"].map((c) => $("span", "", l1, { textContent: c }));
+  const typeChars = [..."你的任務——"].map((c) => $("span", "", l1, { textContent: c }));   // …finished before the title
   const big = $("div", "orders", el), b1 = $("div", "big", big); b1.innerHTML = "10.29 攻佔<em>六度空間</em>";
   const sweep = $("i", "flare warm", el);
   if (TALL) { css(line, { left: "7%", top: "8%" }); l1.style.fontSize = "4.6cqw"; css(big, { left: "7%", top: "78%" }); b1.style.fontSize = "15cqw"; }
@@ -544,10 +550,6 @@ cut("arena", null, (el) => {
     cap(t, M.arena.t + .3);
   };
 });
-cut("gear", null, (el) => {
-  const bg = plate(el, A("gear-rack.webp"), TALL ? "46% 50%" : null); const cap = caption(el, "GEAR", "感應背心・雷射槍");
-  return (t) => { const l = t - M.gear.t; tf(bg, `scale(${mix(1.22, 1.05, p(l, 0, .4, E.outE)).toFixed(4)}) rotate(${mix(-1.2, 0, p(l, 0, .4, E.outE)).toFixed(2)}deg)`); cap(t, M.gear.t + .02); };
-});
 cut("teams", null, (el) => {
   const bg = plate(el, A("walkout.webp"), TALL ? "50% 50%" : null); const fl = $("i", "flare", el); const cap = caption(el, "10.29 THU 12:00", "週四中午・六度空間集合");
   return (t) => { const l = t - M.teams.t; tf(bg, `scale(${mix(1.04, 1.16, p(l, 0, .8, E.outQ)).toFixed(4)})`); css(fl, { left: "50%", top: "44%" }); op(fl, .55 + .25 * Math.sin(l * 9)); tf(fl, `scaleX(${(.8 + .3 * p(l, 0, .8)).toFixed(3)})`); cap(t, M.teams.t + .04); };
@@ -572,20 +574,63 @@ function duel(el, cutSrc, muzzle, color, tShots, capEn, capCn) {
     if (cap) cap(t, t0 + .04);
   };
 }
-shot(M.fireA.t, M.target.t, (el) => {
+shot(M.fireA.t, M.aimB.t, (el) => {
   const u = duel(el, "cut-fire-a.webp", [.194, .439], "", [M.fireA.t + .01, M.fireA2.t], "VIP", "保護老闆");
   hit(M.fireA.t, 1.1, .12, .16, "#ff3a4f"); hit(M.fireA2.t, 1.1, .12, .16, "#ff3a4f");
-  return (t) => u(t, M.fireA.t, M.target.t - M.fireA.t);
+  return (t) => u(t, M.fireA.t, M.aimB.t - M.fireA.t);
 });
-cut("target", null, (el) => {
-  const bg = plate(el, A("target-hit.webp"));
-  sparkBursts.push([M.target.t, PW * .6, PH * .5, 90, 60, "red"]); hit(M.target.t, 1.6, .16, .4, "#ffd0d0");
-  return (t) => { const l = t - M.target.t; tf(bg, `scale(${mix(1.25, 1.08, p(l, 0, .4, E.outE)).toFixed(4)})`); };
-});
-shot(M.aimB.t, M.vault.t, (el) => {
+shot(M.aimB.t, M.faceoff.t, (el) => {
   const u = duel(el, "cut-aim-b.webp", [.144, .475], "blue", [M.aimB2.t], null);
   hit(M.aimB2.t, 1, .12, .16, "#9fc2ff");
-  return (t) => u(t, M.aimB.t, M.vault.t - M.aimB.t);
+  return (t) => u(t, M.aimB.t, M.faceoff.t - M.aimB.t);
+});
+// the captains face off in one frame — red turned to face blue — each aiming at the other; on the beat both fire and the two
+// beams meet in the middle (T.clash)
+cut("faceoff", null, (el) => {
+  const bg = plate(el, A("arena.webp")); bg.style.filter = "blur(.45cqh) brightness(.5) saturate(1.15)";
+  const tint = $("i", "layer", el); tint.style.background = "linear-gradient(90deg, rgb(255 30 60 / .32), rgb(255 30 60 / 0) 42%, rgb(40 110 255 / 0) 58%, rgb(40 110 255 / .32))"; tint.style.mixBlendMode = "screen";
+  const fog = img(A("smoke.webp"), "smoke", el); css(fog, { opacity: .2 });
+  const red = img(A("cut-fire-a.webp"), "", el), blue = img(A("cut-aim-b.webp"), "", el);
+  for (const e of [red, blue]) e.style.webkitMaskImage = e.style.maskImage = "linear-gradient(to bottom, #000 70%, transparent 97%)";
+  const AR = 1672 / 941, box = (e, w, h, l, tp) => css(e, { position: "absolute", width: w + "px", height: h + "px", left: l + "px", top: tp + "px" });
+  let mR, mB;   // where the beams start (picture fractions)
+  if (TALL) {
+    // a phone is too narrow for both: red, then blue, each in close-up aiming out of frame at the other; the beams then come
+    // in from the edges (red's face sits at u .41 of the turned image, blue's at u .56)
+    const HR = PH * .62, HB = PH * .6;
+    box(red, HR * AR, HR, .32 * PW - .41 * HR * AR, .42 * PH - .3 * HR);
+    box(blue, HB * AR, HB, .68 * PW - .56 * HB * AR, .45 * PH - .3 * HB);
+    mR = [-.05, .44]; mB = [1.05, .44];
+  } else {
+    const H = PH * .84, W = H * AR, y0 = .41;
+    mR = [.37, y0]; mB = [.63, y0 + .015];
+    box(red, W, H, mR[0] * PW - (1 - .194) * W, mR[1] * PH - .439 * H);
+    box(blue, W, H, mB[0] * PW - .144 * W, mB[1] * PH - .475 * H);
+  }
+  const beamR = beam(el), beamB = beam(el, "blue"), bloomR = $("i", "bloom", el), bloomB = $("i", "bloom blue", el), ring = $("i", "shock", el);
+  const cx = PW / 2, cy = (mR[1] + mB[1]) / 2 * PH;
+  if (TALL) hit(M.faceoff.t + (T.clash - M.faceoff.t) / 2, .6, .1);
+  hit(T.clash, 1.7, .2, .5, "#ffffff");
+  sparkBursts.push([T.clash, cx, cy, 70, 64, "red"], [T.clash, cx, cy, 70, 64, "blue"]);
+  const shoot = (e, t, x0, y0b) => {
+    const k = t - T.clash; if (k < 0 || k > .55) { op(e, 0); return; }
+    const len = Math.hypot(cx - x0, cy - y0b), ang = Math.atan2(cy - y0b, cx - x0) * 180 / Math.PI;
+    css(e, { left: x0 + "px", top: y0b + "px", width: len + "px" });
+    tf(e, `rotate(${ang.toFixed(2)}deg) scaleX(${E.outE(clamp01(k / .06)).toFixed(3)}) scaleY(${(1.4 + .5 * Math.sin(k * 90)).toFixed(2)})`); op(e, 1 - p(k, .3, .55));
+  };
+  return (t) => {
+    const l = t - M.faceoff.t, d = p(l, 0, M.faceoff.end - M.faceoff.t, E.outQ), lean = 2 * p(t, M.faceoff.t, T.clash, E.inQ);
+    tf(bg, `scale(${mix(1.14, 1.2, d).toFixed(4)})`);
+    if (TALL) {
+      const mid = M.faceoff.t + (T.clash - M.faceoff.t) / 2;
+      op(red, t < mid ? 1 : 0); op(blue, t >= mid && t < T.clash ? 1 : 0);
+      tf(red, `scale(${mix(1.07, 1, p(t, M.faceoff.t, mid, E.outC)).toFixed(4)}) scaleX(-1)`); tf(blue, `scale(${mix(1.07, 1, p(t, mid, T.clash, E.outC)).toFixed(4)})`);
+    } else { tf(red, `translateX(${lean.toFixed(2)}%) scaleX(-1)`); tf(blue, `translateX(${(-lean).toFixed(2)}%)`); }
+    shoot(beamR, t, mR[0] * PW, mR[1] * PH); shoot(beamB, t, mB[0] * PW, mB[1] * PH);
+    bloomAt(bloomR, t, T.clash, cx - 1.2 * cqh, cy, 1.9, .5); bloomAt(bloomB, t, T.clash, cx + 1.2 * cqh, cy, 1.9, .5);
+    const k = p(t, T.clash, T.clash + .5, E.outC); css(ring, { left: cx + "px", top: cy + "px" });
+    op(ring, t >= T.clash && k < 1 ? (1 - k) * .9 : 0); tf(ring, `scale(${(.2 + 6 * k).toFixed(3)})`);
+  };
 });
 cut("tea", null, (el) => {
   const bg = plate(el, A("tea.webp")); const fl = $("i", "flare warm", el); const cap = caption(el, "AFTER", "戰後・飯店下午茶");
@@ -651,6 +696,18 @@ cut("stuntB", null, (el) => {
     R.frame(mix(1.24, 1.12, d), TALL ? .6 : .5, .5, TALL ? mix(.53, .47, d) : mix(.54, .46, d), .5);   // 9:16: her, gun hand to face
     const [mx, my] = R.at(...SLIDE_MUZZLE);
     fire(shotBeam, t, T.slideFire, mx, my, 183.6, 1.3 * Math.max(PW, PH), .3); bloomAt(bl, t, T.slideFire, mx, my, 1.3, .26);
+  };
+});
+// before the title the briefing's line comes back to finish itself — 如果你選擇接受…… — and the title is the answer
+shot(T.accept[0] - .25, T.title, (el) => {
+  const shade = $("i", "layer", el); shade.style.background = "linear-gradient(0deg, rgb(3 3 4 / .8), rgb(3 3 4 / .28) 34%, rgb(3 3 4 / 0) 56%)";
+  const box = $("div", "accept", el), en = $("small", "", box, { textContent: "SHOULD YOU CHOOSE TO ACCEPT IT" }), line = $("p", "", box);
+  const chars = [..."如果你選擇接受……"].map((c) => $("span", "", line, { textContent: c })), caret = $("i", "caret", line);
+  return (t) => {
+    const [a, b] = T.accept;
+    op(shade, p(t, a - .25, a + .1)); reveal(en, t, a - .2, .45, 1);
+    chars.forEach((c, i) => { c.style.display = t >= a + (b - a) * i / chars.length ? "inline" : "none"; });
+    op(caret, t < b ? 1 : Math.floor((t - b) / .2) % 2 ? 0 : 1);
   };
 });
 /** droplets thrown up and back off her knees and heels, in the plate's own coordinates so they ride the camera move */
@@ -725,11 +782,15 @@ shot(T.title, T.duration + 1, (el) => {
   const vow = $("p", "disavow", frame), vowChars = [...VOW].map((c, i) => $("span", i >= HOT && i < HOT + 9 ? "hot" : "", vow, { textContent: c }));
   const msg = $("div", "destruct", frame), msgLine = $("p", "", msg), msgEn = $("small", "", msg, { textContent: "THIS MESSAGE WILL SELF-DESTRUCT" });
   [..."本訊息將自動銷毀"].forEach((c) => $("span", "", msgLine, { textContent: c }));
-  const msgCur = $("i", "cur", msgLine);
+  const count = $("b", "count", msgLine), alarm = $("i", "layer alarm", frame);
+  // the billing block, as under any one-sheet
+  const billing = $("div", "billing", frame);
+  billing.innerHTML = "<p>EGROUP 出品<b>·</b>秋遊特務製作委員會<b>·</b>主演 紅不讓隊長 × 刀槍BLUE隊長<b>·</b>全體探員</p><p>拍攝地 六度空間 LAZERTREKS<b>·</b>戰後補給 飯店下午茶<b>·</b>10.29 僅此一場</p>";
   hit(T.title, 2.6, .3, 1);                          // the fuse reaches the end: the blast
   sparkBursts.push([T.title, PW / 2, PH * (TALL ? .26 : .26), 90, TALL ? 90 : 76, ""], [T.date, PW / 2, PH * (TALL ? .42 : .54), 50, 50, ""]);
   const SHOT = T.laser - T.title, RAISE = SHOT + .46;   // the agent fires, the laser dot lands on 特 — then he raises his pistol
-  hit(T.laser, .6, .1, .22, "#ff8a96"); hit(T.date, 1.5, .2, .42, "#fff3e0"); hit(T.destruct, 1.4, .2, .38, "#ff8a96"); hit(T.burn, .8, .16, .22, "#ffb04a");
+  hit(T.laser, .6, .1, .22, "#ff8a96"); hit(T.date, 1.5, .2, .42, "#fff3e0"); hit(T.destruct, 1.9, .22, .75, "#ffffff");   // ignition
+  T.countdown.forEach((c, i) => hit(c, .5 + .25 * i, .1, .07 + .04 * i, "#ff4a5f")); hit(T.burn, .8, .16, .22, "#ffb04a");
   const tfb = (e, v) => { e.style.transformBox = "fill-box"; e.style.transformOrigin = "center"; e.style.transform = v; };
   /** a slam: in large and hot, settled in a third of a second */
   const slam = (e, l, from, dur = .3) => {
@@ -771,14 +832,21 @@ shot(T.title, T.duration + 1, (el) => {
     // the date, on the brass: slammed in, a laser reads across it, then where and when
     const ld = t - T.date; slam(date, ld, 1.55, .3);
     const sc = p(ld, .1, .6, E.ioC); css(scan, { left: mix(-4, 104, sc).toFixed(2) + "%" }); op(scan, ld > .1 ? Math.sin(Math.PI * sc) : 0);
-    reveal(where, t, T.date + .26, .5, 1);
-    // the classic line, typed under the date; it gives its place to the self-destruct on the last chord
-    const [va, vb] = T.disavow, gone = p(t, T.destruct - .06, T.destruct + .08);
+    reveal(where, t, T.date + .26, .5, 1); reveal(billing, t, T.date + .45, .8, .6);
+    // the classic line, typed under the date; it gives its place to the self-destruct warning when the count starts
+    const [va, vb] = T.disavow, C0 = T.countdown[0], gone = p(t, C0 - .06, C0 + .08);
     op(vow, p(t, va - .12, va) * (1 - gone)); vow.style.filter = gone > 0 ? `blur(${(gone * 1.4 * cqh).toFixed(2)}px)` : "none";
     vowChars.forEach((c, i) => { c.style.visibility = t >= va + (vb - va) * i / vowChars.length ? "visible" : "hidden"; });
-    reveal(msgEn, t, T.destructEn, .35, 1); op(msg, t >= T.destructEn - .02 ? 1 : 0);
-    const lm = t - T.destruct; slam(msgLine, lm, 1.45, .28);
-    op(msgCur, lm < .3 ? 0 : Math.floor((lm - .3) / .22) % 2 ? 0 : 1);
+    // the self-destruct: five counts on the Mission's beat — a red alarm pulse and the frame jolting, harder each time — then
+    // ignition on 007's chord
+    const k = T.countdown.reduce((n, c, i) => (t >= c ? i : n), -1), lk = k >= 0 ? t - T.countdown[k] : 9;
+    op(msg, t >= C0 - .02 ? 1 : 0); reveal(msgEn, t, C0 + .08, .35, 1); slam(msgLine, t - C0, 1.45, .28);
+    count.textContent = t >= T.destruct ? "0" : String(5 - Math.max(0, k));
+    tf(count, `scale(${mix(1.8, 1, p(t >= T.destruct ? t - T.destruct : lk, 0, .18, E.outE)).toFixed(3)})`);
+    const ignite = t >= T.destruct ? Math.exp(-(t - T.destruct) / .35) : 0;
+    op(alarm, k >= 0 ? Math.max(Math.exp(-lk / .3) * (.3 + .1 * k), ignite) : 0);
+    const jolt = k >= 0 && t < T.destruct && lk < .1 ? (.4 + .3 * k) * (hash(Math.floor(t * 48), k + 3) - .5) * 2 : 0;
+    frame.style.translate = `${jolt.toFixed(2)}% 0`;
     op(residue, 0);
   };
 });
@@ -874,7 +942,7 @@ function seek(t) {
   if (titleFuse) { const tp = titleFuse(t); if (tp) fuseHead(t, T.title, (te) => titleFuse(Math.max(te, T.title)) || tp, 1.1); }
   embers(t, T.title, T.burn + .2, 46, .7);
 }
-const fast = [[T.dots[0] - .05, T.irisOpen + .3], [T.turn - .1, T.titles[0] + .5], [T.titles[3], T.titles[3] + .3], [T.button - WIRE_BURN - .05, T.catch + .5], [T.cardA, T.cardB + .3], [T.missionLine, T.missionLine + .4], [T.montage[0].t, T.title + 1.2], [T.laser - .05, T.laser + .5], [T.date - .05, T.date + .5], [T.destruct - .05, T.destruct + .45]];
+const fast = [[T.dots[0] - .05, T.irisOpen + .3], [T.turn - .1, T.titles[0] + .5], [T.titles[3], T.titles[3] + .3], [T.button - .05, T.button + .4], [T.catch - .3, T.catch + .5], [T.cardA, T.cardB + .3], [T.missionLine, T.missionLine + .4], [T.montage[0].t, T.title + 1.2], [T.laser - .05, T.laser + .5], [T.date - .05, T.date + .5], [T.clash - .05, T.clash + .5], ...T.countdown.map((c) => [c - .02, c + .2]), [T.destruct - .05, T.destruct + .45]];
 const samplesAt = (t) => (fast.some(([a, b]) => t >= a && t <= b) ? 8 : 4);
 
 await document.fonts.load('900 100px "Noto Serif TC"', "今年秋天兩位老闆一個戰場只有一隊能贏秋遊特務一如往常若你被雷射擊中主辦單位將否認知情");

@@ -9,14 +9,16 @@
 // sits on a beat measured in these takes, so the recordings play at their own tempo, untouched. timeline.json "music":
 //   bond     007 2.6–13.3 s → 0 s: the dark intro under the dots and the barrel; the band comes in on the shot (7.64 s → 5.04 s);
 //            the cards change with its chords (every 0.83 s); its accent at 13.04 s is the last card's button (→ 10.44 s), where
-//            it hands straight over — the same beat is the Mission's first bass note — and rings out under it in a hall.
-//   mission  the Mission 12.03–33.97 s → 10.40 s, one take with no stops: its bass comes in on the button (12.07 s → 10.44 s,
-//            the wire's flash and the fuse catching), the briefing runs on its beats, the montage starts on the drum fill
-//            (17.28 s → 15.65 s), the action on the full band (21.05 s → 19.42 s), the stunts on its strongest accent
-//            (26.16 s → 24.54 s), the title on the accent at 28.73 s (→ 27.10 s, the fuse reaching its end) and the date on
-//            30.02 s (→ 28.39 s); it carries a little more under the end frame and stops on its accent at 33.85 s (→ 32.22 s)…
+//            the wire catches: from there the band fades away over a second and a half and its accent rings in a hall…
+//   mission  …while the Mission comes up underneath, one take with no stops from 8.6 s (→ 10.44 s): its bongos rise from
+//            almost nothing to full as the wire burns in, and its bass (12.07 s → 13.91 s) is the flash and the fuse catching;
+//            the briefing runs on its beats, the montage starts on the drum fill (17.28 s → 19.12 s), the action on the full band
+//            (21.05 s → 22.89 s), the stunts on its strongest accent (26.16 s → 28.01 s), the title on the accent at 28.73 s
+//            (→ 30.57 s, the fuse reaching its end) and the date on 30.02 s (→ 31.86 s); the classic line is typed in its
+//            melody's pause, the self-destruct warning comes with the melody's return (34.92 s → 36.76 s), and it stops on the
+//            accent at 36.42 s (→ 38.26 s)…
 //   coda     …where 007's last chord (101.02 s) is the button under the self-destruct and rings on through the burn.
-// No black and no silence anywhere: one song hands to the other on a shared downbeat, and the end is the loudest place.
+// No black and no silence anywhere: the songs cross under a build, and the end is the loudest place.
 // 007 is in F♯ minor and moves up a semitone (pitch only, the tempo stays) to G minor — the Mission's key — so the two meet
 // without a clash.
 //
@@ -171,18 +173,20 @@ const piece = (src, { from, to, semitones = 0 }, extra, out) =>
   run(["-i", f(src + "-clean.wav"), "-af", `atrim=start=${from}:end=${to},asetpts=PTS-STARTPTS${pitch(semitones)},${extra}`, "-c:a", "pcm_f32le", f(out)]);
 const B = MU.bond, M = MU.mission, C = MU.coda;
 const bondButton = T.button - B.at;                       // where 007's last accent falls, relative to the piece
-piece("bond", B, `afade=t=in:d=0.25,afade=t=out:st=${(bondButton + 0.04).toFixed(3)}:d=0.16`, "bond.wav");   // the ring carries its last accent
+piece("bond", B, `afade=t=in:d=0.25,afade=t=out:st=${(bondButton + 0.05).toFixed(3)}:d=1.5:curve=hsin`, "bond.wav");   // the band fades under the build
 piece("bond", { ...B, from: B.from + bondButton - 0.3, to: B.from + bondButton + 0.35 }, "afade=t=in:d=0.04,afade=t=out:st=0.5:d=0.15", "bond-ring.wav");
 const missionEnd = M.to - M.from;
 piece("mission", M, `afade=t=in:d=0.04,afade=t=out:st=${(missionEnd - 0.07).toFixed(3)}:d=0.07`, "mission.wav");
 /** a gain envelope (piece time → linear gain), smooth to the sample, applied in place */
 function shape(file, gainAt) { const x = decode(f(file)); for (let i = 0; i < x.length; i++) x[i] *= gainAt(i / SR); writeWav(f(file), [x]); }
 const ramp = (t, a, b, from, to) => t <= a ? from : t >= b ? to : from + (to - from) * (0.5 - 0.5 * Math.cos(Math.PI * (t - a) / (b - a)));
-// the music never stops for the end, it draws breath: a fifth of a second down before the title and (less) before the date,
-// and from the title on it plays 3 dB up — the end frame is the loudest place in the film
+// the Mission's bongos rise from 6 dB under to 7 dB over their own level (about the band's) while the wire burns, slow at first; the music never stops for the end,
+// it draws breath: a fifth of a second down before the title and (less) before the date, and from the title on it plays 3 dB
+// up — the end frame is the loudest place in the film
 {
-  const tt = T.title - M.at, td = T.date - M.at, UP = 1.41, DIP = 0.5;
-  shape("mission.wav", (t) => t < tt - 0.3 ? 1 : t < tt ? (t < tt - 0.06 ? ramp(t, tt - 0.3, tt - 0.22, 1, DIP) : ramp(t, tt - 0.06, tt, DIP, UP))
+  const tc = T.catch - M.at, tt = T.title - M.at, td = T.date - M.at, UP = 1.41, DIP = 0.5;
+  shape("mission.wav", (t) => t < tc ? Math.pow(10, (-6 + 13 * Math.pow(t / tc, 1.4)) / 20)
+    : t < tt - 0.3 ? 1 : t < tt ? (t < tt - 0.06 ? ramp(t, tt - 0.3, tt - 0.22, 1, DIP) : ramp(t, tt - 0.06, tt, DIP, UP))
     : t < td - 0.22 ? UP : t < td ? (t < td - 0.05 ? ramp(t, td - 0.22, td - 0.16, UP, UP * 0.7) : ramp(t, td - 0.05, td, UP * 0.7, UP)) : UP);
 }
 piece("mission", { ...M, from: M.to - 0.4, to: M.to }, "afade=t=in:d=0.02,afade=t=out:st=0.33:d=0.07", "mission-ring.wav");
