@@ -351,7 +351,7 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
   matchStrike(C.destruct - 0.06); impact(C.destruct, 1.5); crash(C.destruct, 0.4, 2.6);
   whoosh(C.destruct, 0.9, { f0: 120, f1: 2400, vel: 0.45, p0: 0, p1: 0, q: 0.7 });
   whoosh(C.burn + 0.04, 1.3, { f0: 160, f1: 2600, vel: 0.5, p0: -0.2, p1: 0.2, q: 0.7 });
-  crackle(C.burn, 1.9, 0.72);
+  impact(C.burn, 1.2); crackle(C.burn, 1.9, 0.72);
   whoosh(C.burn + 1.25, 1.0, { f0: 2600, f1: 240, vel: 0.3, p0: 0.5, p1: -0.5 });
 
   return ctx.startRendering();

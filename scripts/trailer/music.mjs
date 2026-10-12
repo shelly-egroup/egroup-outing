@@ -14,10 +14,10 @@
 //            almost nothing to full as the wire burns in, and its bass (12.07 s → 13.91 s) is the flash and the fuse catching;
 //            the briefing runs on its beats, the montage starts on the drum fill (17.28 s → 19.12 s), the action on the full band
 //            (21.05 s → 22.89 s), the stunts on its strongest accent (26.16 s → 28.01 s), the title on the accent at 28.73 s
-//            (→ 30.57 s, the fuse reaching its end) and the date on 30.02 s (→ 31.86 s); the classic line is typed in its
-//            melody's pause, the self-destruct warning comes with the melody's return (34.92 s → 36.76 s), and it stops on the
-//            accent at 36.42 s (→ 38.26 s)…
-//   coda     …where 007's last chord (101.02 s) is the button under the self-destruct and rings on through the burn.
+//            (→ 30.57 s, the fuse reaching its end) and the date on 30.02 s (→ 31.86 s); the classic line holds as its melody
+//            returns (34.92 s → 36.76 s), the self-destruct counts down one per two beats while that phrase is sung out, and the
+//            end is its own 燈燈 — the next section's first two hits: 燈 (42.90 s → 44.74 s) the count hits zero and ignites,
+//            燈 (43.22 s → 45.06 s) the frame catches fire — where it stops (before the third) and rings in the room.
 // No black and no silence anywhere: the songs cross under a build, and the end is the loudest place.
 // 007 is in F♯ minor and moves up a semitone (pitch only, the tempo stays) to G minor — the Mission's key — so the two meet
 // without a clash.
@@ -171,33 +171,33 @@ const inHall = (from, to) => run(["-i", f(from), "-i", f("hall.wav"), "-filter_c
 const pitch = (n) => n ? `,rubberband=pitch=${SEMI(n).toFixed(7)}:pitchq=quality:transients=crisp` : "";
 const piece = (src, { from, to, semitones = 0 }, extra, out) =>
   run(["-i", f(src + "-clean.wav"), "-af", `atrim=start=${from}:end=${to},asetpts=PTS-STARTPTS${pitch(semitones)},${extra}`, "-c:a", "pcm_f32le", f(out)]);
-const B = MU.bond, M = MU.mission, C = MU.coda;
+const B = MU.bond, M = MU.mission;
 const bondButton = T.button - B.at;                       // where 007's last accent falls, relative to the piece
-piece("bond", B, `afade=t=in:d=0.25,afade=t=out:st=${(bondButton + 0.05).toFixed(3)}:d=1.5:curve=hsin`, "bond.wav");   // the band fades under the build
-piece("bond", { ...B, from: B.from + bondButton - 0.3, to: B.from + bondButton + 0.35 }, "afade=t=in:d=0.04,afade=t=out:st=0.5:d=0.15", "bond-ring.wav");
+// its last accent holds one chord for 0.8 s and its next phrase starts at 13.87 s: the chord rings out whole, the band stops just
+// before that phrase, and the chord's own reverb carries the tail on under the Mission's rising bongos
+const HOLD = 0.8;
+piece("bond", B, `afade=t=in:d=0.25,afade=t=out:st=${(bondButton + HOLD - 0.2).toFixed(3)}:d=0.3:curve=hsin`, "bond.wav");
+piece("bond", { ...B, from: B.from + bondButton - 0.1, to: B.from + bondButton + HOLD }, `afade=t=in:d=0.04,afade=t=out:st=${(HOLD - 0.02).toFixed(3)}:d=0.12`, "bond-ring.wav");
 const missionEnd = M.to - M.from;
 piece("mission", M, `afade=t=in:d=0.04,afade=t=out:st=${(missionEnd - 0.07).toFixed(3)}:d=0.07`, "mission.wav");
 /** a gain envelope (piece time → linear gain), smooth to the sample, applied in place */
 function shape(file, gainAt) { const x = decode(f(file)); for (let i = 0; i < x.length; i++) x[i] *= gainAt(i / SR); writeWav(f(file), [x]); }
 const ramp = (t, a, b, from, to) => t <= a ? from : t >= b ? to : from + (to - from) * (0.5 - 0.5 * Math.cos(Math.PI * (t - a) / (b - a)));
-// the Mission's bongos rise from 6 dB under to 7 dB over their own level (about the band's) while the wire burns, slow at first; the music never stops for the end,
+// the Mission's bongos rise from 8 dB under to 7 dB over their own level (about the band's) while the wire burns, slow at first; the music never stops for the end,
 // it draws breath: a fifth of a second down before the title and (less) before the date, and from the title on it plays 3 dB
 // up — the end frame is the loudest place in the film
 {
   const tc = T.catch - M.at, tt = T.title - M.at, td = T.date - M.at, UP = 1.41, DIP = 0.5;
-  shape("mission.wav", (t) => t < tc ? Math.pow(10, (-6 + 13 * Math.pow(t / tc, 1.4)) / 20)
+  shape("mission.wav", (t) => t < tc ? Math.pow(10, (-8 + 15 * Math.pow(t / tc, 1.5)) / 20)
     : t < tt - 0.3 ? 1 : t < tt ? (t < tt - 0.06 ? ramp(t, tt - 0.3, tt - 0.22, 1, DIP) : ramp(t, tt - 0.06, tt, DIP, UP))
     : t < td - 0.22 ? UP : t < td ? (t < td - 0.05 ? ramp(t, td - 0.22, td - 0.16, UP, UP * 0.7) : ramp(t, td - 0.05, td, UP * 0.7, UP)) : UP);
 }
 piece("mission", { ...M, from: M.to - 0.4, to: M.to }, "afade=t=in:d=0.02,afade=t=out:st=0.33:d=0.07", "mission-ring.wav");
-// 007's last chord, ringing on under the self-destruct and the burn
-const codaLen = Math.min(C.to - C.from, T.duration - C.at);
-piece("bond", { ...C, to: C.from + codaLen }, `afade=t=in:d=0.01,afade=t=out:st=${(codaLen - 1).toFixed(3)}:d=1`, "coda.wav");
 // each cut-off runs into the hall; and every piece gets a quiet stereo send into it, for width and a room to sit in
-for (const k of ["bond-ring", "mission-ring", "bond", "mission", "coda"]) inHall(k + ".wav", k + "-hall.wav");
+for (const k of ["bond-ring", "mission-ring", "bond", "mission"]) inHall(k + ".wav", k + "-hall.wav");
 
-// 4 · balance by loudness: the 007 cold open a touch under the Mission's action, 007's last chord over it, the hits under all
-const target = { bond: -17, mission: -15.5, coda: -14.5 };
+// 4 · balance by loudness: the 007 cold open a touch under the Mission's action, the hits under all
+const target = { bond: -17, mission: -15.5 };
 const gain = {};
 for (const [k, lufs] of Object.entries(target)) { const { i } = loudness(f(k + ".wav")); gain[k] = lufs - i; console.log(k, "measured", i, "LUFS → gain", gain[k].toFixed(2), "dB"); }
 const sfx = path.join(BUILD, "sfx.wav");
@@ -205,17 +205,15 @@ if (!fs.existsSync(sfx)) { console.error("render the sound design first: node sc
 const sfxGain = -22 - loudness(sfx).i;
 
 // 5 · lay everything on the timeline and mix
-// [file, at, gain dB, mono, gone by (timeline s)?]: the Mission's room is shut soon after it stops, so 007's chord rings clean
+// [file, at, gain dB, mono, gone by (timeline s)?]: the Mission's last 燈 rings on in the room under the burn
 const SEND = -15;   // the hall under the dry takes
 const stems = [
   ["bond.wav", B.at, gain.bond, true],
   ["bond-hall.wav", B.at, gain.bond + SEND, false],
-  ["bond-ring-hall.wav", B.at + bondButton - 0.3, gain.bond - 5, false],
+  ["bond-ring-hall.wav", B.at + bondButton - 0.1, gain.bond - 3, false],
   ["mission.wav", M.at, gain.mission, true],
-  ["mission-hall.wav", M.at, gain.mission + SEND, false, T.destruct + 0.3],
-  ["mission-ring-hall.wav", M.at + missionEnd - 0.4, gain.mission - 10, false],
-  ["coda.wav", C.at, gain.coda, true],
-  ["coda-hall.wav", C.at, gain.coda + SEND, false],
+  ["mission-hall.wav", M.at, gain.mission + SEND, false],
+  ["mission-ring-hall.wav", M.at + missionEnd - 0.4, gain.mission - 5, false],
   [sfx, 0, sfxGain, false],
 ];
 const inputs = stems.flatMap(([file]) => ["-i", path.isAbsolute(file) ? file : f(file)]);

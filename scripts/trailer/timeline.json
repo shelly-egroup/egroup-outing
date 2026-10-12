@@ -1,10 +1,9 @@
 {
   "fps": 24,
-  "duration": 40.3,
+  "duration": 46.9,
   "music": {
-    "bond": { "from": 2.6, "to": 15.0, "at": 0, "semitones": 1 },
-    "mission": { "from": 8.6, "to": 36.53, "at": 10.44 },
-    "coda": { "from": 100.99, "to": 104.8, "at": 38.229, "semitones": 1 }
+    "bond": { "from": 2.6, "to": 15.6, "at": 0, "semitones": 1 },
+    "mission": { "from": 8.6, "to": 43.37, "at": 10.44 }
   },
   "dots": [0.57, 0.98, 1.43, 2.04, 2.45],
   "irisOpen": 2.9,
@@ -43,8 +42,9 @@
   "title": 30.57,
   "laser": 31.22,
   "date": 31.86,
-  "disavow": [32.3, 33.4],
-  "countdown": [35.04, 35.69, 36.33, 36.98, 37.62],
-  "destruct": 38.255,
-  "burn": 38.5
+  "disavow": [33.0, 34.2],
+  "reprise": 36.76,
+  "countdown": [38.255, 39.555, 40.81, 42.1, 43.375],
+  "destruct": 44.72,
+  "burn": 45.06
 }

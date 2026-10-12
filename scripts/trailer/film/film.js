@@ -789,8 +789,8 @@ shot(T.title, T.duration + 1, (el) => {
   hit(T.title, 2.6, .3, 1);                          // the fuse reaches the end: the blast
   sparkBursts.push([T.title, PW / 2, PH * (TALL ? .26 : .26), 90, TALL ? 90 : 76, ""], [T.date, PW / 2, PH * (TALL ? .42 : .54), 50, 50, ""]);
   const SHOT = T.laser - T.title, RAISE = SHOT + .46;   // the agent fires, the laser dot lands on 特 — then he raises his pistol
-  hit(T.laser, .6, .1, .22, "#ff8a96"); hit(T.date, 1.5, .2, .42, "#fff3e0"); hit(T.destruct, 1.9, .22, .75, "#ffffff");   // ignition
-  T.countdown.forEach((c, i) => hit(c, .5 + .25 * i, .1, .07 + .04 * i, "#ff4a5f")); hit(T.burn, .8, .16, .22, "#ffb04a");
+  hit(T.laser, .6, .1, .22, "#ff8a96"); hit(T.reprise, .5, .2, .1, "#ffe2bd"); hit(T.date, 1.5, .2, .42, "#fff3e0"); hit(T.destruct, 1.9, .22, .75, "#ffffff");   // ignition
+  T.countdown.forEach((c, i) => hit(c, .5 + .25 * i, .1, .07 + .04 * i, "#ff4a5f")); hit(T.burn, 1.4, .2, .4, "#ffb04a");   // the second 燈: the frame catches
   const tfb = (e, v) => { e.style.transformBox = "fill-box"; e.style.transformOrigin = "center"; e.style.transform = v; };
   /** a slam: in large and hot, settled in a third of a second */
   const slam = (e, l, from, dur = .3) => {
@@ -826,7 +826,8 @@ shot(T.title, T.duration + 1, (el) => {
     for (const e of mark.aim) e.style.opacity = String(1 - p(l, RAISE, RAISE + .12));
     for (const e of mark.up) e.style.opacity = String(Math.min(1, up));   // opacity only: the rim copies keep their own offset transform
     op(mark.muzzle, m1 * (.85 + .15 * Math.sin(l * 3))); tfb(mark.muzzle, `scale(${(2.2 - 1.2 * m1).toFixed(3)})`);
-    mark.sheen.style.transform = `translateX(${mix(-140, 560, p(l, .3, 1.4, E.ioC)).toFixed(1)}px)`;
+    // the chrome catches the light as the title lands, and again when the Mission's melody comes back
+    mark.sheen.style.transform = `translateX(${mix(-140, 560, t < T.reprise - .1 ? p(l, .3, 1.4, E.ioC) : p(t, T.reprise, T.reprise + 1.1, E.ioC)).toFixed(1)}px)`;
     tf(rule, `scaleX(${p(l, .2, .7, E.outE).toFixed(3)})`); reveal(sub, t, T.title + .3, .7, 1.4);
     for (const w of sub.querySelectorAll("span")) w.style.letterSpacing = mix(1.3, .82, p(l, .3, 1.4, E.outC)).toFixed(3) + "em";
     // the date, on the brass: slammed in, a laser reads across it, then where and when
