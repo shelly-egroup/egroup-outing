@@ -34,26 +34,56 @@ const ICONS: Record<ManualIcon, ReactNode> = {
   shield: <><path d="M32 6 12 14v14c0 13 8 24 20 30 12-6 20-17 20-30V14Z" /><path d="m23 32 6 6 12-13" /></>,
 };
 
-/** The field manual as five agent protocols: each card decrypts as it comes on screen, its icon drawn in line by line. */
+const STORE = "egroup-outing:protocols";
+/** A fingerprint, drawn in arcs. */
+const PRINT = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" aria-hidden="true"><path d="M7.2 19.5C5.8 17.7 5 15.4 5 13a7 7 0 0 1 14 0" /><path d="M9.5 21c-1.2-2-1.9-4.4-1.9-7a4.4 4.4 0 0 1 8.8 0c0 1.3-.2 2.6-.5 3.8" /><path d="M12 14c0 2.7.6 5.2 1.7 7.4" /><path d="M17.8 19.6c.4-1.2.6-2.6.6-4" /><path d="M4.6 8.7A9 9 0 0 1 19.4 8.7" /></svg>;
+
+/**
+ * The field manual as five agent protocols. Each card decrypts as it comes on screen, its icon drawn in line by line; each
+ * agent then confirms the protocols themselves — a press on the card's scanner stamps it CLEARED — and the console counts
+ * them off until the agent is ready to deploy. Kept on this device.
+ */
 export default function MissionProtocols() {
   const list = useRef<HTMLOListElement>(null), [on, setOn] = useState(false);
+  const [done, setDone] = useState<boolean[]>(() => FIELD_MANUAL.map(() => false));
   useEffect(() => {
     const el = list.current; if (!el) return;
     const io = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setOn(true); io.disconnect(); } }, { rootMargin: "0px 0px -15% 0px" });
     io.observe(el);
     return () => io.disconnect();
   }, []);
-  return <ol ref={list} className="protocols" data-on={on}>
-    {FIELD_MANUAL.map((item, index) => <li key={item.key} className="protocol" style={{ "--i": index } as React.CSSProperties}>
-      <div className="protocol-top"><span>PROTOCOL {String(index + 1).padStart(2, "0")}</span><b>{item.key}</b></div>
-      <span className="protocol-no" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-      <svg className="protocol-icon" viewBox="0 0 64 64" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <g>{ICONS[item.icon]}</g>
-      </svg>
-      <h3><Decrypt text={item.title} run={on} delay={180 + index * 140} /></h3>
-      <p><Decrypt text={item.body} run={on} delay={420 + index * 140} speed={14} /></p>
-      <span className="protocol-stamp" aria-hidden="true">CLEARED</span>
-      <i className="protocol-scan" aria-hidden="true" />
-    </li>)}
-  </ol>;
+  useEffect(() => {
+    try { const saved = JSON.parse(localStorage.getItem(STORE) || "[]") as string[]; setDone(FIELD_MANUAL.map(item => saved.includes(item.key))); } catch {}
+  }, []);
+  const toggle = (index: number) => setDone(current => {
+    const next = current.map((value, i) => i === index ? !value : value);
+    try { localStorage.setItem(STORE, JSON.stringify(FIELD_MANUAL.filter((_, i) => next[i]).map(item => item.key))); } catch {}
+    return next;
+  });
+  const count = done.filter(Boolean).length, all = count === FIELD_MANUAL.length;
+  return <div className="protocols-wrap" data-all={all}>
+    <div className="protocols-status" role="status">
+      <span className="protocols-label">{all ? "READY FOR DEPLOYMENT" : "AGENT CHECK"}</span>
+      <span className="protocols-meter" aria-hidden="true">{done.map((value, i) => <i key={i} data-on={value} />)}</span>
+      <strong>{all ? "守則全數確認，準備出動" : <>已確認 <b>{count}</b> / {FIELD_MANUAL.length}</>}</strong>
+    </div>
+    <ol ref={list} className="protocols" data-on={on}>
+      {FIELD_MANUAL.map((item, index) => <li key={item.key} className="protocol" data-done={done[index]} style={{ "--i": index } as React.CSSProperties}>
+        <div className="protocol-top"><span>PROTOCOL {String(index + 1).padStart(2, "0")}</span><b>{item.key}</b></div>
+        <span className="protocol-no" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+        <svg className="protocol-icon" viewBox="0 0 64 64" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <g>{ICONS[item.icon]}</g>
+        </svg>
+        <h3><Decrypt text={item.title} run={on} delay={180 + index * 140} /></h3>
+        <p><Decrypt text={item.body} run={on} delay={420 + index * 140} speed={14} /></p>
+        <button type="button" className="protocol-confirm" aria-pressed={done[index]} onClick={() => toggle(index)}>
+          <span className="protocol-print">{PRINT}</span>
+          <span>{done[index] ? "已確認" : "確認這條守則"}</span>
+          <span className="sr-only">：{item.title}</span>
+        </button>
+        <span className="protocol-stamp" aria-hidden="true">CLEARED</span>
+        <i className="protocol-scan" aria-hidden="true" />
+      </li>)}
+    </ol>
+  </div>;
 }

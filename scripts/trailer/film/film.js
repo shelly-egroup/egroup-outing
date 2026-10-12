@@ -5,6 +5,7 @@ const AR = q.get("ar") === "9x16" ? "9x16" : "16x9";
 const TALL = AR === "9x16";
 document.documentElement.dataset.ar = AR;
 const T = await (await fetch("../timeline.json")).json();
+const { MARK_GLYPHS, MARK_AGENT, MARK_DOT, MARK_MUZZLE } = await import("./mark-paths.js");
 const A = (n) => "assets/" + n;
 
 const stage = document.getElementById("stage"), pic = document.querySelector(".pic"), cam = document.querySelector(".cam"), flashEl = document.querySelector(".flash");
@@ -618,35 +619,33 @@ whip("gear", "teams", -1); whip("lockA", "lockB", -1, .07); whip("squad", "strob
 
 // ════ ACT III — the title lit by the fuse, the date, the stinger ════
 let titleFuse = null;
-/** The site's mark (components/title-mark.tsx), drawn the same way: a 430 × 100 box, the cut on a slant from (0, 60) to (430, 46). */
-const cutY = (x) => 60 - 14 * x / 430, CL = -120, CR = 550;
+/** The site's mark (components/title-mark.tsx, outlines from lib/title-mark-paths.ts): a 430 × 100 box, glyph i at x = 110 i. */
+const CENTRES = MARK_GLYPHS.map((_, i) => i * 110 + 50);
 function titleMark(parent) {
-  const word = (cls, fill, extra = "") => `<text class="${cls}" x="0 110 220 330" y="88" fill="${fill}" ${extra}>秋遊特務</text>`;
-  const piece = (cls, clip, chrome, hot) => `<g class="tm-piece ${cls}" clip-path="url(#tm-${clip})"><g filter="url(#tm-rim)">${word("", "url(#tm-rr)", 'transform="translate(-1.6 -.3)"')}${word("", "url(#tm-rb)", 'transform="translate(1.6 -.3)"')}</g>${word("", `url(#tm-${chrome})`)}${word("tm-hot", `url(#tm-${hot})`)}${word("tm-edge", "none")}</g>`;
   const stops = (list) => list.map(([o, c, a = 1]) => `<stop offset="${o}" stop-color="${c}" stop-opacity="${a}"/>`).join("");
-  const heat = [[0, "#fff7e6"], [.16, "#ffc065"], [.46, "#ff4a1c", .7], [1, "#ff2a1a", 0]];
+  const shape = (i, fill, extra = "", agentFill = fill) => `<path d="${MARK_GLYPHS[i]}" fill="${fill}" ${extra}/>${i === 1 ? `<path d="${MARK_AGENT}" fill="${agentFill}" ${extra}/>` : ""}`;
   const box = $("div", "mark", parent);
   box.innerHTML = `<svg class="tm-word" viewBox="0 0 430 100"><defs>
-    <linearGradient id="tm-c1" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="62">${stops([[0, "#fff"], [.42, "#e7eaee"], [.78, "#9aa2ac"], [1, "#767e88"]])}</linearGradient>
-    <linearGradient id="tm-c2" gradientUnits="userSpaceOnUse" x1="0" y1="44" x2="0" y2="98">${stops([[0, "#fcfcfd"], [.34, "#ccd1d7"], [.7, "#8d949d"], [1, "#5a616b"]])}</linearGradient>
-    <linearGradient id="tm-h1" gradientUnits="userSpaceOnUse" x1="215" y1="53" x2="214.6" y2="40">${stops(heat)}</linearGradient>
-    <linearGradient id="tm-h2" gradientUnits="userSpaceOnUse" x1="215" y1="53" x2="215.4" y2="66">${stops(heat)}</linearGradient>
-    <linearGradient id="tm-rr" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="430" y2="0">${stops([[0, "#ff2a4a", .9], [.4, "#ff2a4a", .6], [.56, "#ff2a4a", 0]])}</linearGradient>
-    <linearGradient id="tm-rb" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="430" y2="0">${stops([[.44, "#2f74ff", 0], [.6, "#2f74ff", .6], [1, "#4a8bff", .9]])}</linearGradient>
+    <linearGradient id="tm-c" gradientUnits="userSpaceOnUse" x1="0" y1="6" x2="0" y2="98">${stops([[0, "#fff"], [.3, "#e9ecef"], [.47, "#9aa1aa"], [.53, "#f6f7f8"], [.7, "#c4c9cf"], [1, "#5f666f"]])}</linearGradient>
+    <linearGradient id="tm-g" gradientUnits="userSpaceOnUse" x1="0" y1="18" x2="0" y2="86">${stops([[0, "#d9dde2"], [.28, "#7d848d"], [.5, "#2c3036"], [.52, "#5a6068"], [1, "#1d2025"]])}</linearGradient>
+    <linearGradient id="tm-rr" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="430" y2="0">${stops([[0, "#ff2a4a", .9], [.4, "#ff2a4a", .55], [.56, "#ff2a4a", 0]])}</linearGradient>
+    <linearGradient id="tm-rb" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="430" y2="0">${stops([[.44, "#2f74ff", 0], [.6, "#2f74ff", .55], [1, "#4a8bff", .9]])}</linearGradient>
     <linearGradient id="tm-sh" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="120" y2="0">${stops([[0, "#fff", 0], [.5, "#fff", .95], [.56, "#ffd6dc", .8], [1, "#fff", 0]])}</linearGradient>
-    <clipPath id="tm-t"><polygon points="${CL},-60 ${CR},-60 ${CR},${cutY(CR)} ${CL},${cutY(CL)}"/></clipPath>
-    <clipPath id="tm-b"><polygon points="${CL},${cutY(CL)} ${CR},${cutY(CR)} ${CR},160 ${CL},160"/></clipPath>
-    <clipPath id="tm-w"><text x="0 110 220 330" y="88">秋遊特務</text></clipPath>
+    <radialGradient id="tm-glow">${stops([[0, "#ff2a4a", .85], [.45, "#ff2a4a", .28], [1, "#ff2a4a", 0]])}</radialGradient>
+    <radialGradient id="tm-dotg">${stops([[0, "#fff"], [.28, "#ff9aa8"], [.62, "#ff2a4a"], [1, "#c2102a"]])}</radialGradient>
+    ${CENTRES.map((cx, i) => `<clipPath id="tm-i${i}"><circle class="tm-iris" cx="${cx}" cy="50" r="76"/></clipPath>`).join("")}
+    <clipPath id="tm-w">${MARK_GLYPHS.map((d) => `<path d="${d}"/>`).join("")}<path d="${MARK_AGENT}"/></clipPath>
     <filter id="tm-ds" x="-10%" y="-30%" width="120%" height="170%"><feDropShadow dx="0" dy="2.6" stdDeviation="3.2" flood-color="#000" flood-opacity=".62"/></filter>
     <filter id="tm-rim" x="-5%" y="-10%" width="110%" height="120%"><feGaussianBlur stdDeviation=".9"/></filter>
-  </defs><g filter="url(#tm-ds)">${piece("tm-bottom", "b", "c2", "h2")}${piece("tm-top", "t", "c1", "h1")}</g>
-  <g clip-path="url(#tm-w)"><rect class="tm-sheen" x="-120" y="-10" width="120" height="120" fill="url(#tm-sh)"/></g></svg>
-  <svg class="tm-laser" viewBox="0 0 430 100"><defs>
-    <linearGradient id="tm-bf" gradientUnits="userSpaceOnUse" x1="${CL}" y1="0" x2="${CR}" y2="0">${stops([[0, "#ff2a4a", 0], [.16, "#ff2a4a"], [.84, "#ff2a4a"], [1, "#ff2a4a", 0]])}</linearGradient>
-    <linearGradient id="tm-bc" gradientUnits="userSpaceOnUse" x1="${CL}" y1="0" x2="${CR}" y2="0">${stops([[.05, "#fff", 0], [.2, "#fff"], [.8, "#fff"], [.95, "#fff", 0]])}</linearGradient>
-    <filter id="tm-gl" x="-10%" y="-400%" width="120%" height="900%"><feGaussianBlur stdDeviation="3.2"/></filter>
-  </defs>${[["glow", "url(#tm-bf)", 7, 'filter="url(#tm-gl)"'], ["red", "url(#tm-bf)", 1.8, ""], ["core", "url(#tm-bc)", .7, ""]].map(([k, stroke, w, f]) => `<line class="tm-beam-${k}" x1="${CL}" y1="${cutY(CL)}" x2="${CR}" y2="${cutY(CR)}" stroke="${stroke}" stroke-width="${w}" ${f} pathLength="1"/>`).join("")}</svg>`;
-  return { box, word: box.querySelector(".tm-word"), lines: [...box.querySelectorAll(".tm-laser line")], top: box.querySelector(".tm-top"), hots: [...box.querySelectorAll(".tm-hot")], sheen: box.querySelector(".tm-sheen") };
+  </defs><g filter="url(#tm-ds)">${MARK_GLYPHS.map((_, i) => `<g clip-path="url(#tm-i${i})"><g filter="url(#tm-rim)">${shape(i, "url(#tm-rr)", 'transform="translate(-1.6 -.3)"')}${shape(i, "url(#tm-rb)", 'transform="translate(1.6 -.3)"')}</g>${shape(i, "url(#tm-c)", "", "url(#tm-g)")}${shape(i, "none", 'class="tm-edge"')}</g>`).join("")}</g>
+  <g clip-path="url(#tm-w)"><rect class="tm-sheen" x="-120" y="-10" width="120" height="120" fill="url(#tm-sh)"/></g>
+  <line class="tm-shot" x1="${MARK_MUZZLE.cx}" y1="${MARK_MUZZLE.cy}" x2="${MARK_DOT.cx}" y2="${MARK_DOT.cy}" pathLength="1"/>
+  <circle class="tm-flash" cx="${MARK_MUZZLE.cx}" cy="${MARK_MUZZLE.cy}" r="7" fill="url(#tm-glow)"/>
+  <circle class="tm-halo" cx="${MARK_DOT.cx}" cy="${MARK_DOT.cy}" r="${MARK_DOT.r * 2.4}" fill="url(#tm-glow)"/>
+  <circle class="tm-laser" cx="${MARK_DOT.cx}" cy="${MARK_DOT.cy}" r="${MARK_DOT.r * .74}" fill="url(#tm-dotg)"/>
+  ${CENTRES.map((cx) => `<circle class="tm-dot" cx="${cx}" cy="50" r="9" fill="#fff"/>`).join("")}</svg>`;
+  const q = (sel) => [...box.querySelectorAll(sel)];
+  return { box, irises: q(".tm-iris"), dots: q(".tm-dot"), shot: box.querySelector(".tm-shot"), flash: box.querySelector(".tm-flash"), laser: box.querySelector(".tm-laser"), halo: box.querySelector(".tm-halo"), sheen: box.querySelector(".tm-sheen") };
 }
 shot(T.title, T.date + .3, (el) => {
   const smoke = img(A("smoke.webp"), "smoke", el); css(smoke, { opacity: .45 });
@@ -656,29 +655,29 @@ shot(T.title, T.date + .3, (el) => {
   const rule = $("div", "rule", title), sub = $("div", "sub", title); sub.innerHTML = "<span>AUTUMN</span><i></i><span>AGENTS</span>";
   const third = $("div", "third", title, { textContent: "MISSION  10.29" });
   hit(T.title, 2.2, .3, .35);
-  const RUN = .85;
-  hit(T.title + RUN, .9, .12, .3, "#ffd8b0");   // the cut completes: a jolt and a flash
-  titleFuse = (t) => {
-    // the spark rides the laser cut; the letters exist only behind it
-    if (t < T.title || t > T.title + RUN + .05) return null;
-    const r = mark.word.getBoundingClientRect(), sb = stage.getBoundingClientRect();
-    const u = p(t, T.title, T.title + RUN, E.ioQ), vx = CL + u * (CR - CL);
-    return [r.left - sb.left + vx / 430 * r.width, r.top - sb.top + cutY(vx) / 100 * r.height];
-  };
+  const SHOT = 1.2;   // the agent fires, the laser dot lands on 特
+  hit(T.title + SHOT, .6, .1, .22, "#ff8a96");
+  const tfb = (e, s) => { e.style.transformBox = "fill-box"; e.style.transformOrigin = "center"; e.style.transform = s; };
   return (t) => {
     const l = t - T.title;
     tf(smoke, `scale(${(1.25 + .12 * l / 3).toFixed(4)}) rotate(${(-3 + 2 * l).toFixed(2)}deg)`); op(smoke, .45 * p(l, 0, .6));
     css(rakeR, { left: "30%", top: "22%" }); tf(rakeR, `rotate(-8deg) scaleX(${(.6 + .4 * p(l, 0, 1.2, E.outC)).toFixed(3)})`); op(rakeR, .35 * p(l, .5, 1));
     css(rakeB, { left: "70%", top: "78%" }); tf(rakeB, `rotate(6deg) scaleX(${(.6 + .4 * p(l, 0, 1.2, E.outC)).toFixed(3)})`); op(rakeB, .35 * p(l, .5, 1));
-    // the laser crosses: the beam draws behind the spark and the letters are etched where it has passed
-    const u = p(l, 0, RUN, E.ioQ), X = ((CL + u * (CR - CL)) / 430 * 100).toFixed(2);
-    mark.word.style.webkitMaskImage = mark.word.style.maskImage = l < RUN + .02 ? `linear-gradient(90deg, #000 calc(${X}% - 3%), transparent ${X}%)` : "none";
-    for (const line of mark.lines) { line.style.strokeDasharray = "1 1"; line.style.strokeDashoffset = (1 - u).toFixed(4); }
-    // then the upper half slips along the cut, the edges cool, a sheen crosses the chrome
-    const slip = p(l, RUN - .04, RUN + .55, E.outBack);
-    mark.top.style.transform = `translate(${(4.6 * slip).toFixed(3)}px, ${(-.15 * slip).toFixed(3)}px)`;
-    for (const h of mark.hots) h.style.opacity = (l < RUN ? 1 : mix(1, .26, p(l, RUN, RUN + 2.6, E.outC))).toFixed(3);
-    mark.sheen.style.transform = `translateX(${mix(-140, 560, p(l, RUN + .55, RUN + 1.6, E.ioC)).toFixed(1)}px)`;
+    // the 007 dots: each slides in, stops on its character and irises open into it
+    mark.dots.forEach((d, i) => {
+      const k = p(l, i * .1, i * .1 + .62), slide = E.ioQ(Math.min(1, k / .66)), pop = Math.max(0, (k - .66) / .34);
+      d.style.opacity = k <= 0 || k >= 1 ? "0" : String(1 - pop);
+      tfb(d, `translateX(${((1 - slide) * (-i * 110 - 90)).toFixed(2)}px) scale(${(1 + 1.4 * pop).toFixed(3)})`);
+    });
+    mark.irises.forEach((c, i) => tfb(c, `scale(${p(l, .38 + i * .1, .93 + i * .1, E.outC).toFixed(4)})`));
+    // the shot
+    const s1 = p(l, SHOT, SHOT + .42);
+    mark.shot.style.strokeDasharray = "1 1"; mark.shot.style.strokeDashoffset = (s1 < .45 ? 1 - s1 / .45 : -(s1 - .45) / .55).toFixed(3);
+    mark.shot.style.opacity = s1 > 0 && s1 < 1 ? String(s1 < .45 ? 1 : 1 - (s1 - .45) / .55) : "0";
+    const f1 = p(l, SHOT - .03, SHOT + .47); op(mark.flash, f1 > 0 && f1 < 1 ? (f1 < .25 ? f1 / .25 : 1 - (f1 - .25) / .75) : 0); tfb(mark.flash, `scale(${(f1 < .25 ? .3 + 1.5 * f1 / .25 : 1.8 - 1.2 * (f1 - .25) / .75).toFixed(3)})`);
+    const d1 = p(l, SHOT + .16, SHOT + .66, E.outBack); op(mark.laser, d1 > 0 ? 1 : 0); tfb(mark.laser, `scale(${(2.6 - 1.6 * d1).toFixed(3)})`);
+    op(mark.halo, d1 * (.75 + .2 * Math.sin(l * 4)));
+    mark.sheen.style.transform = `translateX(${mix(-140, 560, p(l, 1.5, 2.6, E.ioC)).toFixed(1)}px)`;
     tf(title, `scale(${(1 + .03 * l).toFixed(4)})`);
     tf(rule, `scaleX(${p(l, .7, 1.2, E.outE).toFixed(3)})`); reveal(sub, t, T.title + .9, .8, 1.4);
     for (const w of sub.querySelectorAll("span")) w.style.letterSpacing = mix(1.3, .82, p(l, .9, 1.9, E.outC)).toFixed(3) + "em";

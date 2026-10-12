@@ -29,7 +29,7 @@ export default function MissionHero({ eventDate, plan, ready, cued, actionsRef, 
     </div>
     <div className="mh-body">
       <p className="mh-kicker"><span className="mh-rec"><i />REC</span><span>MISSION {date}</span></p>
-      <TitleMark className="mh-lockup" sub="AUTUMN AGENTS" motion="cut" play={ready} />
+      <TitleMark className="mh-lockup" sub="AUTUMN AGENTS" motion="intro" play={ready} />
       <h1 className="mh-title">熱血對戰，<em>正式開打！</em></h1>
       <p className="mh-sub">{plan?.title.replaceAll("\n", "") || "雷射對戰＋下午茶"}</p>
       <dl className="mh-intel">

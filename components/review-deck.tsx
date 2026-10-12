@@ -10,31 +10,36 @@ function Stars({ value }: { value: number }) {
 }
 
 /**
- * The venue's Google reviews right on the page: the rating and count, then every review the site has captured (the newest
- * five), each in full, and a clear way to the rest of them on Google Maps.
+ * The venue's Google reviews as field reports: a score panel — the rating, the count, the way to every review on Google Maps —
+ * beside the newest reviews the site has captured, each in full as a quote; reviews that left only stars share one line.
  */
 export default function ReviewDeck({ id }: { id?: string }) {
   const { stores } = useOuting();
   const snapshot = id ? stores[id]?.reviews : undefined;
   if (!snapshot) return null;
-  const reviews = snapshot.reviews;
+  const written = snapshot.reviews.filter(review => review.text?.trim()), starsOnly = snapshot.reviews.filter(review => !review.text?.trim());
   const captured = new Date(snapshot.capturedAt);
   const safe = /^https:\/\/www\.google\.com\//.test(snapshot.sourceUrl);
   const total = snapshot.reviewCount.toLocaleString("zh-TW");
   return <div className="reviews">
-    <div className="reviews-head">
-      <p className="reviews-score"><b>{snapshot.rating.toFixed(1)}</b><Stars value={snapshot.rating} /><span>Google・{total} 則評論</span></p>
-      <p className="reviews-note">{!Number.isNaN(captured.getTime()) ? `最新 ${reviews.length} 則・擷取於 ${captured.getMonth() + 1}/${captured.getDate()}` : `最新 ${reviews.length} 則`}</p>
+    <div className="reviews-score">
+      <span className="ms-label">FIELD SCORE</span>
+      <p className="reviews-rating"><b>{snapshot.rating.toFixed(1)}</b><span>/ 5</span></p>
+      <Stars value={snapshot.rating} />
+      <p className="reviews-count"><b>{total}</b> 則 Google 評論</p>
+      {safe && <a className="reviews-all" href={snapshot.sourceUrl} target="_blank" rel="noopener noreferrer">看全部評論<span aria-hidden="true">↗</span><span className="sr-only">（另開分頁）</span></a>}
+      <p className="reviews-note">{!Number.isNaN(captured.getTime()) ? `這裡是最新 ${snapshot.reviews.length} 則，擷取於 ${captured.getMonth() + 1}/${captured.getDate()}` : `這裡是最新 ${snapshot.reviews.length} 則`}</p>
     </div>
-    {reviews.length > 0 && <ul className="reviews-list">
-      {reviews.map((review, index) => <li key={index} className="review">
-        <p className="review-meta"><strong>{review.author}</strong><Stars value={review.rating} /><span>{review.relativeTimeAtCapture}</span></p>
-        {review.text?.trim() ? <p className="review-text">{review.text.trim()}</p> : <p className="review-text is-empty">只留下星等，沒有文字</p>}
-      </li>)}
-    </ul>}
-    {safe && <a className="reviews-all" href={snapshot.sourceUrl} target="_blank" rel="noopener noreferrer">
-      <span>其餘評論在 Google 地圖</span><b>看全部 {total} 則 ↗</b><span className="sr-only">（另開分頁）</span>
-    </a>}
+    <div className="reviews-feed">
+      {written.length > 0 && <ol className="reviews-list">
+        {written.map((review, index) => <li key={index} className="review">
+          <span className="review-no" aria-hidden="true">REPORT {String(index + 1).padStart(2, "0")}</span>
+          <blockquote className="review-text">{review.text.trim()}</blockquote>
+          <p className="review-meta"><span className="review-by" aria-hidden="true">{[...(review.author || "?")][0]}</span><strong>{review.author}</strong><Stars value={review.rating} /><span>{review.relativeTimeAtCapture}</span></p>
+        </li>)}
+      </ol>}
+      {starsOnly.length > 0 && <p className="reviews-stars-only"><span>另有 {starsOnly.length} 位只留星等</span>{starsOnly.map((review, index) => <span key={index} className="reviews-chip"><strong>{review.author}</strong><Stars value={review.rating} /></span>)}</p>}
+    </div>
   </div>;
 }
 

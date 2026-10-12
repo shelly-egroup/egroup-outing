@@ -403,7 +403,9 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
   brass(C.title, ["D2", "A2", "D3", "F3", "A3", "D4"], 1.6, { vel: 1, attack: 0.015, release: 1.2, bright: 1.1, gain: 0.06 });
   strings(C.title, ["D2", "A2", "F3"], 3.2, { attack: 0.05, vel: 0.5, release: 1.2, gain: 0.05, cutoff: 2200 });
   choir(C.title + 0.05, ["D3", "A3", "F4", "A4"], C.date - C.title + 0.8, { vel: 0.6, attack: 0.6 });
-  fuse(C.title, C.title + 0.9, [[C.title + 0.02, 0.5], [C.title + 0.8, 0.35], [C.title + 0.88, 0.0001]]);
+  // the 007 dots tick into the title, then the agent fires and the laser sight lands on 特
+  for (let i = 0; i < 4; i++) tick(C.title + 0.38 + i * 0.1, 0.9, 2300 + i * 180);
+  zap(C.title + 1.2, 0.75, 0.1);
   vibes(C.title + 0.9, "D6", 2.4, 0.35, 0.3); vibes(C.title + 0.95, "A6", 2.2, 0.25, -0.3);
   pianoHit(C.date, "D4", 0.5, 2.4); pianoHit(C.date, "A3", 0.35, 2.4); pianoHit(C.date, "D1", 0.6, 2.4); vibes(C.date + 0.05, "F5", 2.2, 0.35, -0.2);
   strings(C.date, ["D3", "A3", "D4", "E4"], C.stinger - C.date + 0.2, { attack: 0.6, vel: 0.35, release: 0.3, gain: 0.04, cutoff: 3200 });

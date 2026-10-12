@@ -8,10 +8,14 @@ export const MISSION_IMAGES = {
   tea: "/assets/mission/tea.webp",
   squad: "/assets/mission/squad.webp",
   /** the captains as cut-outs, aiming at each other: red mirrored to face right, blue facing left */
-  captainRed: "/assets/mission/captain-red.webp",
+  captainRed: "/assets/mission/captain-red.webp?v=2",
   captainBlue: "/assets/mission/captain-blue.webp",
   smoke: "/assets/mission/smoke.webp",
 } as const;
+
+/** The afternoon-tea vote's winner as the organisers reported it (台北晶華酒店・栢麗廳): shown until the live tally loads, or if it
+ *  cannot be read; the tally decides once it answers. */
+export const TEA_WINNER = "晶華";
 
 export const ARENA_FACTS = [
   { label: "時長", value: "2 小時・5 場對戰", note: "遲到會少玩場次" },

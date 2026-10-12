@@ -162,7 +162,7 @@ export default function OpeningAnimation({ onFinish, onReveal, autoStart = false
       <p className="trailer-credit">馴錢師 <b>×</b> EGROUP</p>
       <div className="trailer-cover-body">
         <p className="trailer-eyebrow">OFFICIAL TRAILER<b>官方預告</b></p>
-        <TitleMark className="trailer-mark" sub="AUTUMN AGENTS" motion="cut" />
+        <TitleMark className="trailer-mark" sub="AUTUMN AGENTS" motion="intro" />
         <p className="trailer-mission">MISSION 10.29</p>
         <button type="button" className="trailer-play" disabled={locked} aria-busy={waiting || phase === "starting"} aria-describedby="trailer-hint" onClick={play}>
           {waiting

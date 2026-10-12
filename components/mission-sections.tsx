@@ -12,7 +12,7 @@ import ReconTargets from "./recon-targets";
 import { useOuting } from "./outing-provider";
 import { lazerTreksStore, choiceStore } from "@/lib/store-references";
 import { sortedGroups, type TripPlan } from "@/lib/trips";
-import { ARENA_FACTS, ARENA_TRANSIT, MISSION_IMAGES, MISSION_MODES, missionCalendarUrl, missionClock } from "@/lib/mission-brief";
+import { ARENA_FACTS, ARENA_TRANSIT, MISSION_IMAGES, MISSION_MODES, TEA_WINNER, missionCalendarUrl, missionClock } from "@/lib/mission-brief";
 
 const pad = (value: number) => String(value).padStart(2, "0");
 /** What each stop of the day is called on the IMF console, by its position in the schedule. */
@@ -106,7 +106,10 @@ export default function MissionSections({ plan, planId, eventDate, now }: { plan
   const teaGroup = plan ? sortedGroups(plan).find(([, group]) => group.label.includes("下午茶")) : undefined;
   const top = useTopChoice(planId, teaGroup?.[0]);
   // the hotel(s) with the most votes — normally one; on a tie, each of them
-  const hotels = top.status === "ready" && teaGroup ? top.choiceIds.flatMap(choiceId => {
+  // until the live tally answers (or if it cannot), the organisers' known winner stands in, so the hotel is always there
+  const fallbackId = teaGroup ? Object.entries(teaGroup[1].choices).find(([, choice]) => choice.label.includes(TEA_WINNER))?.[0] : undefined;
+  const topIds = top.status === "ready" ? top.choiceIds : fallbackId ? [fallbackId] : [];
+  const hotels = teaGroup ? topIds.flatMap(choiceId => {
     const choice = teaGroup[1].choices[choiceId]; if (!choice) return [];
     const storeId = choice.store?.id || choiceStore(choice.label)?.id, [name, venue] = choice.label.split("｜");
     return [{ choiceId, name, venue, time: choice.description.split("｜")[0], storeId, store: (storeId && stores[storeId]?.info) || choiceStore(choice.label) }];
@@ -190,9 +193,8 @@ export default function MissionSections({ plan, planId, eventDate, now }: { plan
           <Terminal name="EXTRACTION // CAM-02" status={hotel ? "LOCKED" : "STANDBY"} tone="amber">
             <ReconFeed src={MISSION_IMAGES.tea} cam="CAM-02" label={hotel ? (hotel.name || "").toUpperCase() : "AFTERNOON TEA"} alt="飯店下午茶的三層點心架與紅茶" now={now} />
           </Terminal>
-          <Terminal name="EXTRACTION_POINT.DAT" status={top.status === "ready" ? "最高票" : top.status === "loading" ? "LOADING" : "STANDBY"}>
-            {top.status === "loading" ? <p className="ms-term-note">讀取最高票的飯店…</p>
-              : hotel ? <div className="ms-hotels">{hotels.map(item => <div key={item.choiceId} className="ms-hotel">
+          <Terminal name="EXTRACTION_POINT.DAT" status={hotel ? "最高票" : "STANDBY"}>
+            {hotel ? <div className="ms-hotels">{hotels.map(item => <div key={item.choiceId} className="ms-hotel">
                 <span className="ms-label">EXTRACTION POINT・{hotels.length > 1 ? "同票最高" : "最高票"}</span>
                 <strong className="ms-hotel-name">{item.name}{item.venue && <small>{item.venue}</small>}</strong>
                 {item.time && <p className="ms-hotel-time">{item.time}・平日下午茶 Buffet</p>}
@@ -253,7 +255,7 @@ export function MissionFooter({ plan, eventDate, title, onReplay }: { plan?: Tri
     <i className="ms-footer-scrim" aria-hidden="true" />
     <div className="wrap ms-footer-inner">
       <p className="ms-footer-kicker"><span>SEE YOU ON</span><b>{eventDate.slice(5).replace("-", ".")}</b></p>
-      <div ref={markRef} className="ms-footer-markbox"><TitleMark className="ms-footer-mark" sub="AUTUMN AGENTS" motion="cut" play={markSeen} /></div>
+      <div ref={markRef} className="ms-footer-markbox"><TitleMark className="ms-footer-mark" sub="AUTUMN AGENTS" motion="intro" play={markSeen} /></div>
       <h2 className="ms-footer-title">全員出動</h2>
       <div className="ms-footer-actions">
         <a className="ms-cta" href={calendar} target="_blank" rel="noopener noreferrer">加入 Google 日曆<span className="sr-only">（另開分頁）</span></a>

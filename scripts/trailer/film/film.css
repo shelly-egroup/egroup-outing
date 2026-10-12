@@ -136,9 +136,9 @@ img { display: block; max-width: none; user-select: none; }
 .title .mark { position: relative; width: 4.3em; height: 1em; font-size: 23cqh; }
 [data-ar="9x16"] .title .mark { font-size: 18cqw; }
 .title .mark svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.title .mark text { font: 900 100px/1 var(--serif); }
+.title .mark .tm-shot { stroke: #ff2a4a; stroke-width: 1.4; stroke-linecap: round; filter: drop-shadow(0 0 2px #ff2a4a); opacity: 0; }
+.title .mark .tm-flash, .title .mark .tm-laser, .title .mark .tm-halo { opacity: 0; }
 .title .mark .tm-edge { stroke: rgb(255 255 255 / .5); stroke-width: .7; }
-.title .mark .tm-beam-glow { opacity: .6; }
 .title .mark .tm-sheen { transform: translateX(-140px); }
 .title .sub { display: flex; align-items: center; gap: .9em; font: 600 3.2cqh/1 "Oswald", var(--latin); letter-spacing: 0; margin-right: 0; }
 .title .sub span { letter-spacing: .82em; margin-right: -.82em; }
