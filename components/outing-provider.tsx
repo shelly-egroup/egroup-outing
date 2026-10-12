@@ -20,10 +20,12 @@ import {
   onValue,
   get,
   ref,
+  set,
   update,
   serverTimestamp,
   runTransaction,
 } from "firebase/database";
+import { parseTeams, type TeamMap } from "@/lib/teams";
 import { adminEmails, getFirebase } from "@/lib/firebase";
 import { defaultStoreDirectory, mergeStoreDirectory, nextReviewRecord, parseStoreDirectory, parseStoreInfo, seedMissingStores, type StoreDirectory } from "@/lib/store-directory";
 import type { StoreInfo } from "@/lib/store-references";
@@ -60,6 +62,11 @@ type ContextValue = {
   login: () => Promise<void>;
   logout: () => Promise<void>;
   submitVote: (draft: VoteDraft) => Promise<void>;
+  /** Accept the mission: the trip (plan B) with the member's notes and family; works after voting has closed. */
+  acceptMission: (input: Pick<VoteDraft, "note" | "bringingFamily" | "familyCount" | "familyNote">) => Promise<void>;
+  teams: TeamMap;
+  teamsReady: boolean;
+  saveTeams: (teams: TeamMap) => Promise<void>;
   saveCatalog: (catalog: Catalog, version: number | null, acceptedImpacts?: string) => Promise<void>;
   stores: StoreDirectory;
   storedStores: StoreDirectory;
@@ -99,6 +106,7 @@ export function OutingProvider({ children }: { children: ReactNode }) {
   const [votes, setVotes] = useState<Record<string, PublicVote>>({}),
     [votesReady, setVotesReady] = useState(false);
   const [votesError, setVotesError] = useState("");
+  const [teams, setTeams] = useState<TeamMap>({}), [teamsReady, setTeamsReady] = useState(false);
   const [myDetails, setMyDetails] = useState<VoteDetails | null>(null),
     [detailsReady, setDetailsReady] = useState(false);
   const [connected, setConnected] = useState(false),
@@ -218,6 +226,13 @@ export function OutingProvider({ children }: { children: ReactNode }) {
       setVotesError("戰況連線尚未完成，請稍後再試。");
     }
   }, [authReady, user?.uid]);
+  // The team sheet is public, like the names on the agent roster.
+  useEffect(() => {
+    if (!authReady) return;
+    try {
+      return onValue(ref(getFirebase().database, "outing/teams"), (snap) => { setTeams(parseTeams(snap.val())); setTeamsReady(true); }, () => setTeamsReady(false));
+    } catch { setTeamsReady(false); }
+  }, [authReady, user?.uid]);
   useEffect(() => {
     setMyDetails(null);
     setDetailsReady(false);
@@ -329,6 +344,37 @@ export function OutingProvider({ children }: { children: ReactNode }) {
       throw new Error("投票未完成。可能已截止或方案已更新，請確認後再試。");
     }
   }
+  async function acceptMission(input: Pick<VoteDraft, "note" | "bringingFamily" | "familyCount" | "familyNote">) {
+    if (!user) throw new Error("請先使用 Google 登入。");
+    if (!votingAccess) throw new Error("帳號資格尚未確認，請稍後再試。");
+    if (!canVote) throw new Error(votingAccess === "rejected" ? "這個帳號尚未通過審核，請聯絡主辦人，或改用 egroup. 開頭的 Google 帳號。" : "帳號正在等主辦人審核，通過後就能接受任務。");
+    if (!connected) throw new Error("目前連線中斷，請恢復連線後再送出。");
+    if (!catalog || catalogStatus !== "ready") throw new Error("任務資料尚未準備好，請稍後再試。");
+    const entry = Object.entries(catalog.plans).find(([, plan]) => plan.code === "B");
+    if (!entry) throw new Error("找不到這次的行程，請聯絡主辦人。");
+    const [planId, plan] = entry;
+    // An earlier vote for this trip keeps its tea preference; anything else starts clean.
+    const draft: VoteDraft = { planId, preferences: myDetails?.planId === planId ? myDetails.preferences || {} : {}, ...input };
+    const privateDetails = prepareVoteDetails(plan, draft);
+    const token = await user.getIdTokenResult();
+    const latestProfile = (await get(ref(getFirebase().database, "users/" + user.uid))).val() as RegisteredUser | null;
+    const access = getVotingAccess(user.email, latestProfile?.voteReview);
+    if (!latestProfile || !isVotingAllowed(access)) throw new Error("帳號資格已變更，請重新整理後再試。");
+    if (getFirebase().auth.currentUser?.uid !== user.uid) throw new Error("登入帳號已變更，請重新確認。");
+    try {
+      await update(ref(getFirebase().database, "outing"), {
+        ["votes/" + user.uid]: { planId, displayName: typeof token.claims.name === "string" ? token.claims.name : "同事", photoURL: typeof token.claims.picture === "string" ? token.claims.picture : "", updatedAt: serverTimestamp() },
+        ["voteDetails/" + user.uid]: { ...privateDetails, updatedAt: serverTimestamp() },
+      });
+    } catch {
+      throw new Error("任務登記沒有送出，請稍後再試一次。");
+    }
+  }
+  async function saveTeams(next: TeamMap) {
+    if (!isAdmin) throw new Error("只有主辦人可以分隊。");
+    try { await set(ref(getFirebase().database, "outing/teams"), parseTeams(next)); }
+    catch { throw new Error("分隊沒有儲存，請確認連線與資料庫權限後再試。"); }
+  }
   async function saveCatalog(next: Catalog, version: number | null, acceptedImpacts?: string) {
     next = upgradeCatalog(next);
     if (!isAdmin) throw new Error("只有主辦人可以管理方案。");
@@ -377,6 +423,10 @@ export function OutingProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         submitVote,
+        acceptMission,
+        teams,
+        teamsReady,
+        saveTeams,
         saveCatalog,
         stores,
         storedStores,

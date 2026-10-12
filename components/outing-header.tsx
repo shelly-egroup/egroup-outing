@@ -17,6 +17,7 @@ const SECTIONS = [
   { id: "arena", label: "作戰場地", short: "場地" },
   { id: "tea", label: "戰後下午茶", short: "下午茶" },
   { id: "manual", label: "行前須知", short: "須知" },
+  { id: "accept", label: "接受任務", short: "接受" },
 ];
 const BOLT = "M25 2 3 41h15l-7 29 26-44H21l8-24z";
 

@@ -4,6 +4,7 @@ import { TRAILER_IMAGES } from "@/lib/opening-assets";
 import { OPENING_SEEN_KEY } from "@/lib/opening-history";
 import "./globals.css";
 import "./showdown.css";
+import "./title-mark.css";
 import "./opening-film.css";
 import "./showdown-page.css";
 import "./mission-hero.css";

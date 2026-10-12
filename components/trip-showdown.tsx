@@ -15,15 +15,18 @@ export default function TripShowdown() {
   const { catalog: remoteCatalog, now } = useOuting();
   const catalog = remoteCatalog || defaultCatalog;
   // Looked up by plan code rather than position, so reordering plans in the organiser desk never swaps the trip.
-  const plan = Object.values(catalog.plans || {}).find(item => item.code === "B") || defaultCatalog.plans.B;
+  const [planId, plan] = Object.entries(catalog.plans || {}).find(([, item]) => item.code === "B") || ["B", defaultCatalog.plans.B];
   const [intro, setIntro] = useState(false), [introReady, setIntroReady] = useState(false), [replaying, setReplaying] = useState(false);
+  // while the trailer burns away the page is already showing underneath it
+  const [revealing, setRevealing] = useState(false), shown = !intro || revealing;
   useLayoutEffect(() => { setIntro(!openingHistory.hasSeen()); setIntroReady(true); }, []);
   // After the trailer, cue the key visual's first action so the film hands straight over to the mission.
   const [cueNext, setCueNext] = useState(false);
   const nextStepRef = useRef<HTMLAnchorElement>(null), pageRef = useRef<HTMLDivElement>(null), heroActionsRef = useRef<HTMLDivElement>(null);
-  useSectionReveal(pageRef, introReady && !intro);
-  const finishIntro = useCallback(() => { openingHistory.markSeen(); setIntro(false); setCueNext(true); }, []);
-  const replay = useCallback(() => { setReplaying(true); setIntro(true); }, []);
+  useSectionReveal(pageRef, introReady && shown);
+  const finishIntro = useCallback(() => { openingHistory.markSeen(); setIntro(false); setRevealing(false); setCueNext(true); }, []);
+  const revealPage = useCallback(() => setRevealing(true), []);
+  const replay = useCallback(() => { setReplaying(true); setIntro(true); window.scrollTo({ top: 0, behavior: "instant" }); }, []);
   useEffect(() => {
     if (!cueNext) return;
     nextStepRef.current?.focus({ preventScroll: true });
@@ -33,11 +36,11 @@ export default function TripShowdown() {
   if (!introReady) return <OutingLoading />;
   const { title, eventDate } = catalog.settings;
   return <>
-    {intro && <OpeningAnimation onFinish={finishIntro} autoStart={replaying} />}
-    <div ref={pageRef} hidden={intro} className="outing-page mission-page">
-      <OutingHeader active={!intro} heroActions={heroActionsRef} title={title} eventDate={eventDate} />
-      <MissionHero eventDate={eventDate} plan={plan} ready={!intro} cued={cueNext} actionsRef={heroActionsRef} primaryRef={nextStepRef} onReplay={replay} />
-      <main><MissionSections plan={plan} eventDate={eventDate} title={title} now={now} /></main>
+    {intro && <OpeningAnimation onFinish={finishIntro} onReveal={revealPage} autoStart={replaying} />}
+    <div ref={pageRef} hidden={!shown} className="outing-page mission-page">
+      <OutingHeader active={shown} heroActions={heroActionsRef} title={title} eventDate={eventDate} />
+      <MissionHero eventDate={eventDate} plan={plan} ready={shown} cued={cueNext} actionsRef={heroActionsRef} primaryRef={nextStepRef} onReplay={replay} />
+      <main><MissionSections plan={plan} planId={planId} eventDate={eventDate} now={now} /></main>
       <MissionFooter plan={plan} eventDate={eventDate} title={title} onReplay={replay} />
     </div>
   </>;

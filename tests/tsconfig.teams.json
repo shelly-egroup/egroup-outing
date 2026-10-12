@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.audio.json",
+  "include": [
+    "../lib/teams.ts"
+  ],
+  "compilerOptions": {
+    "outDir": "../.tools/team-tests"
+  }
+}

@@ -31,7 +31,7 @@
 .trailer-cover-body { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: min(100%, 760px); padding: 24px 20px max(28px, 5.5svh); text-align: center; }
 .trailer-eyebrow { display: flex; align-items: center; gap: 14px; margin: 0; font: 500 12px/1 "Oswald", sans-serif; letter-spacing: .52em; color: rgb(255 255 255 / .85); animation: cover-rise .8s .2s var(--out) both; }
 .trailer-eyebrow b { padding-left: 14px; border-left: 1px solid rgb(255 255 255 / .4); font: 700 12px/1 "Noto Sans TC", sans-serif; letter-spacing: .4em; }
-.trailer-mark { --mark-size: clamp(56px, min(9.5vw, 12.5svh), 128px); margin: 2.6svh 0 0; animation: cover-mark 1.2s .3s var(--out) both; }
+.trailer-mark { --mark-size: clamp(56px, min(9.5vw, 12.5svh), 128px); --tm-d: .6s; margin: 2.6svh 0 0; }
 .trailer-mission { margin: 2svh 0 0; font: 600 13px/1 "JetBrains Mono", monospace; letter-spacing: .6em; margin-right: -.6em; color: var(--amber); animation: cover-rise .8s .55s var(--out) both; }
 .trailer-play { position: relative; margin-top: 3.6svh; display: inline-flex; align-items: center; justify-content: center; gap: 16px; min-width: 216px; min-height: 64px; padding: 8px 28px 8px 8px; border: 1px solid rgb(255 255 255 / .55); border-radius: 999px; background: rgb(3 3 4 / .5); color: #fff; font: 700 17px/1 "Noto Sans TC", sans-serif; letter-spacing: .28em; cursor: pointer; backdrop-filter: blur(8px); transition: background .2s, color .2s, border-color .2s, transform .2s; animation: cover-rise .8s .65s var(--out) both; }
 .trailer-play:disabled { cursor: wait; }
@@ -46,7 +46,6 @@
 @keyframes play-ping { 0% { transform: scale(1); opacity: .9; } 70%, 100% { transform: scale(1.9); opacity: 0; } }
 .trailer-hint { min-height: 21px; max-width: 320px; margin: 2svh 0 0; color: rgb(255 255 255 / .78); font-size: 13px; font-weight: 500; line-height: 1.6; letter-spacing: .14em; animation: cover-rise .8s .8s var(--out) both; }
 @keyframes cover-rise { from { opacity: 0; transform: translateY(16px); } }
-@keyframes cover-mark { from { opacity: 0; transform: scale(1.12); filter: blur(10px); } }
 
 /* portrait: the vertical one-sheet hangs from the top edge, its dark lower third carries the billing */
 @media (max-aspect-ratio: 4/5) {
@@ -66,6 +65,12 @@
   .trailer-play-ring { width: 38px; height: 38px; }
   .trailer-hint { margin-top: 8px; }
 }
+/* ── Hand-over: the frame freezes into a canvas and burns away; the page is already underneath, coming up through the holes ── */
+.film-handoff { position: absolute; inset: 0; z-index: 8; display: none; width: 100%; height: 100%; pointer-events: none; }
+.film-opening[data-phase="handoff"] { background: transparent; pointer-events: none; }
+.film-opening[data-phase="handoff"] .film-handoff { display: block; }
+.film-opening[data-phase="handoff"] :is(.trailer-video, .trailer-cover, .trailer-grain, .film-controls, .film-progress, .trailer-note) { opacity: 0; visibility: hidden; transition: none; }
+.film-opening[data-phase="leaving"] :is(.trailer-cover-body, .trailer-credit, .film-controls) { opacity: 0; transform: translateY(10px); filter: blur(4px); transition: opacity .24s ease, transform .24s ease, filter .24s ease; }
 @media (prefers-reduced-motion: reduce) {
   .film-opening *, .film-opening *::before, .film-opening *::after { animation: none !important; transition: none !important; }
 }

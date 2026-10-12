@@ -7,8 +7,10 @@ export const MISSION_IMAGES = {
   gear: "/assets/mission/gear.webp",
   tea: "/assets/mission/tea.webp",
   squad: "/assets/mission/squad.webp",
-  captainRed: "/assets/mission/close-a.webp",
-  captainBlue: "/assets/mission/close-b.webp",
+  /** the captains as cut-outs, aiming at each other: red mirrored to face right, blue facing left */
+  captainRed: "/assets/mission/captain-red.webp",
+  captainBlue: "/assets/mission/captain-blue.webp",
+  smoke: "/assets/mission/smoke.webp",
 } as const;
 
 export const ARENA_FACTS = [

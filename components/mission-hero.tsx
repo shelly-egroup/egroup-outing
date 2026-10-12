@@ -29,7 +29,7 @@ export default function MissionHero({ eventDate, plan, ready, cued, actionsRef, 
     </div>
     <div className="mh-body">
       <p className="mh-kicker"><span className="mh-rec"><i />REC</span><span>MISSION {date}</span></p>
-      <TitleMark className="mh-lockup" sub="AUTUMN AGENTS" />
+      <TitleMark className="mh-lockup" sub="AUTUMN AGENTS" motion="cut" play={ready} />
       <h1 className="mh-title">熱血對戰，<em>正式開打！</em></h1>
       <p className="mh-sub">{plan?.title.replaceAll("\n", "") || "雷射對戰＋下午茶"}</p>
       <dl className="mh-intel">
@@ -38,7 +38,8 @@ export default function MissionHero({ eventDate, plan, ready, cued, actionsRef, 
         <div><dt>戰後</dt><dd>飯店下午茶 Buffet</dd></div>
       </dl>
       <div className="mh-actions" ref={actionsRef}>
-        <a ref={primaryRef} href="#mission" className={"mh-cta" + (cued ? " is-cued" : "")}>看任務流程</a>
+        <a ref={primaryRef} href="#accept" className={"mh-cta" + (cued ? " is-cued" : "")}>接受任務</a>
+        <a href="#mission" className="mh-ghost">看任務流程</a>
         <button type="button" className="mh-replay" onClick={onReplay}>
           <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" /></svg>
           重播預告

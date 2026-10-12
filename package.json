@@ -14,6 +14,7 @@
     "test:score": "tsc -p tests/tsconfig.score.json && node --test tests/score-motion.test.mjs",
     "test:admin": "tsc -p tests/tsconfig.admin.json && node --test tests/voting-access.test.mjs tests/catalog-impact.test.mjs tests/catalog-order.test.mjs tests/text-highlights.test.mjs tests/catalog-upgrade.test.mjs",
     "test:images": "tsc -p tests/tsconfig.images.json && node --test tests/image-viewport.test.mjs",
+    "test:teams": "tsc -p tests/tsconfig.teams.json && node --test tests/teams.test.mjs",
     "test:stores": "tsc -p tests/tsconfig.stores.json && node --test tests/store-directory.test.mjs",
     "reviews:refresh": "tsc -p scripts/tsconfig.reviews.json && node .tools/review-job/scripts/refresh-store-reviews.js"
   },

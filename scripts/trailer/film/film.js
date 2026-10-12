@@ -618,36 +618,70 @@ whip("gear", "teams", -1); whip("lockA", "lockB", -1, .07); whip("squad", "strob
 
 // ════ ACT III — the title lit by the fuse, the date, the stinger ════
 let titleFuse = null;
+/** The site's mark (components/title-mark.tsx), drawn the same way: a 430 × 100 box, the cut on a slant from (0, 60) to (430, 46). */
+const cutY = (x) => 60 - 14 * x / 430, CL = -120, CR = 550;
+function titleMark(parent) {
+  const word = (cls, fill, extra = "") => `<text class="${cls}" x="0 110 220 330" y="88" fill="${fill}" ${extra}>秋遊特務</text>`;
+  const piece = (cls, clip, chrome, hot) => `<g class="tm-piece ${cls}" clip-path="url(#tm-${clip})"><g filter="url(#tm-rim)">${word("", "url(#tm-rr)", 'transform="translate(-1.6 -.3)"')}${word("", "url(#tm-rb)", 'transform="translate(1.6 -.3)"')}</g>${word("", `url(#tm-${chrome})`)}${word("tm-hot", `url(#tm-${hot})`)}${word("tm-edge", "none")}</g>`;
+  const stops = (list) => list.map(([o, c, a = 1]) => `<stop offset="${o}" stop-color="${c}" stop-opacity="${a}"/>`).join("");
+  const heat = [[0, "#fff7e6"], [.16, "#ffc065"], [.46, "#ff4a1c", .7], [1, "#ff2a1a", 0]];
+  const box = $("div", "mark", parent);
+  box.innerHTML = `<svg class="tm-word" viewBox="0 0 430 100"><defs>
+    <linearGradient id="tm-c1" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="62">${stops([[0, "#fff"], [.42, "#e7eaee"], [.78, "#9aa2ac"], [1, "#767e88"]])}</linearGradient>
+    <linearGradient id="tm-c2" gradientUnits="userSpaceOnUse" x1="0" y1="44" x2="0" y2="98">${stops([[0, "#fcfcfd"], [.34, "#ccd1d7"], [.7, "#8d949d"], [1, "#5a616b"]])}</linearGradient>
+    <linearGradient id="tm-h1" gradientUnits="userSpaceOnUse" x1="215" y1="53" x2="214.6" y2="40">${stops(heat)}</linearGradient>
+    <linearGradient id="tm-h2" gradientUnits="userSpaceOnUse" x1="215" y1="53" x2="215.4" y2="66">${stops(heat)}</linearGradient>
+    <linearGradient id="tm-rr" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="430" y2="0">${stops([[0, "#ff2a4a", .9], [.4, "#ff2a4a", .6], [.56, "#ff2a4a", 0]])}</linearGradient>
+    <linearGradient id="tm-rb" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="430" y2="0">${stops([[.44, "#2f74ff", 0], [.6, "#2f74ff", .6], [1, "#4a8bff", .9]])}</linearGradient>
+    <linearGradient id="tm-sh" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="120" y2="0">${stops([[0, "#fff", 0], [.5, "#fff", .95], [.56, "#ffd6dc", .8], [1, "#fff", 0]])}</linearGradient>
+    <clipPath id="tm-t"><polygon points="${CL},-60 ${CR},-60 ${CR},${cutY(CR)} ${CL},${cutY(CL)}"/></clipPath>
+    <clipPath id="tm-b"><polygon points="${CL},${cutY(CL)} ${CR},${cutY(CR)} ${CR},160 ${CL},160"/></clipPath>
+    <clipPath id="tm-w"><text x="0 110 220 330" y="88">秋遊特務</text></clipPath>
+    <filter id="tm-ds" x="-10%" y="-30%" width="120%" height="170%"><feDropShadow dx="0" dy="2.6" stdDeviation="3.2" flood-color="#000" flood-opacity=".62"/></filter>
+    <filter id="tm-rim" x="-5%" y="-10%" width="110%" height="120%"><feGaussianBlur stdDeviation=".9"/></filter>
+  </defs><g filter="url(#tm-ds)">${piece("tm-bottom", "b", "c2", "h2")}${piece("tm-top", "t", "c1", "h1")}</g>
+  <g clip-path="url(#tm-w)"><rect class="tm-sheen" x="-120" y="-10" width="120" height="120" fill="url(#tm-sh)"/></g></svg>
+  <svg class="tm-laser" viewBox="0 0 430 100"><defs>
+    <linearGradient id="tm-bf" gradientUnits="userSpaceOnUse" x1="${CL}" y1="0" x2="${CR}" y2="0">${stops([[0, "#ff2a4a", 0], [.16, "#ff2a4a"], [.84, "#ff2a4a"], [1, "#ff2a4a", 0]])}</linearGradient>
+    <linearGradient id="tm-bc" gradientUnits="userSpaceOnUse" x1="${CL}" y1="0" x2="${CR}" y2="0">${stops([[.05, "#fff", 0], [.2, "#fff"], [.8, "#fff"], [.95, "#fff", 0]])}</linearGradient>
+    <filter id="tm-gl" x="-10%" y="-400%" width="120%" height="900%"><feGaussianBlur stdDeviation="3.2"/></filter>
+  </defs>${[["glow", "url(#tm-bf)", 7, 'filter="url(#tm-gl)"'], ["red", "url(#tm-bf)", 1.8, ""], ["core", "url(#tm-bc)", .7, ""]].map(([k, stroke, w, f]) => `<line class="tm-beam-${k}" x1="${CL}" y1="${cutY(CL)}" x2="${CR}" y2="${cutY(CR)}" stroke="${stroke}" stroke-width="${w}" ${f} pathLength="1"/>`).join("")}</svg>`;
+  return { box, word: box.querySelector(".tm-word"), lines: [...box.querySelectorAll(".tm-laser line")], top: box.querySelector(".tm-top"), hots: [...box.querySelectorAll(".tm-hot")], sheen: box.querySelector(".tm-sheen") };
+}
 shot(T.title, T.date + .3, (el) => {
   const smoke = img(A("smoke.webp"), "smoke", el); css(smoke, { opacity: .45 });
   const rakeR = $("i", "flare", el), rakeB = $("i", "flare blue", el);
   const title = $("div", "title", el);
-  const word = $("div", "word", title); $("span", "chrome", word, { textContent: "秋遊特務" });
-  const edge = $("span", "edge", word, { textContent: "秋遊特務" }), sheen = $("span", "sheen", word, { textContent: "秋遊特務" }), hot = $("span", "hot", word, { textContent: "秋遊特務" });
-  for (const e of [edge, sheen, hot]) css(e, { position: "absolute", inset: "0" });
-  const rule = $("div", "rule", title), sub = $("div", "sub", title, { textContent: "AUTUMN AGENTS" }), third = $("div", "third", title, { textContent: "MISSION  10.29" });
+  const mark = titleMark(title);
+  const rule = $("div", "rule", title), sub = $("div", "sub", title); sub.innerHTML = "<span>AUTUMN</span><i></i><span>AGENTS</span>";
+  const third = $("div", "third", title, { textContent: "MISSION  10.29" });
   hit(T.title, 2.2, .3, .35);
   const RUN = .85;
+  hit(T.title + RUN, .9, .12, .3, "#ffd8b0");   // the cut completes: a jolt and a flash
   titleFuse = (t) => {
-    // the spark runs along the baseline of the title; letters exist only behind it
+    // the spark rides the laser cut; the letters exist only behind it
     if (t < T.title || t > T.title + RUN + .05) return null;
-    const r = word.getBoundingClientRect(), sb = stage.getBoundingClientRect();
-    const u = p(t, T.title, T.title + RUN, E.ioQ), x = r.left - sb.left - r.width * .04 + u * r.width * 1.08, y = r.top - sb.top + r.height * .78;
-    return [x, y];
+    const r = mark.word.getBoundingClientRect(), sb = stage.getBoundingClientRect();
+    const u = p(t, T.title, T.title + RUN, E.ioQ), vx = CL + u * (CR - CL);
+    return [r.left - sb.left + vx / 430 * r.width, r.top - sb.top + cutY(vx) / 100 * r.height];
   };
   return (t) => {
     const l = t - T.title;
     tf(smoke, `scale(${(1.25 + .12 * l / 3).toFixed(4)}) rotate(${(-3 + 2 * l).toFixed(2)}deg)`); op(smoke, .45 * p(l, 0, .6));
     css(rakeR, { left: "30%", top: "22%" }); tf(rakeR, `rotate(-8deg) scaleX(${(.6 + .4 * p(l, 0, 1.2, E.outC)).toFixed(3)})`); op(rakeR, .35 * p(l, .5, 1));
     css(rakeB, { left: "70%", top: "78%" }); tf(rakeB, `rotate(6deg) scaleX(${(.6 + .4 * p(l, 0, 1.2, E.outC)).toFixed(3)})`); op(rakeB, .35 * p(l, .5, 1));
-    const u = p(l, 0, RUN, E.ioQ), X = (-4 + u * 108).toFixed(2);
-    word.style.webkitMaskImage = word.style.maskImage = `linear-gradient(90deg, #000 calc(${X}% - 1%), transparent ${X}%)`;
-    hot.style.webkitMaskImage = hot.style.maskImage = `linear-gradient(90deg, transparent calc(${X}% - 14%), #000 calc(${X}% - 1%), transparent ${X}%)`;
-    op(hot, 1 - p(l, RUN, RUN + .5));
+    // the laser crosses: the beam draws behind the spark and the letters are etched where it has passed
+    const u = p(l, 0, RUN, E.ioQ), X = ((CL + u * (CR - CL)) / 430 * 100).toFixed(2);
+    mark.word.style.webkitMaskImage = mark.word.style.maskImage = l < RUN + .02 ? `linear-gradient(90deg, #000 calc(${X}% - 3%), transparent ${X}%)` : "none";
+    for (const line of mark.lines) { line.style.strokeDasharray = "1 1"; line.style.strokeDashoffset = (1 - u).toFixed(4); }
+    // then the upper half slips along the cut, the edges cool, a sheen crosses the chrome
+    const slip = p(l, RUN - .04, RUN + .55, E.outBack);
+    mark.top.style.transform = `translate(${(4.6 * slip).toFixed(3)}px, ${(-.15 * slip).toFixed(3)}px)`;
+    for (const h of mark.hots) h.style.opacity = (l < RUN ? 1 : mix(1, .26, p(l, RUN, RUN + 2.6, E.outC))).toFixed(3);
+    mark.sheen.style.transform = `translateX(${mix(-140, 560, p(l, RUN + .55, RUN + 1.6, E.ioC)).toFixed(1)}px)`;
     tf(title, `scale(${(1 + .03 * l).toFixed(4)})`);
-    sheen.style.backgroundPosition = `${mix(140, -40, p(l, 1.0, 1.9, E.ioC)).toFixed(1)}% 0`;
     tf(rule, `scaleX(${p(l, .7, 1.2, E.outE).toFixed(3)})`); reveal(sub, t, T.title + .9, .8, 1.4);
-    sub.style.letterSpacing = mix(1.3, .9, p(l, .9, 1.9, E.outC)).toFixed(3) + "em";
+    for (const w of sub.querySelectorAll("span")) w.style.letterSpacing = mix(1.3, .82, p(l, .9, 1.9, E.outC)).toFixed(3) + "em";
     reveal(third, t, T.title + 1.25, .6, 1);
     op(el, 1 - p(t, T.date - .1, T.date + .3));
   };
@@ -683,8 +717,86 @@ shot(T.stinger, T.cut, (el) => {
     bloomAt(gR, t, T.stingerFire, rx, ry, .55, .3); bloomAt(gB, t, T.stingerFire + .03, bx, by, .55, .3);
   };
 });
-const BURN = 1.25;
-burns.push([T.burn, BURN]);
+const BURN = 1.8;
+/** The film burn (the site's lib/film-burn.ts, made a pure function of time): holes catch at seed points and spread through a
+ *  noise field; ahead of the front the picture scorches, the front glows white-hot to red, behind it is black. */
+const endBurn = (() => {
+  const W = PW, H = PH, gw = 360, gh = Math.round(gw * H / W), aspect = W / H;
+  const seeds = TALL ? [[.5, .7, 0], [.2, .3, .1], [.82, .22, .18], [.86, .86, .28], [.12, .9, .34]] : [[.5, .78, 0], [.18, .28, .16], [.86, .22, .24], [.9, .86, .34], [.06, .9, .4]];
+  const fr = (v) => v - Math.floor(v), hh = (x, y) => fr(Math.sin(x * 127.1 + y * 311.7 + 7 * 74.7) * 43758.5453);
+  const sm = (x, y, f) => { const X = Math.floor(x * f), Y = Math.floor(y * f), fx = x * f - X, fy = y * f - Y, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy); return mix(mix(hh(X, Y), hh(X + 1, Y), u), mix(hh(X, Y + 1), hh(X + 1, Y + 1), u), v); };
+  const noise = new Float32Array(gw * gh);
+  for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) { const x = i / gw * aspect, y = j / gh; noise[j * gw + i] = .55 * sm(x, y, 2.4) + .3 * sm(x, y, 6.5) + .15 * sm(x, y, 17); }
+  const mk = () => { const c = document.createElement("canvas"); c.width = gw; c.height = gh; return c; };
+  const holeC = mk(), charC = mk(), glowC = mk(), hx = holeC.getContext("2d"), cx = charC.getContext("2d"), gx = glowC.getContext("2d");
+  const hole = hx.createImageData(gw, gh), char = cx.createImageData(gw, gh), glow = gx.createImageData(gw, gh);
+  const spread = (t) => .08 + .34 * Math.max(0, t - T.burn);    // catches at once, the picture is gone by about 1.6 s
+  const field = (t, cb) => {
+    const sp = spread(t);
+    for (let j = 0, k = 0; j < gh; j++) for (let i = 0; i < gw; i++, k++) {
+      let v = -9; for (const [sx, sy, d] of seeds) { const f = (sp - d) * 1.7 - Math.hypot((i / gw - sx) * aspect * .55, j / gh - sy); if (f > v) v = f; }
+      cb(k, i, j, v + (noise[k] - 1) * .45);
+    }
+  };
+  // where the front was at each instant, so the embers it throws are a function of time too
+  const fronts = [];
+  for (let n = 0; n <= 60; n++) { const t = T.burn + n / 60 * BURN, list = []; field(t, (k, i, j, v) => { if (v > -.05 && v < .01 && (i * 7 + j * 3) % 11 === 0) list.push([i / gw, j / gh]); }); fronts.push(list); }
+  function draw(t) {
+    if (t < T.burn) return;
+    const flick = .88 + .12 * Math.sin(t * 23) * Math.sin(t * 7.3 + 1);
+    field(t, (k, i, j, v) => {
+      const o = k * 4;
+      if (v > 0) { const bb = Math.min(1, v / .12); hole.data[o] = mix(52, 3, bb); hole.data[o + 1] = mix(22, 3, bb); hole.data[o + 2] = mix(8, 4, bb); hole.data[o + 3] = 255; char.data[o + 3] = 0; }
+      else { hole.data[o + 3] = 0; if (v > -.2) { const q = 1 + v / .2; char.data[o] = mix(70, 18, q * q); char.data[o + 1] = mix(34, 8, q * q); char.data[o + 2] = mix(12, 3, q * q); char.data[o + 3] = Math.round(255 * Math.min(.94, q * q * 1.05)); } else char.data[o + 3] = 0; }
+      if (v > -.075 && v < .03) { const r = v <= 0 ? 1 + v / .075 : 1 - v / .03; glow.data[o] = 255; glow.data[o + 1] = Math.round(mix(52, 238, r * r)); glow.data[o + 2] = Math.round(mix(8, 200, r * r * r)); glow.data[o + 3] = Math.round(255 * Math.min(1, r * 1.3) * flick); }
+      else glow.data[o + 3] = 0;
+    });
+    hx.putImageData(hole, 0, 0); cx.putImageData(char, 0, 0); gx.putImageData(glow, 0, 0);
+    const soft = Math.max(1, Math.round(H / 170));
+    g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+    g.filter = `blur(${soft * 2}px)`; g.drawImage(charC, 0, PY, W, H);
+    g.filter = `blur(${soft}px)`; g.drawImage(holeC, 0, PY, W, H);
+    g.globalCompositeOperation = "lighter";
+    g.filter = `blur(${soft * 1.4}px)`; g.drawImage(glowC, 0, PY, W, H);
+    g.filter = `blur(${Math.round(H / 24)}px)`; g.globalAlpha = .9; g.drawImage(glowC, 0, PY, W, H);
+    g.restore();
+  }
+  /** sparks (streak and fall), embers (drift up, wink out) and smoke, each born on the front at its own instant */
+  function motes(t) {
+    if (t < T.burn) return;
+    g.save();
+    for (let k = 0; k < 520; k++) {
+      const born = T.burn + hash(k, 61) * BURN * .92, age = t - born; if (age < 0) continue;
+      const list = fronts[Math.min(60, Math.round((born - T.burn) / BURN * 60))]; if (!list.length) continue;
+      const [fx0, fy0] = list[Math.floor(hash(k, 62) * list.length)], x0 = fx0 * PW, y0 = PY + fy0 * PH, kind = hash(k, 63);
+      if (kind < .2) {   // spark
+        const life = .35 + .45 * hash(k, 64); if (age > life) continue;
+        const a = -Math.PI / 2 + (hash(k, 65) - .5) * 2.4, sp = (12 + 26 * hash(k, 66)) * cqh, vx = Math.cos(a) * sp, vy = Math.sin(a) * sp;
+        const P = (u) => [x0 + vx * u, y0 + vy * u + 50 * cqh * u * u], [x1, y1] = P(age), [x2, y2] = P(Math.max(0, age - .03));
+        streak(x1, y1, x2, y2, 1 - age / life, .22 * cqh);
+      } else if (kind < .78) {   // ember
+        const life = .8 + 1.2 * hash(k, 67); if (age > life) continue;
+        const q = 1 - age / life, x = x0 + (hash(k, 68) - .5) * 5 * cqh * age + Math.sin(age * 5 + k) * .6 * cqh, y = y0 - (2.5 + 9 * hash(k, 69)) * cqh * age;
+        const tw = .65 + .35 * Math.sin(age * 31 + k);
+        g.globalCompositeOperation = "lighter"; g.fillStyle = `rgba(255,${Math.round(110 + 120 * q)},${Math.round(40 + 90 * q * q)},${(q * tw).toFixed(3)})`;
+        g.beginPath(); g.arc(x, y, (.12 + .2 * hash(k, 70)) * cqh * (.55 + .45 * q), 0, Math.PI * 2); g.fill();
+      } else {   // smoke
+        const life = 1.6 + 1.6 * hash(k, 71); if (age > life) continue;
+        const q = 1 - age / life, x = x0 + (hash(k, 72) - .5) * 3 * cqh * age, y = y0 - (2 + 4 * hash(k, 73)) * cqh * age, r = (1 + 1.6 * hash(k, 74)) * cqh * (1 + age * 1.8);
+        const w = Math.min(1, age / .8), cr = Math.round(mix(150, 160, w)), cg = Math.round(mix(96, 154, w)), cb = Math.round(mix(60, 150, w)), al = .13 * q * Math.min(1, age * 3);
+        const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${cr},${cg},${cb},${al.toFixed(3)})`); gr.addColorStop(.6, `rgba(${cr},${cg},${cb},${(al * .4).toFixed(3)})`); gr.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+        g.globalCompositeOperation = "source-over"; g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+      }
+    }
+    g.restore();
+    // the flare where it catches
+    const l = t - T.burn;
+    if (l < .42) { const q = l / .42, [sx, sy] = seeds[0], x = sx * PW, y = PY + sy * PH, R = Math.max(PW, PH) * (.08 + .35 * q), gr = g.createRadialGradient(x, y, 0, x, y, R);
+      gr.addColorStop(0, `rgba(255,244,222,${(.85 * (1 - q)).toFixed(3)})`); gr.addColorStop(.35, `rgba(255,160,70,${(.35 * (1 - q)).toFixed(3)})`); gr.addColorStop(1, "rgba(255,90,30,0)");
+      g.globalCompositeOperation = "lighter"; g.fillStyle = gr; g.fillRect(0, 0, SW, SH); g.globalCompositeOperation = "source-over"; }
+  }
+  return { draw, motes };
+})();
 shot(T.cut, T.duration + 1, (el) => {
   // what burns: the end card, its smoke and the self-destruct line; what stays: the smoke the fire leaves behind
   const frame = $("div", "layer", el), residue = img(A("smoke.webp"), "smoke", el); css(residue, { opacity: 0 });
@@ -694,18 +806,15 @@ shot(T.cut, T.duration + 1, (el) => {
   const rule = $("div", "rule", card), third = $("div", "third", card, { textContent: "MISSION  10.29" });
   const msg = $("div", "destruct", frame), msgEn = $("small", "", msg, { textContent: "THIS MESSAGE WILL SELF-DESTRUCT" }), msgLine = $("p", "", msg);
   const msgChars = [..."本訊息將自動銷毀"].map((c) => $("span", "", msgLine, { textContent: c })), msgCur = $("i", "cur", msgLine);
-  hit(T.burn, .35, .12, .14, "#ffb04a");
-  for (let k = 0; k < 7; k++) { const v = .12 + .76 * hash(k, 41); sparkBursts.push([T.burn + .08 + k * BURN / 7, (p(T.burn + .08 + k * BURN / 7, T.burn, T.burn + BURN, E.ioC) * 1.12 - .06) * PW, v * PH, 10, 14, ""]); }
-  sparkBursts.push([T.burn, .02 * PW, .9 * PH, 22, 20, ""]);
+  hit(T.burn, .8, .16, .22, "#ffb04a");
   return (t) => {
     const l = t - T.end, x = p(l, 0, 1.6, E.outC), out = 1;
-    burnAway(frame, t, T.burn, BURN);
     const [da, db] = [T.destruct, T.destruct + .6];
     op(msg, p(t, da - .15, da)); reveal(msgEn, t, da - .15, .4, 1);
     let typed = 0; msgChars.forEach((c, i) => { const on = t >= da + (db - da) * i / msgChars.length; c.style.visibility = on ? "visible" : "hidden"; if (on) typed = i + 1; });
     if (msgCur.previousSibling !== (msgChars[typed - 1] || null)) msgLine.insertBefore(msgCur, msgChars[typed] || null);
     op(msgCur, t < db ? 1 : Math.floor((t - db) / .22) % 2 ? 0 : 1);
-    op(residue, .26 * p(t, T.burn + .3, T.burn + 1.1) * (1 - p(t, T.burn + BURN + .1, T.duration - .25)));
+    op(residue, 0);
     tf(residue, `translateY(${(-10 * p(t, T.burn, T.duration)).toFixed(2)}%) scale(${(1.3 + .15 * p(t, T.burn, T.duration)).toFixed(4)})`);
     op(card, p(l, 0, .45, E.outC) * out); op(smoke, .3 * p(l, 0, 1) * out); tf(smoke, `scale(${(1.3 + .08 * l).toFixed(4)}) rotate(${(2 - 2 * l).toFixed(2)}deg)`);
     const ls = mix(.42, .2, x).toFixed(3); word.style.letterSpacing = ls + "em"; word.style.marginRight = "-" + ls + "em";
@@ -724,6 +833,7 @@ function seek(t) {
   camera(t);
   g.clearRect(0, 0, SW, SH);
   drawFuses(t); drawBurns(t); drawSparks(t);
+  endBurn.draw(t); endBurn.motes(t);
   if (titleFuse) { const tp = titleFuse(t); if (tp) fuseHead(t, T.title, (te) => titleFuse(Math.max(te, T.title)) || tp, 1.1); }
   embers(t, T.title, T.date + .3, 46, .7); embers(t, T.stinger, T.cut, 30, .5);
 }
@@ -735,6 +845,7 @@ await document.fonts.load('900 100px "Noto Sans TC"', "任務簡報攻佔六度�
 await document.fonts.load('700 100px "Noto Sans TC"', "你的任務如果你選擇接受中午十二點集合感應背心雷射槍週四戰後飯店下午茶保護老闆");
 await document.fonts.load('500 40px "Cinzel"', "THIS AUTUMN TWO BOSSES ONE BATTLEFIELD AUTUMN AGENTS");
 await document.fonts.load('700 40px "Cinzel"', "AUTUMN AGENTS");
+await document.fonts.load('600 40px "Oswald"', "AUTUMN AGENTS");
 await document.fonts.load('500 40px "JetBrains Mono"', "MISSION BRIEFING 10.29 代號");
 await document.fonts.load('700 40px "JetBrains Mono"', "MISSION 10.29");
 await document.fonts.load('700 40px "JetBrains Mono"', "LOCATION GEAR VIP AFTER TARGET RED BLUE LEADER THU 12:00");

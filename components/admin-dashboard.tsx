@@ -12,6 +12,7 @@ import AdminCatalogPreview from "./admin-catalog-preview";
 import CalendarField from "./calendar-field";
 import { parseCalendarDate, taipeiDeadline } from "@/lib/calendar";
 import AdminMembers from "./admin-members";
+import AdminTeams from "./admin-teams";
 import { getVotingAccess, type RegisteredUser } from "@/lib/voting-access";
 import AdminVoteOverview from "./admin-vote-overview";
 import { useOuting } from "./outing-provider";
@@ -72,7 +73,7 @@ export default function AdminDashboard() {
   const [draft, setDraft] = useState<Catalog | null>(null),
     [version, setVersion] = useState<number | null>(null),
     [dirty, setDirty] = useState(false);
-  const [view, setView] = useState<"overview" | "editor" | "members">("overview");
+  const [view, setView] = useState<"overview" | "editor" | "members" | "teams">("overview");
   const [reviewChanges, setReviewChanges] = useState(false);
   const editorForm = useRef<HTMLFormElement>(null);
   const [editorMode, setEditorMode] = useState<"edit" | "preview">("edit");
@@ -293,9 +294,11 @@ export default function AdminDashboard() {
             <div className="organizer-view-tabs" role="group" aria-label="主辦功能">
               <button type="button" aria-pressed={view === "overview"} onClick={() => setView("overview")}>戰況與明細</button>
               <button type="button" className="member-review-tab" aria-pressed={view === "members"} onClick={() => setView("members")} title={membersReady && pendingMembers > 0 ? pendingMembers + " 個帳號待審核" : undefined}>帳號與審核{membersReady && <span>{pendingMembers ? pendingMembers + " 待審" : Object.keys(members).length + " 人"}</span>}{membersReady && pendingMembers > 0 && <i className="pending-review-dot" aria-hidden="true" />}</button>
+              <button type="button" aria-pressed={view === "teams"} onClick={() => setView("teams")}>分隊{votesReady && <span>{Object.keys(votes).length} 人</span>}</button>
               <button type="button" aria-pressed={view === "editor"} onClick={() => setView("editor")}>編輯方案{dirty && <span>未儲存</span>}</button>
             </div>
             {catalog && <div hidden={view !== "overview"}><AdminVoteOverview catalog={catalog} votes={votes} details={details} emails={emails} ready={votesReady && detailsReady && membersReady} error={votesError || detailsError || membersError} /></div>}
+            {view === "teams" && <AdminTeams votes={votes} details={details} ready={votesReady && detailsReady} />}
             <div hidden={view !== "members"}><AdminMembers members={members} ready={membersReady} error={membersError} votes={votes} votesReady={votesReady} catalog={catalog} /></div>
             {draft && (
               <form ref={editorForm} hidden={view !== "editor"} noValidate onSubmit={save} onInvalidCapture={(event) => {

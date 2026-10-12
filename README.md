@@ -49,27 +49,35 @@ Firebase Google 登入提供者須啟用，Auth 授權網域須包含實際使�
 - `users/{uid}`：Email、顯示名稱、頭像、角色、建立及更新時間；人工審核存於 `voteReview`（status、email、reviewedBy、reviewedAt）。未審核與公司帳號資格由 Email 和審核紀錄判斷，不另存重複狀態。
 - `outing/catalog`：活動設定、方案、版本與截止時間。
 - `outing/votes/{uid}`：投票方案、姓名、Google 頭像及更新時間。
-- `outing/voteDetails/{uid}`：選配與備註；一般頁面只顯示本人，後台顯示投票明細。
+- `outing/voteDetails/{uid}`：選配與備註；一般頁面只顯示本人，後台顯示投票明細。首頁「接受任務」登記的備註與家眷也存在這裡。
+- `outing/teams`：分隊結果 `{uid: "red" | "blue"}`，由主辦在後台「分隊」儲存。
 
 ## 開場
 
-行程為熱血對戰派（六度空間雷射對戰＋飯店下午茶）。開場是一支 32 秒的預告片《秋遊特務》：前段致敬 007（白點、槍管、轉身開槍、紅色流下、剪影片名卡「今年秋天／兩位老闆／一個戰場／只有一隊能贏」），後段致敬不可能的任務（黑暗中劃亮火柴、導火線一路燒過地面、任務簡報、紅藍隊長檔案、「10.29 攻佔六度空間」、場地／裝備／對戰／下午茶／金庫雷射網快剪、鎖定兩位隊長、片名、日期、兩位老闆開槍、「全員出動」，最後「本訊息將自動銷毀」，畫面燒掉化成煙）。橫式為 2.39:1 遮幅，手機直式另有重新構圖的版本。
+行程為熱血對戰派（六度空間雷射對戰＋飯店下午茶）。網站載入時先是黑色主控台開機畫面（`components/outing-loading.tsx`）：《秋遊特務》字樣被雷射切開、掃描光條與「ESTABLISHING SECURE LINK」，純 CSS，腳本還沒載入就會動。
 
-預告片是預先算好的影片（`public/assets/trailer/trailer-16x9.mp4`、`trailer-9x16.mp4`），網站依螢幕方向播放其中一支，畫面上再疊即時底片顆粒。進站先顯示預告海報封面（橫式與直式海報各一張），點「播放預告」才有聲播放；瀏覽器擋下時提示再點一次，影片無法播放時可直接跳過。看完或跳過後首頁主視覺從黑中淡入；首頁的「重播預告」會直接開始播放。
+開場是一支 32 秒的預告片《秋遊特務》：前段致敬 007（白點、槍管、轉身開槍、紅色流下、剪影片名卡「今年秋天／兩位老闆／一個戰場／只有一隊能贏」），後段致敬不可能的任務（黑暗中劃亮火柴、導火線一路燒過地面、任務簡報、紅藍隊長檔案、「10.29 攻佔六度空間」、場地／裝備／對戰／下午茶／金庫雷射網快剪、鎖定兩位隊長、雷射切開的片名、日期、兩位老闆開槍、「全員出動」，最後「本訊息將自動銷毀」，畫面從字幕處起火燒穿成黑，只剩餘燼與煙）。橫式為 2.39:1 遮幅，手機直式另有重新構圖的版本。
 
-首頁主視覺（`components/mission-hero.tsx`、`app/mission-hero.css`）與頂端導覽列沿用預告片風格：黑底電影海報、兩位老闆持雷射槍的主視覺照、雷射紅藍光、取景框與《秋遊特務》鉻銀字樣（`components/title-mark.tsx`）。左側列出集合時間、地點與戰後下午茶，集合時間與地址讀取方案 B 行程的第一站。
+預告片是預先算好的影片（`public/assets/trailer/trailer-16x9.mp4`、`trailer-9x16.mp4`），網站依螢幕方向播放其中一支，畫面上再疊即時底片顆粒。進站先顯示預告海報封面（橫式與直式海報各一張），點「播放預告」才有聲播放；瀏覽器擋下時提示再點一次，影片無法播放時可直接跳過。
+
+**接到主頁的轉場**：影片播到自毀那一刻（`TRAILER_BURN_AT`），畫面凍結成畫布，由網站即時燒穿（`lib/film-burn.ts`：雜訊場擴散的焦痕、白熱火邊、火花、餘燼與煙），主頁就在底下從燒出的洞裡出現，配樂照常播完；主視覺的 logo 同時被雷射刻出。按「跳過預告」（或 Esc）也是同樣的燒穿，只是更快；在封面就跳過時，封面海報燒掉。減少動態效果時直接切換。首頁的「重播預告」會回到頁首並直接開始播放。
+
+首頁主視覺（`components/mission-hero.tsx`、`app/mission-hero.css`）與頂端導覽列沿用預告片風格：黑底電影海報、兩位老闆持雷射槍的主視覺照、雷射紅藍光、取景框。字樣 `components/title-mark.tsx`（樣式 `app/title-mark.css`）：鉻金屬襯線字被一道斜向雷射切開、上半部沿切口錯位、切口留著紅熱餘溫、左紅右藍的輪廓光；`motion="cut"` 時雷射帶著火花劃過、把字刻出來，`motion="scan"` 時光脈衝持續沿雷射跑（載入畫面）。左側列出集合時間、地點與戰後下午茶，集合時間與地址讀取方案 B 行程的第一站。
 
 ## 行程頁
 
 首頁只放這次要去玩的內容，投票、方案比較與戰況都已拿掉（後台 /admin 仍可用）。主視覺下方是不可能的任務風格的電腦終端機畫面（`components/mission-sections.tsx`、`app/mission-page.css`）：
 
-- **任務流程**：開機字幕逐字打出後倒數五秒「本訊息將自動銷毀」，字幕燒掉只留下「訊息已銷毀」（減少動態效果時不倒數、不燒）；下面是方案 B 的行程紀錄，右上角倒數到集合時間。
-- **作戰場地**：六度空間的監視器畫面（即時時間戳）、場地情報、紅藍隊長的臉部辨識、任務模式與捷運步行路線。場地說明、任務模式、交通與須知整理自六度空間官網（`lib/mission-brief.ts`）。
-- **戰後補給**：飯店下午茶的候選飯店、Google 評分與連結。
-- **行前須知**：可逐項打勾的裝備檢查，勾選只存在這台裝置。
+- **任務流程**：開機字幕逐字打出（每行之間停一拍），倒數五秒「本訊息將自動銷毀」、主控台警報、畫面故障、點火燒穿（`components/mission-briefing.tsx`），留下「訊息已銷毀」九秒後才重新傳送；捲走再回來也會重新傳送。減少動態效果時不倒數、不燒。下面是方案 B 的行程紀錄，右上角倒數到集合時間。
+- **作戰場地**：六度空間的監視器畫面（即時時間戳），裡面藏了彩蛋——兩位隊長會不定時從掩體或走廊深處探頭，點一下就開槍，命中有白閃、火花與 HIT +1，右下角計分（`components/recon-targets.tsx`）。接著是場地情報、兩位隊長的對決海報（`components/captains-faceoff.tsx`：紅藍兩半斜向雷射接縫、兩人舉槍互瞄、光束在 VS 後方對撞、臉部辨識框）、任務模式、捷運步行路線，以及六度空間的 Google 評論。場地說明、任務模式、交通與須知整理自六度空間官網（`lib/mission-brief.ts`）。
+- **戰後補給**：只顯示下午茶票數最高的飯店（`/api/choice-results` 的匿名統計，同票時全部列出；頁面不顯示票數），附地圖、官網與該飯店的 Google 評論。本機沒有資料庫時可用 `?topTea=c1` 這類網址參數預覽（僅開發模式）。
+- **Google 評論**：顯示網站擷取到的全部評論（最新五則、全文，只留星等的也列出），其餘評論用「看全部 N 則」連到 Google 地圖（`components/review-deck.tsx`）。
+- **行前須知**：特務守則五條（`components/mission-protocols.tsx`），卡片捲入時圖示描線、文字解碼並蓋上 CLEARED。
+- **接受任務**：「你的任務，如果你選擇接受——」。登入後填備註、是否帶家眷與人數、家眷備註，按「確認接受任務」（`components/mission-accept.tsx`）。資料寫進原本的 `votes`／`voteDetails`（方案 B），所以沒投過票的人也能登記、主辦明細照常看得到；投票關閉後仍可登記，資格審核規則不變。右側是已接受任務的特務名單，分好隊後依紅隊／藍隊／待分隊顯示。
 - **頁尾**：加入 Google 日曆、重播預告。
+- **隊長對決**（最底下，預設就顯示，`components/duel-sim.tsx`）：單人挑戰電腦或雙人同機；背對背走三步立刻開打，A 開槍、按住 S 躲到掩體後（藍隊雙人為 L／K），躲太久會被拉起來，每人 3 條命；手機用下方按鈕。人物動作圖在 `public/assets/mission/duel/`。
 
-頁面最底下藏了一個 `> run duel.exe` 彩蛋（`components/duel-sim.tsx`）：兩位隊長背對背走三步、轉身，聽到「開槍！」後紅隊按 A、藍隊按 L（手機直接點按鈕），先開槍的一方獲勝、另一位中彈倒地；搶先開槍會走火判輸。人物動作圖在 `public/assets/mission/duel/`。
+後台多了「分隊」分頁（`components/admin-teams.tsx`、`lib/teams.ts`）：列出所有接受任務的人（含家眷人數），可逐一點紅隊／藍隊，或「隨機分配其餘的人」（保留已手動指定的人，其餘洗牌補到人數較少的一隊）、「全部重新抽籤」、「清空」，最後按「儲存分隊」寫入 `outing/teams`，前台名單即時更新。
 
 ### 製作預告片
 
@@ -91,6 +99,7 @@ npm run test:opening
 npm run test:votes
 npm run test:admin
 npm run test:draw
+npm run test:teams
 npm run build
 npm start -- --port 3008
 ```
@@ -103,8 +112,10 @@ npm start -- --port 3008
 
 ## 主要檔案
 
-- `components/opening-animation.tsx`：預告片海報封面與播放。
-- `components/mission-sections.tsx`：行程頁的終端機區塊與頁尾；`components/duel-sim.tsx`：隊長決鬥彩蛋。
+- `components/opening-animation.tsx`：預告片海報封面、播放與燒穿轉場。
+- `components/mission-sections.tsx`：行程頁的終端機區塊與頁尾；`components/mission-briefing.tsx`：自毀簡報；`components/captains-faceoff.tsx`：隊長對決海報；`components/recon-targets.tsx`：監視器射擊彩蛋；`components/mission-accept.tsx`：接受任務與名單；`components/duel-sim.tsx`：隊長對決小遊戲。
+- `components/title-mark.tsx`、`app/title-mark.css`：雷射切開的《秋遊特務》字樣；`components/outing-loading.tsx`：載入畫面。
+- `lib/film-burn.ts`：燒穿特效（自毀簡報與預告片接主頁共用）；`lib/teams.ts`：分隊邏輯（`npm run test:teams`）。
 - `scripts/trailer/`：預告片合成、配樂與輸出。
 - `components/trip-showdown.tsx`：首頁：預告片、主視覺與行程頁。
 - `components/outing-provider.tsx`：登入、使用者資料與即時同步。
