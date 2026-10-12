@@ -18,6 +18,9 @@ export function Face({ vote, size }: { vote: PublicVote; size?: "lg" }) {
   </span>;
 }
 
+/** The part of the classic line the organisers say in amber. */
+const DISAVOW = "主辦單位將否認知情";
+
 /** A fingerprint, drawn in arcs. */
 const PRINT = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" aria-hidden="true"><path d="M7.2 19.5C5.8 17.7 5 15.4 5 13a7 7 0 0 1 14 0" /><path d="M9.5 21c-1.2-2-1.9-4.4-1.9-7a4.4 4.4 0 0 1 8.8 0c0 1.3-.2 2.6-.5 3.8" /><path d="M12 14c0 2.7.6 5.2 1.7 7.4" /><path d="M17.8 19.6c.4-1.2.6-2.6.6-4" /><path d="M4.6 8.7A9 9 0 0 1 19.4 8.7" /><path d="M7.5 5.2A9.3 9.3 0 0 1 16.5 5.2" /></svg>;
 
@@ -118,7 +121,10 @@ function Briefing({ name, destroy, onDestroyed }: { name?: string; destroy: bool
     <p className="sr-only">{lines.join("")}</p>
     {stage !== "gone" ? <div className="tape-lines" aria-hidden="true">
       {lines.map((line, i) => { const shown = line.slice(0, Math.max(0, left)); const caret = left > 0 && left <= line.length && typed < total; left -= line.length;
-        return <p key={i} className={"tape-line" + (i === 0 ? " is-greet" : i === 1 ? " is-cue" : i === lines.length - 1 ? " is-classic" : "")}>{shown}{caret && <i className="tape-caret" />}</p>; })}
+        const classic = i === lines.length - 1, hot = classic ? line.indexOf(DISAVOW) : -1;
+        return <p key={i} className={"tape-line" + (i === 0 ? " is-greet" : i === 1 ? " is-cue" : classic ? " is-classic" : "")}>
+          {hot < 0 ? shown : <>{shown.slice(0, hot)}<em className="tape-hot">{shown.slice(hot, hot + DISAVOW.length)}</em>{shown.slice(hot + DISAVOW.length)}</>}{caret && <i className="tape-caret" />}
+        </p>; })}
       {stage === "count" && <p className="tape-line is-destruct">本訊息將在 <b key={secs}>{secs}</b> 秒後自動銷毀</p>}
     </div> : <p className="tape-gone">簡報已銷毀・祝任務順利</p>}
     <canvas ref={canvas} className="tape-burn" aria-hidden="true" />

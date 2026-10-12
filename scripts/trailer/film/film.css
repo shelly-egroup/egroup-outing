@@ -124,6 +124,7 @@ img { display: block; max-width: none; user-select: none; }
 /* the classic line, in the title's serif */
 .disavow { position: absolute; left: 50%; top: 62.5%; translate: -50% 0; margin: 0; font: 900 4.3cqh/1.3 var(--serif); letter-spacing: .12em; margin-right: -.12em; color: var(--paper); white-space: nowrap; text-shadow: 0 0 2.4cqh rgb(0 0 0 / .9), 0 0 .6cqh rgb(0 0 0 / .8); }
 [data-ar="9x16"] .disavow { top: 57.5%; font-size: 3.9cqw; letter-spacing: .04em; margin-right: -.04em; }
+.disavow .hot { color: var(--amber); text-shadow: 0 0 2.4cqh rgb(0 0 0 / .9), 0 0 2.2cqh rgb(255 176 74 / .35); }
 [data-ar="9x16"] .destruct small { font-size: 2.6cqw; letter-spacing: .3em; margin-right: -.3em; }
 [data-ar="9x16"] .destruct p { font-size: 5.6cqw; letter-spacing: .26em; }
 .title.endcard .word { font-size: 15cqh; }

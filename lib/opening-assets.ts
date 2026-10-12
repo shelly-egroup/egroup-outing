@@ -11,8 +11,8 @@ export const TRAILER_IMAGES = { keyArt: "/assets/trailer/key-art.webp?v=3", keyA
 
 /** The pre-rendered trailer (scripts/trailer/render-film.mjs): widescreen, plus a vertical cut for portrait phones. */
 export const TRAILER_VIDEO = {
-  wide: "/assets/trailer/trailer-16x9.mp4?v=10",
-  tall: "/assets/trailer/trailer-9x16.mp4?v=10",
+  wide: "/assets/trailer/trailer-16x9.mp4?v=11",
+  tall: "/assets/trailer/trailer-9x16.mp4?v=11",
 } as const;
 
 /** When the trailer's end card starts to burn (scripts/trailer/timeline.json "burn"): from here the site burns the frozen frame

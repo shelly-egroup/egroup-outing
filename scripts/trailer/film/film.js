@@ -276,14 +276,15 @@ shot(T.titles[0], T.ignite, (el) => {
   const cards = [...el.querySelectorAll(".card")];
   if (TALL) {
     css(silA.s, { position: "absolute", left: "-12%", bottom: "-4%", height: "72%" }); place(cards[0], "8%", "16%");
-    css(silB.s, { position: "absolute", right: "-6%", bottom: "-4%", height: "74%" }); place(cards[1], "8%", "16%");
+    css(silB.s, { position: "absolute", right: "2%", bottom: "-4%", height: "74%" }); place(cards[1], "8%", "16%");
     place(cards[2], "8%", "16%");
-    css(fA.s, { position: "absolute", left: "-26%", bottom: "-8%", height: "62%" }); css(fB.s, { position: "absolute", right: "-10%", bottom: "-8%", height: "62%" }); place(cards[3], "50%", "14%", .5);
+    css(fA.s, { position: "absolute", left: "0%", bottom: "-8%", height: "62%" }); css(fB.s, { position: "absolute", right: "2%", bottom: "-8%", height: "62%" }); place(cards[3], "50%", "14%", .5);
   } else {
-    css(silA.s, { position: "absolute", left: "3%", bottom: "-50%", height: "160%" }); place(cards[0], "92%", "50%", 1);
-    css(silB.s, { position: "absolute", right: "6%", bottom: "-50%", height: "160%" }); place(cards[1], "8%", "50%");
+    // whole heads: the figures stop a little under the top of the 2.39:1 picture
+    css(silA.s, { position: "absolute", left: "3%", bottom: "-36%", height: "132%" }); place(cards[0], "92%", "50%", 1);
+    css(silB.s, { position: "absolute", right: "6%", bottom: "-36%", height: "132%" }); place(cards[1], "8%", "50%");
     place(cards[2], "8%", "50%");
-    css(fA.s, { position: "absolute", left: "4%", bottom: "-44%", height: "152%" }); css(fB.s, { position: "absolute", right: "8%", bottom: "-44%", height: "152%" }); place(cards[3], "50%", "64%", .5);
+    css(fA.s, { position: "absolute", left: "4%", bottom: "-36%", height: "132%" }); css(fB.s, { position: "absolute", right: "8%", bottom: "-36%", height: "132%" }); place(cards[3], "50%", "64%", .5);
   }
   const [a1, a2, a3, a4] = T.titles;
   hit(a4, .6, .14);
@@ -835,7 +836,8 @@ shot(T.cut, T.duration + 1, (el) => {
   $("span", "chrome", word, { textContent: "全員出動" }); const sheen = $("span", "sheen", word, { textContent: "全員出動" }); css(sheen, { position: "absolute", inset: "0" });
   const rule = $("div", "rule", card), third = $("div", "third", card, { textContent: "MISSION  10.29" });
   // as always: the organisers disavow any knowledge — typed under the card, before the self-destruct line
-  const vow = $("p", "disavow", frame), vowChars = [..."一如往常，若你被雷射擊中，主辦單位將否認知情。"].map((c) => $("span", "", vow, { textContent: c }));
+  const VOW = "一如往常，若你被雷射擊中，主辦單位將否認知情。", HOT = VOW.indexOf("主辦單位將否認知情");
+  const vow = $("p", "disavow", frame), vowChars = [...VOW].map((c, i) => $("span", i >= HOT && i < HOT + 9 ? "hot" : "", vow, { textContent: c }));
   const msg = $("div", "destruct", frame), msgEn = $("small", "", msg, { textContent: "THIS MESSAGE WILL SELF-DESTRUCT" }), msgLine = $("p", "", msg);
   const msgChars = [..."本訊息將自動銷毀"].map((c) => $("span", "", msgLine, { textContent: c })), msgCur = $("i", "cur", msgLine);
   hit(T.burn, .8, .16, .22, "#ffb04a");

@@ -80,7 +80,29 @@ function ReconFeed({ src, cam, label, alt, now, game = false }: { src: string; c
 
 /** The walk from the MRT, drawn as a route trace. */
 function RouteMap({ address }: { address: string }) {
-  return <svg className="route" viewBox="0 0 640 200" role="img" aria-label={"捷運民權西路站 9 號出口步行約 8 分鐘到 " + address}>
+  const label = "捷運民權西路站 9 號出口步行約 8 分鐘到 " + address;
+  return <>
+    <WideRoute label={label} />
+    {/* phones: the same walk, drawn taller so the words stay readable */}
+    <svg className="route route-tall" viewBox="0 0 360 286" role="img" aria-label={label}>
+      <defs><pattern id="route-grid-tall" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="currentColor" strokeOpacity=".08" /></pattern></defs>
+      <rect width="360" height="286" fill="url(#route-grid-tall)" />
+      <path className="route-road" d="M0 176H360" />
+      <text className="route-road-name" x="180" y="206" textAnchor="middle">中山北路二段</text>
+      <path className="route-path" d="M66 112C102 112 112 176 150 176H214C254 176 262 112 294 112" />
+      <g className="route-mrt" transform="translate(48 112)"><circle r="20" /><text y="6" textAnchor="middle">M</text></g>
+      <text className="route-label" x="18" y="42">捷運民權西路站</text>
+      <text className="route-sub" x="18" y="66">9 號出口</text>
+      <g className="route-target" transform="translate(310 112)"><circle r="22" /><circle r="9" /><path d="M0-33V-25M0 25V33M-33 0H-25M25 0H33" /></g>
+      <text className="route-label" x="342" y="42" textAnchor="end">六度空間 B1</text>
+      <text className="route-sub" x="342" y="66" textAnchor="end">185 號</text>
+      <text className="route-eta" x="180" y="250" textAnchor="middle">步行約 8 分鐘</text>
+    </svg>
+  </>;
+}
+
+function WideRoute({ label }: { label: string }) {
+  return <svg className="route route-wide" viewBox="0 0 640 200" role="img" aria-label={label}>
     <defs><pattern id="route-grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="currentColor" strokeOpacity=".08" /></pattern></defs>
     <rect width="640" height="200" fill="url(#route-grid)" />
     <path className="route-road" d="M0 132H640" />

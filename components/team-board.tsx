@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import { Face, SAMPLE } from "./mission-accept";
 import { useOuting } from "./outing-provider";
 import { useInView } from "./use-in-view";
-import { MARK_AGENT } from "@/lib/title-mark-paths";
+import { MARK_AGENT_WHOLE } from "@/lib/title-mark-paths";
 import { assignTeams, captainOf, drawOne, otherTeam, pickTurn, TEAM_LABEL, teamCounts, TEAMS, withCaptains, type Captain, type Team, type TeamConfig, type TeamDraw, type TeamMap } from "@/lib/teams";
 import type { PublicVote } from "@/lib/trips";
 
@@ -31,7 +31,7 @@ const SCENARIOS: Scenario[] = [
 
 /** The agent from the mark: standing in for a captain who has not signed in yet, or a ghost in an empty slot. */
 function Silhouette({ className }: { className: string }) {
-  return <svg className={className} viewBox="176 19 38 64" aria-hidden="true"><path d={MARK_AGENT} /></svg>;
+  return <svg className={className} viewBox="176 19 38 64" aria-hidden="true"><path d={MARK_AGENT_WHOLE} /></svg>;
 }
 
 /**
@@ -99,10 +99,9 @@ export default function TeamBoard() {
   const codes = Object.fromEntries(Object.entries(votes).sort(([, a], [, b]) => (a.updatedAt || 0) - (b.updatedAt || 0)).map(([uid], i) => [uid, pad(i + 1)]));
   const name = (uid: string) => votes[uid]?.displayName || "探員";
 
-  // the cards fly: remember where every card sits (relative to the board), and when one changes team, fly it from there —
-  // one after another, in reading order, when many move at once
+  // the cards fly: remember where every card sits (relative to the board), and when one changes team, throw it from there in
+  // an arc, glowing in its new colour — one after another, in reading order, when many move at once
   const cards = useRef(new Map<string, HTMLElement>()), spots = useRef(new Map<string, { x: number; y: number }>()), last = useRef<TeamMap>({});
-  const fx = useRef<HTMLDivElement>(null);
   const reg = (uid: string) => (el: HTMLElement | null) => { if (el) cards.current.set(uid, el); else cards.current.delete(uid); };
   useLayoutEffect(() => {
     const host = ref.current; if (!host) return;
@@ -113,17 +112,14 @@ export default function TeamBoard() {
     if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) moved.forEach((uid, i) => {
       const from = spots.current.get(uid)!, at = now.get(uid)!, el = cards.current.get(uid), team = placed[uid], delay = i * 120;
       if (!el) return;
-      el.animate([{ transform: `translate(${from.x - at.x}px, ${from.y - at.y}px) scale(1.1)`, filter: "brightness(2.2)" }, { transform: "none", filter: "none" }], { duration: 680, delay, easing: "cubic-bezier(.2,.8,.2,1)", fill: "backwards" });
-      window.setTimeout(() => { el.classList.remove("is-landed"); void el.offsetWidth; el.classList.add("is-landed"); }, delay + 320);
-      // the laser it rides on
-      const layer = fx.current;
-      if (layer && team) {
-        const trail = document.createElement("i"), dx = at.x - from.x, dy = at.y - from.y;
-        trail.className = "draft-trail"; trail.dataset.team = team;
-        Object.assign(trail.style, { left: from.x + "px", top: from.y + "px", width: Math.hypot(dx, dy) + "px", rotate: Math.atan2(dy, dx) + "rad" });
-        layer.appendChild(trail);
-        trail.animate([{ scale: "0 1", opacity: 1 }, { scale: "1 1", opacity: 1, offset: .45 }, { scale: "1 1", opacity: 0 }], { duration: 720, delay, easing: "cubic-bezier(.2,.8,.2,1)", fill: "backwards" }).finished.then(() => trail.remove(), () => trail.remove());
-      }
+      const dx = from.x - at.x, dy = from.y - at.y, tilt = dx > 0 ? 5 : dx < 0 ? -5 : 0, lift = Math.min(70, Math.abs(dx) * .14 + 18);
+      const glow = team === "red" ? "rgb(255 42 74 / .9)" : team === "blue" ? "rgb(61 125 255 / .9)" : "rgb(255 255 255 / .6)";
+      el.animate([
+        { transform: `translate(${dx}px, ${dy}px) scale(1.06) rotate(${tilt}deg)`, filter: `brightness(1.7) drop-shadow(0 0 18px ${glow})` },
+        { transform: `translate(${dx * .42}px, ${dy * .42 - lift}px) scale(1.14) rotate(${tilt * .5}deg)`, filter: `brightness(1.45) drop-shadow(0 0 22px ${glow})`, offset: .5 },
+        { transform: "none", filter: "brightness(1) drop-shadow(0 0 0 transparent)" },
+      ], { duration: 760, delay, easing: "cubic-bezier(.3,.7,.2,1)", fill: "backwards" });
+      window.setTimeout(() => { el.classList.remove("is-landed"); void el.offsetWidth; el.classList.add("is-landed"); }, delay + 700);
     });
     if (moved.length) setNews(moved.map(uid => name(uid) + (placed[uid] ? " 加入" + TEAM_LABEL[placed[uid]] : " 回到待分隊")).join("，"));
     spots.current = now; last.current = placed;
@@ -273,7 +269,6 @@ export default function TeamBoard() {
         </section>
         {side("blue")}
       </div>
-      <div ref={fx} className="draft-fx" aria-hidden="true" />
     </div>
     <p className="sr-only" aria-live="polite">{rolling ? "抽籤中" : news}</p>
     {problem && <p className="draft-problem" role="alert">{problem}</p>}
