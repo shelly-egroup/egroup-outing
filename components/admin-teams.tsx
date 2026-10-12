@@ -69,9 +69,10 @@ function CaptainCard({ team, captain, rival, people, emails, accepted, saving, o
 }
 
 /**
- * The teams, in the back office: whether the front page shows them and whether the captains may pick their people there;
- * who the two captains are (by default egroup.james for red and egroup.ivy for blue, changeable here); and the team sheet
- * itself — everyone who has accepted, picked by hand or drawn at random, with the captains fixed to their teams.
+ * The teams, in the back office, as three steps: the captains (by default egroup.james for red and egroup.ivy for blue,
+ * changeable here); how the teams are made — by the organisers, or by the captains picking on the front page, in turn from a
+ * first pick drawn by lot or named, or freely; and going public. A line on top says what the front page shows right now. The
+ * team sheet below holds everyone who has accepted, picked by hand or drawn at random, the captains fixed to their teams.
  */
 export default function AdminTeams({ votes, details, emails, ready }: { votes: Record<string, PublicVote>; details: Record<string, VoteDetails>; emails: Record<string, string | null>; ready: boolean }) {
   const { teams, teamsReady, saveTeams, teamConfig, teamConfigReady, saveTeamConfig, connected } = useOuting();
@@ -98,38 +99,67 @@ export default function AdminTeams({ votes, details, emails, ready }: { votes: R
     catch (error) { setConfigFailed(error instanceof Error ? error.message : "設定沒有儲存，請稍後再試。"); }
     finally { setConfigSaving(false); }
   }
+  const live = !teamConfig.published ? "不顯示分隊（探員看不到任何分隊資訊）" : !teamConfig.picking ? "顯示兩隊名單（主辦分隊）"
+    : "隊長選人進行中・" + (teamConfig.turns ? "輪流，" + (teamConfig.firstPick ? TEAM_LABEL[teamConfig.firstPick] : "紅隊") + "先選" : "不輪流");
   if (!ready || !teamsReady || !teamConfigReady) return <section className="admin-teams"><LoadingIndicator label="讀取名單" /></section>;
   return <section className="admin-teams">
     <div className="admin-teams-head">
       <div>
         <h2>分隊</h2>
-        <p className="quiet">分組預設不公開：先在這裡設定隊長與隊伍，準備好再打開「前台顯示分隊」。分隊可以由主辦人手動指定、隨機分配，或打開「開放隊長選人」讓兩位隊長在首頁的接受任務區選人（可設定是否輪流）；主辦人隨時可以在這裡調整。</p>
+        <p className="quiet">三個步驟：設定隊長 → 選分隊方式 → 公開到首頁。公開前首頁看不到任何分隊資訊，可以先慢慢準備。</p>
       </div>
     </div>
+    <p className="admin-teams-live" data-on={teamConfig.published}><i aria-hidden="true" /><span>首頁現在</span><strong>{live}</strong></p>
+    {configMessage && <p className="notice" role="status">{configMessage}</p>}
+    {configFailed && <p className="notice notice-error" role="alert">{configFailed}</p>}
 
-    <div className="admin-teams-config">
-      <Toggle label="前台顯示分隊" hint={teamConfig.published ? "首頁名單依紅隊／藍隊顯示，隊長有標記，本人看得到自己的隊伍。" : "關閉中：首頁不顯示任何分隊資訊。"} on={teamConfig.published} disabled={configSaving || !connected}
-        onChange={on => saveConfig({ ...teamConfig, published: on, picking: on && teamConfig.picking }, on ? "已公開分隊。" : "已關閉分隊顯示。")} />
-      <Toggle label="開放隊長選人" hint={!teamConfig.published ? "需要先打開「前台顯示分隊」。" : teamConfig.picking ? "隊長登入首頁後，可以點未分隊的探員把他選進自己的隊。" : "關閉中：只有主辦人能分隊。"} on={teamConfig.picking} disabled={configSaving || !connected || !teamConfig.published}
-        onChange={on => { const firstPick = on && teamConfig.turns && !teamConfig.firstPick ? drawFirstPick() : teamConfig.firstPick; saveConfig({ ...teamConfig, picking: on, firstPick }, on ? "已開放隊長選人。" + (firstPick && !teamConfig.firstPick ? "抽籤結果：" + TEAM_LABEL[firstPick] + "先選。" : "") : "已停止隊長選人。"); }} />
-      <Toggle label="隊長輪流選" hint={!teamConfig.picking ? "開放隊長選人後才會用到。" : teamConfig.turns ? "兩隊輪流：從先選的隊伍開始，一隊選一個。" : "不輪流：兩位隊長隨時都可以選人。"} on={teamConfig.turns} disabled={configSaving || !connected || !teamConfig.picking}
-        onChange={on => { const firstPick = on && !teamConfig.firstPick ? drawFirstPick() : teamConfig.firstPick; saveConfig({ ...teamConfig, turns: on, firstPick }, on ? "已改為兩隊輪流選。" : "已改為隨時都可以選。"); }} />
-      {teamConfig.picking && teamConfig.turns && <div className="admin-teams-first">
-        <span><strong>先選的隊伍</strong><small>{teamConfig.firstPick ? TEAM_LABEL[teamConfig.firstPick] + "先選，之後兩隊輪流。" : "還沒決定，預設紅隊先選。"}</small></span>
-        <div className="admin-teams-switch" role="group" aria-label="先選的隊伍">
-          {TEAMS.map(team => <button key={team} type="button" data-team={team} aria-pressed={teamConfig.firstPick === team} disabled={configSaving || !connected} onClick={() => saveConfig({ ...teamConfig, firstPick: team }, "已指定" + TEAM_LABEL[team] + "先選。")}>{TEAM_LABEL[team]}先選</button>)}
+    <ol className="admin-steps">
+      <li className="admin-step">
+        <span className="admin-step-no" aria-hidden="true">1</span>
+        <div className="admin-step-body">
+          <h3>隊長</h3>
+          <p className="quiet">預設紅隊 egroup.james、藍隊 egroup.ivy。本人登入網站就自動就位，也可以在這裡換人。</p>
+          <div className="admin-captains">
+            {TEAMS.map(team => <CaptainCard key={team + captains[team].email} team={team} captain={captains[team]} rival={captains[otherTeam(team)]} people={people} emails={emails}
+              accepted={!!captains[team].uid && !!votes[captains[team].uid as string]} saving={configSaving || !connected}
+              onChange={next => saveConfig({ ...teamConfig, captains: { ...captains, [team]: next } }, TEAM_LABEL[team] + "隊長已更新。")} />)}
+          </div>
         </div>
-        <button type="button" className="button button-white" disabled={configSaving || !connected} onClick={() => { const firstPick = drawFirstPick(); saveConfig({ ...teamConfig, firstPick }, "抽籤結果：" + TEAM_LABEL[firstPick] + "先選。"); }}>抽籤決定</button>
-      </div>}
-      {configMessage && <p className="notice" role="status">{configMessage}</p>}
-      {configFailed && <p className="notice notice-error" role="alert">{configFailed}</p>}
-    </div>
-
-    <div className="admin-captains">
-      {TEAMS.map(team => <CaptainCard key={team + captains[team].email} team={team} captain={captains[team]} rival={captains[otherTeam(team)]} people={people} emails={emails}
-        accepted={!!captains[team].uid && !!votes[captains[team].uid as string]} saving={configSaving || !connected}
-        onChange={next => saveConfig({ ...teamConfig, captains: { ...captains, [team]: next } }, TEAM_LABEL[team] + "隊長已更新。")} />)}
-    </div>
+      </li>
+      <li className="admin-step">
+        <span className="admin-step-no" aria-hidden="true">2</span>
+        <div className="admin-step-body">
+          <h3>分隊方式</h3>
+          <div className="admin-method" role="radiogroup" aria-label="分隊方式">
+            <button type="button" role="radio" aria-checked={!teamConfig.picking} disabled={configSaving || !connected} onClick={() => teamConfig.picking && saveConfig({ ...teamConfig, picking: false }, "改為主辦分隊。")}>
+              <strong>主辦分隊</strong><small>在下方「隊伍名單」手動指定，或隨機分配後儲存。</small>
+            </button>
+            <button type="button" role="radio" aria-checked={teamConfig.picking} disabled={configSaving || !connected} onClick={() => { if (teamConfig.picking) return; const firstPick = teamConfig.turns && !teamConfig.firstPick ? drawFirstPick() : teamConfig.firstPick; saveConfig({ ...teamConfig, picking: true, firstPick }, "改為隊長選人。" + (firstPick && !teamConfig.firstPick ? "抽籤結果：" + TEAM_LABEL[firstPick] + "先選。" : "")); }}>
+              <strong>隊長選人</strong><small>兩位隊長在首頁「接受任務」下方的分隊面板挑人，主辦仍可在下方調整。</small>
+            </button>
+          </div>
+          {teamConfig.picking && <div className="admin-method-options">
+            <Toggle label="輪流選" hint={teamConfig.turns ? "兩隊輪流：從先選的隊伍開始，一隊選一個。" : "不輪流：兩位隊長隨時都可以選人。"} on={teamConfig.turns} disabled={configSaving || !connected}
+              onChange={on => { const firstPick = on && !teamConfig.firstPick ? drawFirstPick() : teamConfig.firstPick; saveConfig({ ...teamConfig, turns: on, firstPick }, on ? "已改為兩隊輪流選。" : "已改為隨時都可以選。"); }} />
+            {teamConfig.turns && <div className="admin-teams-first">
+              <span><strong>誰先選</strong><small>{teamConfig.firstPick ? TEAM_LABEL[teamConfig.firstPick] + "先選，之後兩隊輪流。" : "還沒決定。"}</small></span>
+              <div className="admin-teams-switch" role="group" aria-label="先選的隊伍">
+                {TEAMS.map(team => <button key={team} type="button" data-team={team} aria-pressed={teamConfig.firstPick === team} disabled={configSaving || !connected} onClick={() => saveConfig({ ...teamConfig, firstPick: team }, "已指定" + TEAM_LABEL[team] + "先選。")}>{TEAM_LABEL[team]}先選</button>)}
+              </div>
+              <button type="button" className="button button-white" disabled={configSaving || !connected} onClick={() => { const firstPick = drawFirstPick(); saveConfig({ ...teamConfig, firstPick }, "抽籤結果：" + TEAM_LABEL[firstPick] + "先選。"); }}>抽籤決定</button>
+            </div>}
+          </div>}
+        </div>
+      </li>
+      <li className="admin-step">
+        <span className="admin-step-no" aria-hidden="true">3</span>
+        <div className="admin-step-body">
+          <h3>公開到首頁</h3>
+          <Toggle label="前台顯示分隊" hint={teamConfig.published ? (teamConfig.picking ? "首頁出現分隊面板，隊長登入後就能選人。" : "首頁出現分隊面板，顯示兩隊名單。") : "關閉中：首頁不顯示任何分隊資訊。"} on={teamConfig.published} disabled={configSaving || !connected}
+            onChange={on => saveConfig({ ...teamConfig, published: on }, on ? "已公開到首頁。" : "已從首頁收回。")} />
+        </div>
+      </li>
+    </ol>
 
     <div className="admin-teams-head admin-teams-sheet">
       <h3>隊伍名單</h3>
