@@ -45,15 +45,15 @@ function useDuelSound() {
 /**
  * The training sim at the bottom of the page: a laser duel. The captains start back to back, take three paces, turn — and
  * it is on at once: fire, or drop behind your bunker so the shot flies over. Every vest has three lives. One player takes on
- * the computer, or two share a keyboard (A/S and L/K) or a phone (the buttons).
+ * the computer — dealt the red or the blue captain at random each round — or two share a keyboard (A/S and L/K) or a phone.
  */
 export default function DuelSim() {
   const stage = useRef<HTMLDivElement>(null), bolts = useRef<HTMLDivElement>(null);
   const boss = { a: useRef<HTMLDivElement>(null), b: useRef<HTMLDivElement>(null) }, img = { a: useRef<HTMLImageElement>(null), b: useRef<HTMLImageElement>(null) };
   const meter = { a: useRef<HTMLElement>(null), b: useRef<HTMLElement>(null) };
   const [mode, setMode] = useState<Mode>("cpu"), [phase, setPhase] = useState<Phase>("ready"), [call, setCall] = useState("背對背站好"), [result, setResult] = useState("");
-  const [lives, setLives] = useState({ a: LIVES, b: LIVES }), [reach, setReach] = useState(.32);
-  const game = useRef({ phase: "ready" as Phase, mode: "cpu" as Mode, a: fresh(), b: fresh(), bolts: [] as Bolt[], reach: .32, last: 0, frame: 0, timers: [] as number[] });
+  const [lives, setLives] = useState({ a: LIVES, b: LIVES }), [reach, setReach] = useState(.32), [human, setHuman] = useState<Side>("a");
+  const game = useRef({ phase: "ready" as Phase, mode: "cpu" as Mode, human: "a" as Side, a: fresh(), b: fresh(), bolts: [] as Bolt[], reach: .32, last: 0, frame: 0, timers: [] as number[] });
   const sound = useDuelSound();
   const reduced = useRef(false);
 
@@ -86,6 +86,7 @@ export default function DuelSim() {
   function reset() {
     clearField();
     const g = game.current; g.a = fresh(); g.b = fresh(); setLives({ a: LIVES, b: LIVES });
+    g.human = g.mode === "cpu" && Math.random() < .5 ? "b" : "a"; setHuman(g.human);
     pose("a", "stand", .5 - .035, -1); pose("b", "stand", .5 + .035, 1);
     go("ready"); setCall("背對背站好"); setResult("");
   }
@@ -103,10 +104,13 @@ export default function DuelSim() {
     // pace far enough that a fallen captain still lands inside the stage
     const width = stage.current?.clientWidth || 800, tall = boss.a.current?.clientHeight || 220;
     g.reach = Math.max(.24, Math.min(.36, .5 - tall * 1.04 / width)); setReach(g.reach);
-    go("intro"); setCall("一");
-    const t0 = performance.now(), total = PACE * 3;
+    go("intro");
+    const deal = g.mode === "cpu" && !reduced.current ? 900 : 0;
+    if (deal) setCall("你是" + NAMES[g.human]); else setCall("一");
+    const t0 = performance.now() + deal, total = PACE * 3;
     let step = -1;
     const walk = (now: number) => {
+      if (now < t0) { g.frame = requestAnimationFrame(walk); return; }
       const s = Math.min(total, (now - t0) / 1000), k = Math.min(2, Math.floor(s / PACE)), u = (s - k * PACE) / PACE;
       if (k !== step && s < total) { step = k; setCall(["一", "二", "三"][k]); sound.step(); }
       const ease = u < .5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2, dist = .035 + (reduced.current ? 3 : k + ease) / 3 * (g.reach - .035);
@@ -157,18 +161,20 @@ export default function DuelSim() {
     fall(other(winner)); sound.win();
     const f = g[winner], rate = f.shots ? Math.round(f.hits / f.shots * 100) : 0;
     setCall(NAMES[winner] + " 勝");
-    setResult(g.mode === "cpu" ? (winner === "a" ? "你贏了電腦！命中率 " + rate + "%" : "電腦贏了，再來一局？") : "命中率 " + rate + "%・剩 " + f.lives + " 條命");
+    setResult(g.mode === "cpu" ? (winner === g.human ? "你贏了電腦！命中率 " + rate + "%" : "電腦贏了，再來一局？") : "命中率 " + rate + "%・剩 " + f.lives + " 條命");
   }
 
-  /** the computer: drops behind cover when a shot is coming (not always in time), pops up and fires at a nervous rhythm */
+  /** the computer (whichever captain you were not dealt): drops behind cover when a shot is coming (not always in time), pops
+   *  up and fires at a nervous rhythm */
   function think(t: number) {
-    const g = game.current, me = g.b, foe = g.a;
-    const incoming = g.bolts.filter(b => b.from === "a").map(b => (spot("b") - b.x) / BOLT_SPEED).filter(s => s > 0);
+    const g = game.current, cpu = other(g.human), me = g[cpu], foe = g[g.human];
+    const eta = (b: Bolt) => Math.abs(spot(cpu) - b.x) / BOLT_SPEED;
+    const incoming = g.bolts.filter(b => b.from === g.human).map(eta);
     const soon = incoming.length ? Math.min(...incoming) : 9;
-    for (const b of g.bolts) if (b.from === "a" && !b.read && (spot("b") - b.x) / BOLT_SPEED < .3) { b.read = true; if (Math.random() < .58 && me.energy > .25) me.want = true; }
+    for (const b of g.bolts) if (b.from === g.human && !b.read && eta(b) < .3) { b.read = true; if (Math.random() < .58 && me.energy > .25) me.want = true; }
     if (me.want && soon > .32 && t > me.brain) { me.want = false; me.brain = t + .15; }
     if (!me.want && !me.cover && t > me.fireAt && t > me.brain) {
-      fire("b"); me.brain = t + .45 + Math.random() * .7 + (foe.cover ? .35 : 0);
+      fire(cpu); me.brain = t + .45 + Math.random() * .7 + (foe.cover ? .35 : 0);
     }
   }
 
@@ -220,16 +226,16 @@ export default function DuelSim() {
     const shown = () => { const r = stage.current?.getBoundingClientRect(); return !!r && Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0) > r.height * .4; };
     const down = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey || !shown()) return;
-      const k = event.key.toLowerCase(), g = game.current, h = handlers.current, duo = g.mode === "duo";
-      if (k === "a") { event.preventDefault(); if (!event.repeat) h.fire("a"); }
-      else if (k === "s") { event.preventDefault(); h.setCover("a", true); }
+      const k = event.key.toLowerCase(), g = game.current, h = handlers.current, duo = g.mode === "duo", me: Side = duo ? "a" : g.human;
+      if (k === "a") { event.preventDefault(); if (!event.repeat) h.fire(me); }
+      else if (k === "s") { event.preventDefault(); h.setCover(me, true); }
       else if (k === "l" && duo) { event.preventDefault(); if (!event.repeat) h.fire("b"); }
       else if (k === "k" && duo) { event.preventDefault(); h.setCover("b", true); }
       else if (k === "enter" && (g.phase === "ready" || g.phase === "over") && !(event.target instanceof HTMLButtonElement)) { event.preventDefault(); h.start(); }
     };
     const up = (event: KeyboardEvent) => {
       const k = event.key.toLowerCase(), h = handlers.current;
-      if (k === "s") h.setCover("a", false);
+      if (k === "s") h.setCover(game.current.mode === "duo" ? "a" : game.current.human, false);
       else if (k === "k" && game.current.mode === "duo") h.setCover("b", false);
     };
     window.addEventListener("keydown", down); window.addEventListener("keyup", up);
@@ -253,7 +259,7 @@ export default function DuelSim() {
     </div>
     <div ref={stage} className="duel-stage">
       {(["a", "b"] as Side[]).map(side => <div key={side} className={"duel-hud is-" + side}>
-        <span className="duel-hud-name">{side === "a" ? (mode === "cpu" ? "你・紅隊" : "紅隊") : mode === "cpu" ? "電腦・藍隊" : "藍隊"}</span>
+        <span className="duel-hud-name">{(mode === "cpu" ? (side === human ? "你・" : "電腦・") : "") + (side === "a" ? "紅隊" : "藍隊")}</span>
         <span className="duel-lives" role="img" aria-label={NAMES[side] + " 剩 " + lives[side] + " 條命"}>{Array.from({ length: LIVES }, (_, i) => <i key={i} data-on={i < lives[side]} />)}</span>
         <span className="duel-meter" aria-hidden="true"><i ref={meter[side]} /></span>
       </div>)}
@@ -269,12 +275,12 @@ export default function DuelSim() {
       <i className="duel-floor" aria-hidden="true" />
     </div>
     <div className="duel-controls">
-      {pad("a", ["A", "S"])}
+      {pad(mode === "cpu" ? human : "a", ["A", "S"])}
       <button type="button" className="duel-start" disabled={phase === "intro" || live} onClick={() => start()}>{phase === "over" ? "再來一局" : "開始對決"}</button>
       {mode === "duo" ? pad("b", ["L", "K"]) : <span className="duel-pad-gap" aria-hidden="true" />}
     </div>
     <p className="duel-rules">{mode === "cpu"
-      ? "轉身就開打：按 A 開槍、按住 S 躲到掩體後（雷射會從頭上飛過），手機用下面的按鈕。躲太久會被拉起來，每人 3 條命。"
+      ? "每局隨機分配你是紅隊或藍隊隊長。轉身就開打：按 A 開槍、按住 S 躲到掩體後（雷射會從頭上飛過），手機用下面的按鈕。躲太久會被拉起來，每人 3 條命。"
       : "紅隊 A 開槍、S 躲；藍隊 L 開槍、K 躲。手機兩人各按一邊。躲太久會被拉起來，每人 3 條命，先打光對方的贏。"}</p>
   </div>;
 }

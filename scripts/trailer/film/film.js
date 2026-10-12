@@ -5,7 +5,7 @@ const AR = q.get("ar") === "9x16" ? "9x16" : "16x9";
 const TALL = AR === "9x16";
 document.documentElement.dataset.ar = AR;
 const T = await (await fetch("../timeline.json")).json();
-const { MARK_GLYPHS, MARK_AGENT, MARK_DOT, MARK_MUZZLE } = await import("./mark-paths.js");
+const { MARK_GLYPHS, MARK_AGENT, MARK_AGENT_AIM, MARK_DOT, MARK_MUZZLE, MARK_MUZZLE_UP } = await import("./mark-paths.js");
 const A = (n) => "assets/" + n;
 
 const stage = document.getElementById("stage"), pic = document.querySelector(".pic"), cam = document.querySelector(".cam"), flashEl = document.querySelector(".flash");
@@ -621,9 +621,13 @@ whip("gear", "teams", -1); whip("lockA", "lockB", -1, .07); whip("squad", "strob
 let titleFuse = null;
 /** The site's mark (components/title-mark.tsx, outlines from lib/title-mark-paths.ts): a 430 × 100 box, glyph i at x = 110 i. */
 const CENTRES = MARK_GLYPHS.map((_, i) => i * 110 + 50);
+/** the red glow just inside the raised pistol's muzzle (the barrel points straight up) */
+const TIP = { x: MARK_MUZZLE_UP.cx, y: +(MARK_MUZZLE_UP.cy + .9).toFixed(2) };
 function titleMark(parent) {
   const stops = (list) => list.map(([o, c, a = 1]) => `<stop offset="${o}" stop-color="${c}" stop-opacity="${a}"/>`).join("");
-  const shape = (i, fill, extra = "", agentFill = fill) => `<path d="${MARK_GLYPHS[i]}" fill="${fill}" ${extra}/>${i === 1 ? `<path d="${MARK_AGENT}" fill="${agentFill}" ${extra}/>` : ""}`;
+  // 遊 carries the agent in both poses: aiming (he fires from it) and pistol raised (where he ends)
+  const shape = (i, fill, extra = "", agentFill = fill, cls = "") => `<path d="${MARK_GLYPHS[i]}" fill="${fill}" ${cls ? `class="${cls}"` : ""} ${extra}/>${i === 1
+    ? `<path class="${cls} tm-pose-up" d="${MARK_AGENT}" fill="${agentFill}" ${extra}/><path class="${cls} tm-pose-aim" d="${MARK_AGENT_AIM}" fill="${agentFill}" ${extra}/>` : ""}`;
   const box = $("div", "mark", parent);
   box.innerHTML = `<svg class="tm-word" viewBox="0 0 430 100"><defs>
     <linearGradient id="tm-c" gradientUnits="userSpaceOnUse" x1="0" y1="6" x2="0" y2="98">${stops([[0, "#fff"], [.3, "#e9ecef"], [.47, "#9aa1aa"], [.53, "#f6f7f8"], [.7, "#c4c9cf"], [1, "#5f666f"]])}</linearGradient>
@@ -637,7 +641,7 @@ function titleMark(parent) {
     <clipPath id="tm-w">${MARK_GLYPHS.map((d) => `<path d="${d}"/>`).join("")}<path d="${MARK_AGENT}"/></clipPath>
     <filter id="tm-ds" x="-10%" y="-30%" width="120%" height="170%"><feDropShadow dx="0" dy="2.6" stdDeviation="3.2" flood-color="#000" flood-opacity=".62"/></filter>
     <filter id="tm-rim" x="-5%" y="-10%" width="110%" height="120%"><feGaussianBlur stdDeviation=".9"/></filter>
-  </defs><g filter="url(#tm-ds)">${MARK_GLYPHS.map((_, i) => `<g clip-path="url(#tm-i${i})"><g filter="url(#tm-rim)">${shape(i, "url(#tm-rr)", 'transform="translate(-1.6 -.3)"')}${shape(i, "url(#tm-rb)", 'transform="translate(1.6 -.3)"')}</g>${shape(i, "url(#tm-c)", "", "url(#tm-g)")}${shape(i, "none", 'class="tm-edge"')}</g>`).join("")}</g>
+  </defs><g filter="url(#tm-ds)">${MARK_GLYPHS.map((_, i) => `<g clip-path="url(#tm-i${i})"><g filter="url(#tm-rim)">${shape(i, "url(#tm-rr)", 'transform="translate(-1.6 -.3)"')}${shape(i, "url(#tm-rb)", 'transform="translate(1.6 -.3)"')}</g>${shape(i, "url(#tm-c)", "", "url(#tm-g)")}${shape(i, "none", "", "none", "tm-edge")}${i === 1 ? `<path class="tm-agent-line tm-pose-up" d="${MARK_AGENT}" fill="none" stroke="url(#tm-c)"/><path class="tm-agent-line tm-pose-aim" d="${MARK_AGENT_AIM}" fill="none" stroke="url(#tm-c)"/><g class="tm-muzzle"><circle cx="${TIP.x}" cy="${TIP.y}" r="3.6" fill="url(#tm-glow)"/><circle cx="${TIP.x}" cy="${TIP.y}" r="1.2" fill="url(#tm-dotg)"/></g>` : ""}</g>`).join("")}</g>
   <g clip-path="url(#tm-w)"><rect class="tm-sheen" x="-120" y="-10" width="120" height="120" fill="url(#tm-sh)"/></g>
   <line class="tm-shot" x1="${MARK_MUZZLE.cx}" y1="${MARK_MUZZLE.cy}" x2="${MARK_DOT.cx}" y2="${MARK_DOT.cy}" pathLength="1"/>
   <circle class="tm-flash" cx="${MARK_MUZZLE.cx}" cy="${MARK_MUZZLE.cy}" r="7" fill="url(#tm-glow)"/>
@@ -645,7 +649,8 @@ function titleMark(parent) {
   <circle class="tm-laser" cx="${MARK_DOT.cx}" cy="${MARK_DOT.cy}" r="${MARK_DOT.r * .74}" fill="url(#tm-dotg)"/>
   ${CENTRES.map((cx) => `<circle class="tm-dot" cx="${cx}" cy="50" r="9" fill="#fff"/>`).join("")}</svg>`;
   const q = (sel) => [...box.querySelectorAll(sel)];
-  return { box, irises: q(".tm-iris"), dots: q(".tm-dot"), shot: box.querySelector(".tm-shot"), flash: box.querySelector(".tm-flash"), laser: box.querySelector(".tm-laser"), halo: box.querySelector(".tm-halo"), sheen: box.querySelector(".tm-sheen") };
+  return { box, irises: q(".tm-iris"), dots: q(".tm-dot"), shot: box.querySelector(".tm-shot"), flash: box.querySelector(".tm-flash"), laser: box.querySelector(".tm-laser"), halo: box.querySelector(".tm-halo"), sheen: box.querySelector(".tm-sheen"),
+    aim: q(".tm-pose-aim"), up: q(".tm-pose-up"), muzzle: box.querySelector(".tm-muzzle") };
 }
 shot(T.title, T.date + .3, (el) => {
   const smoke = img(A("smoke.webp"), "smoke", el); css(smoke, { opacity: .45 });
@@ -655,7 +660,7 @@ shot(T.title, T.date + .3, (el) => {
   const rule = $("div", "rule", title), sub = $("div", "sub", title); sub.innerHTML = "<span>AUTUMN</span><i></i><span>AGENTS</span>";
   const third = $("div", "third", title, { textContent: "MISSION  10.29" });
   hit(T.title, 2.2, .3, .35);
-  const SHOT = 1.2;   // the agent fires, the laser dot lands on 特
+  const SHOT = 1.2, RAISE = SHOT + .46;   // the agent fires, the laser dot lands on 特 — then he raises his pistol
   hit(T.title + SHOT, .6, .1, .22, "#ff8a96");
   const tfb = (e, s) => { e.style.transformBox = "fill-box"; e.style.transformOrigin = "center"; e.style.transform = s; };
   return (t) => {
@@ -677,6 +682,11 @@ shot(T.title, T.date + .3, (el) => {
     const f1 = p(l, SHOT - .03, SHOT + .47); op(mark.flash, f1 > 0 && f1 < 1 ? (f1 < .25 ? f1 / .25 : 1 - (f1 - .25) / .75) : 0); tfb(mark.flash, `scale(${(f1 < .25 ? .3 + 1.5 * f1 / .25 : 1.8 - 1.2 * (f1 - .25) / .75).toFixed(3)})`);
     const d1 = p(l, SHOT + .16, SHOT + .66, E.outBack); op(mark.laser, d1 > 0 ? 1 : 0); tfb(mark.laser, `scale(${(2.6 - 1.6 * d1).toFixed(3)})`);
     op(mark.halo, d1 * (.75 + .2 * Math.sin(l * 4)));
+    // arm out until the shot has landed, then the pistol comes up beside his face and its muzzle glows
+    const up = p(l, RAISE, RAISE + .2, E.outBack), m1 = p(l, RAISE + .14, RAISE + .64, E.outC);
+    for (const e of mark.aim) e.style.opacity = String(1 - p(l, RAISE, RAISE + .12));
+    for (const e of mark.up) e.style.opacity = String(Math.min(1, up));   // opacity only: the rim copies keep their own offset transform
+    op(mark.muzzle, m1 * (.85 + .15 * Math.sin(l * 3))); tfb(mark.muzzle, `scale(${(2.2 - 1.2 * m1).toFixed(3)})`);
     mark.sheen.style.transform = `translateX(${mix(-140, 560, p(l, 1.5, 2.6, E.ioC)).toFixed(1)}px)`;
     tf(title, `scale(${(1 + .03 * l).toFixed(4)})`);
     tf(rule, `scaleX(${p(l, .7, 1.2, E.outE).toFixed(3)})`); reveal(sub, t, T.title + .9, .8, 1.4);
@@ -803,11 +813,15 @@ shot(T.cut, T.duration + 1, (el) => {
   const card = $("div", "title endcard", frame), word = $("div", "word", card);
   $("span", "chrome", word, { textContent: "全員出動" }); const sheen = $("span", "sheen", word, { textContent: "全員出動" }); css(sheen, { position: "absolute", inset: "0" });
   const rule = $("div", "rule", card), third = $("div", "third", card, { textContent: "MISSION  10.29" });
+  // as always: the organisers disavow any knowledge — typed under the card, before the self-destruct line
+  const vow = $("p", "disavow", frame), vowChars = [..."一如往常，若你被雷射擊中，主辦單位將否認知情。"].map((c) => $("span", "", vow, { textContent: c }));
   const msg = $("div", "destruct", frame), msgEn = $("small", "", msg, { textContent: "THIS MESSAGE WILL SELF-DESTRUCT" }), msgLine = $("p", "", msg);
   const msgChars = [..."本訊息將自動銷毀"].map((c) => $("span", "", msgLine, { textContent: c })), msgCur = $("i", "cur", msgLine);
   hit(T.burn, .8, .16, .22, "#ffb04a");
   return (t) => {
     const l = t - T.end, x = p(l, 0, 1.6, E.outC), out = 1;
+    const [va, vb] = T.disavow;
+    op(vow, p(t, va - .12, va)); vowChars.forEach((c, i) => { c.style.visibility = t >= va + (vb - va) * i / vowChars.length ? "visible" : "hidden"; });
     const [da, db] = [T.destruct, T.destruct + .6];
     op(msg, p(t, da - .15, da)); reveal(msgEn, t, da - .15, .4, 1);
     let typed = 0; msgChars.forEach((c, i) => { const on = t >= da + (db - da) * i / msgChars.length; c.style.visibility = on ? "visible" : "hidden"; if (on) typed = i + 1; });

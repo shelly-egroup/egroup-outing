@@ -1,15 +1,20 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import LoadingIndicator from "./loading-indicator";
+import AgentHat from "./agent-hat";
 import { useOuting } from "./outing-provider";
 import { createEmbers, createFilmBurn, type BurnSeed } from "@/lib/film-burn";
 import { initials, type PublicVote } from "@/lib/trips";
 import { TEAM_LABEL, TEAMS, type Team } from "@/lib/teams";
 
+/** An agent's photo (or initials), wearing the fedora. */
 function Face({ vote, size }: { vote: PublicVote; size?: "lg" }) {
   const [broken, setBroken] = useState(false);
-  return <span className={"agent-face" + (size ? " is-" + size : "")} aria-hidden="true">
-    {vote.photoURL && !broken ? <img src={vote.photoURL} alt="" referrerPolicy="no-referrer" loading="lazy" onError={() => setBroken(true)} /> : initials(vote.displayName || "特務")}
+  return <span className={"hat-wrap" + (size ? " is-" + size : "")} aria-hidden="true">
+    <span className={"agent-face" + (size ? " is-" + size : "")}>
+      {vote.photoURL && !broken ? <img src={vote.photoURL} alt="" referrerPolicy="no-referrer" loading="lazy" onError={() => setBroken(true)} /> : initials(vote.displayName || "特務")}
+    </span>
+    <AgentHat />
   </span>;
 }
 
@@ -67,12 +72,15 @@ function Briefing({ name, destroy, onDestroyed }: { name?: string; destroy: bool
   ];
   const total = lines.join("").length;
   const [typed, setTyped] = useState(0), [run, setRun] = useState(false), [stage, setStage] = useState<"live" | "count" | "burn" | "gone">("live"), [secs, setSecs] = useState(3);
+  const stageRef = useRef(stage); stageRef.current = stage;
   useEffect(() => {
     const el = box.current; if (!el) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setRun(true); setTyped(total); return; }
-    const io = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setRun(true); io.disconnect(); } }, { rootMargin: "0px 0px -15% 0px" });
-    io.observe(el);
-    return () => io.disconnect();
+    const enter = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) setRun(true); }, { rootMargin: "0px 0px -15% 0px" });
+    // gone from the screen while still a live briefing: it types itself again next time
+    const leave = new IntersectionObserver(([entry]) => { if (!entry.isIntersecting) { setRun(false); setTyped(t => stageRef.current === "live" ? 0 : t); } });
+    enter.observe(el); leave.observe(el);
+    return () => { enter.disconnect(); leave.disconnect(); };
   }, [total]);
   useEffect(() => { if (!run || typed >= total) return; const t = setTimeout(() => setTyped(n => n + 1), 38); return () => clearTimeout(t); }, [run, typed, total]);
   // accepted: three seconds, then the tape burns
@@ -118,14 +126,18 @@ function Briefing({ name, destroy, onDestroyed }: { name?: string; destroy: bool
 }
 
 /** Everyone who has accepted, as dossier photos — by team once the organisers have drawn them. */
-function AgentRoster({ me }: { me?: string }) {
-  const { votes, votesReady, votesError, catalogStatus, teams } = useOuting();
+/** Sample agents for the local preview (?agent=new): the database is not reachable on a development machine. */
+const SAMPLE: [string, PublicVote][] = ["王特務", "林探員", "陳隊長", "張探員", "李特務", "黃探員", "測試探員"].map((name, i) => ["demo" + i, { planId: "B", displayName: name, photoURL: "", updatedAt: i } as PublicVote]);
+
+function AgentRoster({ me, demo = false }: { me?: string; demo?: boolean }) {
+  const { votes: live, votesReady: liveReady, votesError, catalogStatus, teams } = useOuting();
+  const votes = demo ? Object.fromEntries(SAMPLE) : live, votesReady = demo || liveReady;
   const agents = Object.entries(votes).sort(([, a], [, b]) => (a.updatedAt || 0) - (b.updatedAt || 0));
   const drawn = agents.some(([uid]) => teams[uid]);
   const offline = !votesReady && (catalogStatus === "error" || !!votesError);
   const grid = (rows: [string, PublicVote][]) => <ul className="dossier-grid">
     {rows.map(([uid, vote]) => <li key={uid} className={uid === me ? "is-me" : undefined} data-team={teams[uid] || "open"}>
-      <Face vote={vote} /><span>{vote.displayName || "同事"}</span>{uid === me && <b>你</b>}
+      <Face vote={vote} /><span>{vote.displayName || "探員"}</span>{uid === me && <b>你</b>}
     </li>)}
   </ul>;
   return <div className="roster" aria-live="polite">
@@ -140,6 +152,29 @@ function AgentRoster({ me }: { me?: string }) {
           </div>; })}
           {agents.some(([uid]) => !teams[uid]) && <div className="roster-team" data-team="open"><p className="roster-team-name"><i />待分隊<span>{agents.filter(([uid]) => !teams[uid]).length} 人</span></p>{grid(agents.filter(([uid]) => !teams[uid]))}</div>}
         </div>}
+  </div>;
+}
+
+/**
+ * The agent's file once the mission is accepted. Fresh from the scanner it plays the sequence: a green scan opens the file, a
+ * lock snaps onto the photo, the facts come in, the MISSION ACCEPTED stamp slams down — the card jolts, ink flies, a shockwave
+ * runs out — and the confirmation types itself.
+ */
+function AgentFile({ vote, name, team, familyCount, note, fresh, actions }: { vote: PublicVote; name: string; team?: Team; familyCount: number; note: string; fresh: boolean; actions: React.ReactNode }) {
+  return <div className={"agent-card" + (fresh ? " is-new" : "")}>
+    {fresh && <i className="agent-scan" aria-hidden="true" />}
+    <span className="agent-stamp" aria-hidden="true">MISSION ACCEPTED{fresh && <span className="agent-ink">{Array.from({ length: 12 }, (_, i) => <i key={i} style={{ "--a": i * 30 + 8 + "deg", "--d": 26 + (i % 3) * 14 + "px" } as React.CSSProperties} />)}</span>}</span>
+    <div className="agent-card-head">
+      <span className="agent-photo"><Face vote={vote} size="lg" /><span className="agent-lock" aria-hidden="true"><i /><i /><i /><i /></span></span>
+      <span><small>AGENT FILE</small><strong>{name}</strong><em>STATUS・ACTIVE</em></span>
+    </div>
+    <dl className="accept-facts">
+      <div><dt>隊伍</dt><dd data-team={team}>{team ? TEAM_LABEL[team] : "分隊公布後顯示在這裡"}</dd></div>
+      <div><dt>同行</dt><dd>{familyCount ? "帶 " + familyCount + " 位家眷" : "單獨行動"}</dd></div>
+      <div><dt>備註</dt><dd>{note || "無"}</dd></div>
+    </dl>
+    {fresh && <p className="agent-confirm" role="status"><span aria-hidden="true">&gt;</span>身分確認・任務已接受・10.29 戰場見<b aria-hidden="true">✓</b></p>}
+    <p className="accept-actions">{actions}</p>
   </div>;
 }
 
@@ -162,6 +197,15 @@ export default function MissionAccept() {
   useEffect(() => { setEditing(false); setJustAccepted(false); setFailed(""); }, [user?.uid]);
   const countValid = !family || (Number.isSafeInteger(familyCount) && familyCount >= 1 && familyCount <= 20);
   const team: Team | undefined = user ? teams[user.uid] : undefined;
+  const [demo, setDemo] = useState(false);
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development" || new URLSearchParams(window.location.search).get("agent") !== "new") return;
+    // the sample plays once the section is on screen
+    const el = document.getElementById("accept"); if (!el) { setDemo(true); return; }
+    const io = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setDemo(true); io.disconnect(); } }, { threshold: .35 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   async function accept() {
     if (saving || !countValid) return;
     setSaving(true); setFailed("");
@@ -173,10 +217,11 @@ export default function MissionAccept() {
   }
 
   let panel: React.ReactNode;
-  if (!authReady || (user && (!profileReady || !detailsReady))) panel = <LoadingIndicator label="確認特務身分" />;
+  if (demo) panel = <AgentFile vote={{ planId: "B", displayName: "測試探員", photoURL: "", updatedAt: 0 } as PublicVote} name="測試探員" familyCount={1} note="（預覽）" fresh actions={null} />;
+  else if (!authReady || (user && (!profileReady || !detailsReady))) panel = <LoadingIndicator label="確認特務身分" />;
   else if (!user) panel = <div className="accept-call">
     <Scanner mode="tap" label={signingIn ? "驗證中…" : "驗證身分，接受任務"} sub="以公司 Google 帳號（egroup. 開頭）登入" busy={signingIn} onConfirm={login} />
-    <p className="accept-hint">登入後填上注意事項與同行家眷。已經投過票的同事也可以進來更新。</p>
+    <p className="accept-hint">登入後填上注意事項與同行家眷；之前填過的探員也可以隨時進來更新。</p>
   </div>;
   else if (!canVote) panel = <div className="accept-denied" role="status">
     <span className="ms-label">{votingAccess === "rejected" ? "ACCESS DENIED" : "CLEARANCE PENDING"}</span>
@@ -184,16 +229,8 @@ export default function MissionAccept() {
     <p>{votingAccess === "rejected" ? "請聯絡主辦人，或改用 egroup. 開頭的 Google 帳號。" : "主辦人確認後，這裡會自動開放接受任務。"}</p>
     <button type="button" className="accept-link" onClick={login}>改用公司 Google 帳號 →</button>
   </div>;
-  else if (mine && !editing) panel = <div className={"agent-card" + (justAccepted ? " is-new" : "")}>
-    <span className="agent-stamp" aria-hidden="true">MISSION ACCEPTED</span>
-    <div className="agent-card-head"><Face vote={mine} size="lg" /><span><small>AGENT FILE</small><strong>{mine.displayName || user.displayName || "特務"}</strong><em>STATUS・ACTIVE</em></span></div>
-    <dl className="accept-facts">
-      <div><dt>隊伍</dt><dd data-team={team}>{team ? TEAM_LABEL[team] : "分隊公布後顯示在這裡"}</dd></div>
-      <div><dt>同行</dt><dd>{myDetails?.familyCount ? "帶 " + myDetails.familyCount + " 位家眷" : "單獨行動"}</dd></div>
-      <div><dt>備註</dt><dd>{myDetails?.note?.trim() || "無"}</dd></div>
-    </dl>
-    <p className="accept-actions"><button type="button" className="accept-link" onClick={() => { setEditing(true); setJustAccepted(false); }}>修改任務資料</button><button type="button" className="accept-link is-quiet" onClick={logout}>登出</button></p>
-  </div>;
+  else if (mine && !editing) panel = <AgentFile vote={mine} name={mine.displayName || user.displayName || "特務"} team={team} familyCount={myDetails?.familyCount || 0} note={myDetails?.note?.trim() || ""} fresh={justAccepted}
+    actions={<><button type="button" className="accept-link" onClick={() => { setEditing(true); setJustAccepted(false); }}>修改任務資料</button><button type="button" className="accept-link is-quiet" onClick={logout}>登出</button></>} />;
   else panel = <form className="accept-form" onSubmit={event => { event.preventDefault(); void accept(); }}>
     <p className="accept-who"><span className="ms-label">AGENT FILE</span>特務 <strong>{user.displayName || user.email}</strong><button type="button" className="accept-link is-quiet" onClick={logout}>不是你？登出</button></p>
     <label className="accept-field">
@@ -225,9 +262,9 @@ export default function MissionAccept() {
   return <div className="accept">
     <div className="dossier">
       <div className="dossier-head"><span>AGENT BRIEFING</span><b>FILE 10.29</b><i className="dossier-classified">機密・TOP SECRET</i></div>
-      <Briefing name={user?.displayName || undefined} destroy={justAccepted && !burnt} onDestroyed={() => setBurnt(true)} />
+      <Briefing name={user?.displayName || undefined} destroy={(justAccepted || demo) && !burnt} onDestroyed={() => setBurnt(true)} />
       {panel}
     </div>
-    <AgentRoster me={user?.uid} />
+    <AgentRoster me={demo ? "demo6" : user?.uid} demo={demo} />
   </div>;
 }

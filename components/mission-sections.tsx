@@ -10,6 +10,7 @@ import ReviewDeck, { useTopChoice } from "./review-deck";
 import CaptainsFaceOff from "./captains-faceoff";
 import ReconTargets from "./recon-targets";
 import { useOuting } from "./outing-provider";
+import { useInView } from "./use-in-view";
 import { lazerTreksStore, choiceStore } from "@/lib/store-references";
 import { sortedGroups, type TripPlan } from "@/lib/trips";
 import { ARENA_FACTS, ARENA_TRANSIT, MISSION_IMAGES, MISSION_MODES, TEA_WINNER, missionCalendarUrl, missionClock } from "@/lib/mission-brief";
@@ -18,18 +19,6 @@ const pad = (value: number) => String(value).padStart(2, "0");
 /** What each stop of the day is called on the IMF console, by its position in the schedule. */
 const PHASES = ["RENDEZVOUS", "ENGAGE", "TRANSIT", "EXTRACT"];
 
-/** Becomes true once the element scrolls into view (at once when motion is reduced). */
-function useSeen<T extends Element>() {
-  const ref = useRef<T>(null), [seen, setSeen] = useState(false);
-  useEffect(() => {
-    const el = ref.current; if (!el) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setSeen(true); return; }
-    const io = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setSeen(true); io.disconnect(); } }, { rootMargin: "0px 0px -12% 0px" });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-  return [ref, seen] as const;
-}
 
 /** A console window: title bar with the file name and a status lamp, scanlines over the body. */
 function Terminal({ name, status, tone = "amber", className = "", children }: { name: string; status: string; tone?: "amber" | "red" | "blue" | "green"; className?: string; children: ReactNode }) {
@@ -57,7 +46,7 @@ function MissionCountdown({ eventDate, start, now }: { eventDate: string; start:
   </p>;
 }
 
-/** A photo shown as a live surveillance feed: camera id, REC, a Taipei timestamp from the page clock, crosshair, scanlines.
+/** A photo shown as a live surveillance feed: camera id, REC, a Taipei timestamp from the page clock, scanlines.
  *  With `game`, the captains' shooting-gallery easter egg plays in it. */
 function ReconFeed({ src, cam, label, alt, now, game = false }: { src: string; cam: string; label: string; alt: string; now: number; game?: boolean }) {
   const stamp = new Date(now + 8 * 3600000).toISOString();
@@ -68,7 +57,6 @@ function ReconFeed({ src, cam, label, alt, now, game = false }: { src: string; c
       <span className="feed-tr"><i />REC</span>
       <span className="feed-bl">{stamp.slice(0, 10).replaceAll("-", ".")} {stamp.slice(11, 19)}</span>
       {!game && <span className="feed-br">ZOOM 1.0×</span>}
-      <span className="feed-cross" />
     </span>
     {game && <ReconTargets />}
   </figure>;
@@ -93,11 +81,80 @@ function RouteMap({ address }: { address: string }) {
 }
 
 
-/** Below the key visual, only the trip itself, on the IMF console: the day's log, the arena recon, the tea extraction, the
- *  protocols, and accepting the mission. */
+/** The fuse from the briefing to accepting the mission, as in Mission: Impossible's titles: a cord runs from the log's last
+ *  prompt down into the accept section's number, and as the page scrolls a spark burns along it; when it arrives the accept
+ *  console ignites. It only burns forward, and re-arms once it is below the screen again, to burn the next time down. With
+ *  reduced motion the cord is simply there and the console already lit. */
+function MissionFuse({ onLit }: { onLit: (lit: boolean) => void }) {
+  const svg = useRef<SVGSVGElement>(null), cord = useRef<SVGPathElement>(null), ash = useRef<SVGPathElement>(null), spark = useRef<SVGGElement>(null);
+  const [geo, setGeo] = useState<{ top: number; left: number; width: number; height: number; d: string } | null>(null);
+  const lit = useRef(onLit); lit.current = onLit;
+  // from the prompt under the log to the accept section's number, wherever the layout puts them
+  useEffect(() => {
+    const host = svg.current?.parentElement; if (!host) return;
+    const measure = () => {
+      const from = host.querySelector<HTMLElement>(".ms-handoff-prompt"), to = host.querySelector<HTMLElement>("#accept .ms-eyebrow b");
+      if (!from || !to) return;
+      const h = host.getBoundingClientRect(), a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+      const x1 = a.left + a.width / 2 - h.left, y1 = a.bottom - h.top + 8, x2 = b.left + b.width / 2 - h.left, y2 = b.top - h.top - 10;
+      const left = Math.min(x1, x2) - 48, width = Math.abs(x2 - x1) + 96, height = Math.max(40, y2 - y1), ax = x1 - left, bx = x2 - left;
+      // a cord that hangs and swings a little on the way down
+      const d = `M${ax.toFixed(1)} 0C${ax.toFixed(1)} ${(height * .3).toFixed(1)} ${(bx + 34).toFixed(1)} ${(height * .34).toFixed(1)} ${(bx + 16).toFixed(1)} ${(height * .58).toFixed(1)}S${bx.toFixed(1)} ${(height * .84).toFixed(1)} ${bx.toFixed(1)} ${height.toFixed(1)}`;
+      setGeo(g => g && g.top === y1 && g.left === left && g.width === width && g.height === height ? g : { top: y1, left, width, height, d });
+    };
+    measure();
+    const ro = new ResizeObserver(measure); ro.observe(host);
+    return () => ro.disconnect();
+  }, []);
+  // the burn follows the scroll: the spark sits where the cord crosses 62% of the window, eased, and never goes back
+  useEffect(() => {
+    const el = svg.current, path = cord.current; if (!geo || !el || !path) return;
+    const draw = (p: number) => {
+      path.style.strokeDashoffset = String(-p); ash.current?.style.setProperty("stroke-dasharray", p + " 2");
+      const at = path.getPointAtLength(p * path.getTotalLength()); spark.current?.setAttribute("transform", `translate(${at.x.toFixed(1)} ${at.y.toFixed(1)})`);
+    };
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { el.dataset.state = "still"; draw(0); lit.current(true); return; }
+    let shown = Number(el.dataset.p || 0), frame = 0, done = shown >= 1;
+    const tick = () => {
+      frame = 0;
+      const r = el.getBoundingClientRect();
+      // scrolled back above the fuse: a fresh cord, ready to burn again
+      if (r.top > window.innerHeight && (done || shown > 0)) { shown = 0; done = false; el.dataset.state = "idle"; el.dataset.p = "0"; draw(0); lit.current(false); return; }
+      if (done) return;
+      const target = Math.max(0, Math.min(1, (window.innerHeight * .62 - r.top) / r.height));
+      if (target > shown) shown = Math.min(target, shown + Math.max(.004, (target - shown) * .16));
+      if (shown >= .995) { shown = 1; done = true; el.dataset.state = "done"; lit.current(true); }
+      else el.dataset.state = shown > 0 ? "burning" : "idle";
+      el.dataset.p = String(shown); draw(shown);
+      if (!done && target > shown) frame = requestAnimationFrame(tick);
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(tick); };
+    draw(shown); schedule();
+    window.addEventListener("scroll", schedule, { passive: true }); window.addEventListener("resize", schedule);
+    return () => { window.removeEventListener("scroll", schedule); window.removeEventListener("resize", schedule); cancelAnimationFrame(frame); };
+  }, [geo]);
+  return <svg ref={svg} className="ms-fuse" data-state="idle" aria-hidden="true" style={geo ? { top: geo.top, left: geo.left, width: geo.width, height: geo.height } : { display: "none" }} viewBox={geo ? `0 0 ${geo.width} ${geo.height}` : undefined}>
+    <defs><radialGradient id="ms-fuse-glow"><stop offset="0" stopColor="#fff7e6" /><stop offset=".22" stopColor="#ffc86b" stopOpacity=".95" /><stop offset=".55" stopColor="#ff6a3d" stopOpacity=".35" /><stop offset="1" stopColor="#ff2a4a" stopOpacity="0" /></radialGradient></defs>
+    {geo && <>
+      <path ref={ash} className="ms-fuse-ash" d={geo.d} pathLength={1} />
+      <path ref={cord} className="ms-fuse-cord" d={geo.d} pathLength={1} />
+      <g ref={spark} className="ms-fuse-spark">
+        <circle className="ms-fuse-halo" r="26" fill="url(#ms-fuse-glow)" />
+        <g className="ms-fuse-rays"><path d="M0-12V-5M0 5V12M-12 0H-5M5 0H12M-8.5-8.5l4 4M4.5 4.5l4 4M-8.5 8.5l4-4M4.5-4.5l4-4" /></g>
+        {[0, 1, 2, 3, 4, 5].map(i => <circle key={i} className="ms-fuse-ember" r="1.5" style={{ "--a": i * 60 + 15 + "deg", animationDelay: i * -.09 + "s" } as React.CSSProperties} />)}
+        <circle r="2.8" fill="#fff" />
+      </g>
+    </>}
+  </svg>;
+}
+
+/** Below the key visual, only the trip itself, on the IMF console: the day's log, which hands straight over to accepting the
+ *  mission, then the arena recon, the tea extraction and the protocols. */
 export default function MissionSections({ plan, planId, eventDate, now }: { plan?: TripPlan; planId?: string; eventDate: string; now: number }) {
-  const { stores } = useOuting();
-  const [alarm, setAlarm] = useState<BriefingAlarm>({ armed: false, seconds: 5 });
+  const { stores, user, votes } = useOuting();
+  // the briefing's status follows this agent: waiting for an answer, or accepted
+  const accepted = !!(user && votes[user.uid]);
+  const [alarm, setAlarm] = useState<BriefingAlarm>({ armed: false, seconds: 5 }), [lit, setLit] = useState(false);
   const schedule = plan?.schedule || [];
   const meet = schedule[0];
   const teaStop = schedule.find(stop => stop.title.includes("下午茶"));
@@ -115,6 +172,8 @@ export default function MissionSections({ plan, planId, eventDate, now }: { plan
     return [{ choiceId, name, venue, time: choice.description.split("｜")[0], storeId, store: (storeId && stores[storeId]?.info) || choiceStore(choice.label) }];
   }) : [];
   const hotel = hotels[0];
+  // the log names the hotel the agents chose instead of the old "one of three"
+  const stopNote = (stop: (typeof schedule)[number]) => stop === teaStop && hotel ? hotel.name + (hotel.venue ? "・" + hotel.venue : "") + "・平日下午茶 Buffet" : stop.description;
   const arenaStore = stores[lazerTreksStore.id]?.info || lazerTreksStore;
   const venue = { ...arenaStore, mapsQuery: "六度空間 LazerTreks " + address.replace(/\s/g, "") };
   return <div className="mission-sections">
@@ -123,23 +182,39 @@ export default function MissionSections({ plan, planId, eventDate, now }: { plan
         <SectionHead no="01" en="MISSION TIMELINE" id="ms-mission-title" title={<>{date} <em>任務流程</em></>}
           lead={plan?.description} aside={meet && <MissionCountdown eventDate={eventDate} start={meet.time} now={now} />} />
         <Terminal name="MISSION_TIMELINE.LOG" status={alarm.armed ? "SELF-DESTRUCT T-" + alarm.seconds : alarm.gone ? "MESSAGE DESTROYED" : "SECURE LINK"} tone={alarm.armed ? "red" : alarm.gone ? "amber" : "green"} className={alarm.armed ? "is-alarm" : ""}>
-          <MissionBriefing lines={[["SECURE LINK", "OK"], ["AGENTS", "全體同仁"], ["MISSION FILE", "秋遊特務 / " + date], ["STATUS", "ACCEPTED"]]} onAlarm={setAlarm} />
+          <MissionBriefing lines={[["SECURE LINK", "OK"], ["AGENTS", "全體探員"], ["MISSION FILE", "秋遊特務 / " + date], accepted ? ["STATUS", "ACCEPTED・任務已接受", "ok"] : ["STATUS", "等待特務接受", "wait"]]} onAlarm={setAlarm} />
           <ol className="ms-log">
             {schedule.map((stop, index) => <li key={index} className="ms-log-row">
               <span className="ms-log-node" aria-hidden="true"><i /></span>
               <time className="ms-log-time">{stop.time}</time>
               <span className="ms-log-code">{PHASES[index] || "STEP " + pad(index + 1)}</span>
-              <div className="ms-log-copy"><h3>{stop.title}</h3>{stop.description && <p>{stop.description}</p>}</div>
+              <div className="ms-log-copy"><h3>{stop.title}</h3>{stopNote(stop) && <p>{stopNote(stop)}</p>}</div>
             </li>)}
           </ol>
           {!!plan?.tags?.length && <ul className="ms-tags" aria-label="行程特色">{plan.tags.map(tag => <li key={tag}>{tag}</li>)}</ul>}
+          <a className="ms-handoff" href="#accept" data-accepted={accepted}>
+            <span className="ms-handoff-prompt" aria-hidden="true">&gt;</span>
+            {accepted
+              ? <span className="ms-handoff-copy"><small aria-hidden="true">MISSION ACCEPTED</small>你已接受任務——10.29 戰場見</span>
+              : <span className="ms-handoff-copy"><small aria-hidden="true">YOUR MISSION, SHOULD YOU CHOOSE TO ACCEPT IT</small>你的任務，如果你選擇接受——</span>}
+            <b className="ms-handoff-cta">{accepted ? "查看特務檔案" : "接受任務"}<svg aria-hidden="true" width="12" height="14" viewBox="0 0 12 14"><path d="M6 1v11M1 7.5 6 12.5l5-5" fill="none" stroke="currentColor" strokeWidth="1.6" /></svg></b>
+          </a>
+        </Terminal>
+      </div>
+    </section>
+
+    <section id="accept" className="ms-section ms-accept" data-lit={lit} aria-labelledby="ms-accept-title">
+      <div className="wrap">
+        <SectionHead no="02" en="ACCEPT THE MISSION" id="ms-accept-title" title={<>接受任務 <em>登記備註與家眷</em></>} />
+        <Terminal name="MISSION_ACCEPTANCE.EXE" status="AWAITING AGENTS" tone="red" className="ms-accept-term">
+          <MissionAccept />
         </Terminal>
       </div>
     </section>
 
     <section id="arena" className="ms-section ms-arena" aria-labelledby="ms-arena-title">
       <div className="wrap">
-        <SectionHead no="02" en="THE ARENA" id="ms-arena-title" title={<>作戰場地 <em>六度空間 LazerTreks</em></>}
+        <SectionHead no="03" en="THE ARENA" id="ms-arena-title" title={<>作戰場地 <em>六度空間 LazerTreks</em></>}
           lead="霓虹迷宮裡穿上感應背心、拿起雷射槍，分隊攻防、電腦即時計分；教練先教裝備，再從暖身個人賽打到團隊對抗。" />
         <div className="ms-arena-grid">
           <Terminal name="RECON_FEED // CAM-01" status="LIVE" tone="red">
@@ -188,7 +263,7 @@ export default function MissionSections({ plan, planId, eventDate, now }: { plan
 
     <section id="tea" className="ms-section ms-tea" aria-labelledby="ms-tea-title">
       <div className="wrap">
-        <SectionHead no="03" en="AFTER ACTION" id="ms-tea-title" title={<>戰後補給 <em>飯店下午茶 Buffet</em></>} lead={hotel ? "雷射槍戰結束後，移動到飯店享用平日下午茶 Buffet。" : teaStop?.description} />
+        <SectionHead no="04" en="AFTER ACTION" id="ms-tea-title" title={<>戰後補給 <em>飯店下午茶 Buffet</em></>} lead={hotel ? "雷射槍戰結束後，移動到飯店享用平日下午茶 Buffet。" : teaStop?.description} />
         <div className="ms-tea-grid">
           <Terminal name="EXTRACTION // CAM-02" status={hotel ? "LOCKED" : "STANDBY"} tone="amber">
             <ReconFeed src={MISSION_IMAGES.tea} cam="CAM-02" label={hotel ? (hotel.name || "").toUpperCase() : "AFTERNOON TEA"} alt="飯店下午茶的三層點心架與紅茶" now={now} />
@@ -211,20 +286,12 @@ export default function MissionSections({ plan, planId, eventDate, now }: { plan
 
     <section id="manual" className="ms-section ms-manual" aria-labelledby="ms-manual-title">
       <div className="wrap">
-        <SectionHead no="04" en="FIELD MANUAL" id="ms-manual-title" title={<>行前須知 <em>特務守則五條</em></>} />
+        <SectionHead no="05" en="FIELD MANUAL" id="ms-manual-title" title={<>行前須知 <em>特務守則五條</em></>} />
         <MissionProtocols />
         <p className="ms-source">依六度空間官網說明整理，現場以教練說明為準。</p>
       </div>
     </section>
-
-    <section id="accept" className="ms-section ms-accept" aria-labelledby="ms-accept-title">
-      <div className="wrap">
-        <SectionHead no="05" en="ACCEPT THE MISSION" id="ms-accept-title" title={<>接受任務 <em>登記備註與家眷</em></>} />
-        <Terminal name="MISSION_ACCEPTANCE.EXE" status="AWAITING AGENTS" tone="red" className="ms-accept-term">
-          <MissionAccept />
-        </Terminal>
-      </div>
-    </section>
+    <MissionFuse onLit={setLit} />
   </div>;
 }
 
@@ -240,7 +307,8 @@ function SectionHead({ no, en, id, title, lead, aside }: { no: string; en: strin
 }
 
 
-/** The closing card, and at the very bottom the captains' training sim — a laser duel anyone can play. */
+/** The closing card over the two captains walking off into the arena, and at the very bottom their training sim — a laser
+ *  duel anyone can play. */
 export function MissionFooter({ plan, eventDate, title, onReplay }: { plan?: TripPlan; eventDate: string; title: string; onReplay: () => void }) {
   const meet = plan?.schedule[0];
   const address = meet?.description.replace(/，?自行前往。?$/, "") || "台北市中山區中山北路二段 185 號 B1";
@@ -249,13 +317,14 @@ export function MissionFooter({ plan, eventDate, title, onReplay }: { plan?: Tri
     title: "秋遊特務｜" + title, eventDate, start, end: "16:30", location: "六度空間 LazerTreks，" + address,
     details: start + " 六度空間集合（自行前往）→ LazerTreks 雷射對戰 → 戰後飯店下午茶 Buffet。",
   });
-  const [markRef, markSeen] = useSeen<HTMLDivElement>();
+  const [markRef, markSeen, markRound] = useInView<HTMLDivElement>("0px 0px -12% 0px");
   return <footer className="ms-footer">
-    <img className="ms-footer-art" src={MISSION_IMAGES.squad} width={1920} height={1081} loading="lazy" decoding="async" alt="" />
+    <div className="ms-footer-card">
+    <img className="ms-footer-art" src={MISSION_IMAGES.walkout} width={1672} height={941} loading="lazy" decoding="async" alt="" />
     <i className="ms-footer-scrim" aria-hidden="true" />
     <div className="wrap ms-footer-inner">
       <p className="ms-footer-kicker"><span>SEE YOU ON</span><b>{eventDate.slice(5).replace("-", ".")}</b></p>
-      <div ref={markRef} className="ms-footer-markbox"><TitleMark className="ms-footer-mark" sub="AUTUMN AGENTS" motion="intro" play={markSeen} /></div>
+      <div ref={markRef} className="ms-footer-markbox"><TitleMark key={markRound} className="ms-footer-mark" sub="AUTUMN AGENTS" motion="intro" play={markSeen} /></div>
       <h2 className="ms-footer-title">全員出動</h2>
       <div className="ms-footer-actions">
         <a className="ms-cta" href={calendar} target="_blank" rel="noopener noreferrer">加入 Google 日曆<span className="sr-only">（另開分頁）</span></a>
@@ -265,6 +334,7 @@ export function MissionFooter({ plan, eventDate, title, onReplay }: { plan?: Tri
       </div>
       <p className="ms-footer-meta">{title}・{start} 六度空間集合，自行前往</p>
       <p className="ms-footer-partners">馴錢師 <b>×</b> EGROUP</p>
+    </div>
     </div>
     <section id="duel" className="wrap ms-sim" aria-labelledby="ms-sim-title">
       <p className="ms-eyebrow"><b>06</b><span>TRAINING SIM</span></p>

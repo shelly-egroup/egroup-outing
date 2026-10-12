@@ -1,5 +1,7 @@
+"use client";
 import type { RefObject } from "react";
 import TitleMark from "./title-mark";
+import { useInView } from "./use-in-view";
 import { TRAILER_IMAGES } from "@/lib/opening-assets";
 import type { TripPlan } from "@/lib/trips";
 
@@ -19,7 +21,9 @@ export default function MissionHero({ eventDate, plan, ready, cued, actionsRef, 
   const weekday = WEEKDAYS[new Date(eventDate + "T12:00:00Z").getUTCDay()];
   const meet = plan?.schedule[0];
   const address = meet?.description.replace(/，?自行前往。?$/, "") || "台北市中山區中山北路二段 185 號 B1";
-  return <header className="mission-hero" data-ready={ready}>
+  // the mark plays its intro again whenever the hero comes back on screen
+  const [heroRef, heroSeen, heroRound] = useInView<HTMLElement>("0px");
+  return <header ref={heroRef} className="mission-hero" data-ready={ready}>
     <div className="mh-art">
       <img className="mh-art-img" src={TRAILER_IMAGES.keyArt} width={1600} height={900} fetchPriority="high"
         alt="兩位老闆背靠背舉著雷射槍，站在六度空間紅藍光的雷射迷宮裡" />
@@ -29,7 +33,7 @@ export default function MissionHero({ eventDate, plan, ready, cued, actionsRef, 
     </div>
     <div className="mh-body">
       <p className="mh-kicker"><span className="mh-rec"><i />REC</span><span>MISSION {date}</span></p>
-      <TitleMark className="mh-lockup" sub="AUTUMN AGENTS" motion="intro" play={ready} />
+      <TitleMark key={heroRound} className="mh-lockup" sub="AUTUMN AGENTS" motion="intro" play={ready && heroSeen} />
       <h1 className="mh-title">熱血對戰，<em>正式開打！</em></h1>
       <p className="mh-sub">{plan?.title.replaceAll("\n", "") || "雷射對戰＋下午茶"}</p>
       <dl className="mh-intel">

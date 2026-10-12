@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { FIELD_MANUAL, type ManualIcon } from "@/lib/mission-brief";
+import { useInView } from "./use-in-view";
 
 const HALF = "#%&*+=<>/\\|01░▒▓";
 const FULL = "囗回田目甲申由日曰口品器畐冂亠十丿乂入凵匚";
@@ -30,8 +31,8 @@ const ICONS: Record<ManualIcon, ReactNode> = {
   gear: <><path d="M10 30c0-3 2-5 5-5h10l6-9c2-3 6-3 8 0l2 3c3 5 8 7 14 7 3 0 5 2 5 5v3c0 2-1 3-3 3H13c-2 0-3-1-3-3Z" /><path d="M10 33h50M24 25l3 4M30 21l3 4M36 18l3 4" /></>,
   clock: <><circle cx="32" cy="36" r="20" /><path d="M32 24v12l8 6M26 10h12M32 10v6M48 18l4-4" /></>,
   locker: <><rect x="16" y="8" width="32" height="50" rx="2" /><path d="M16 33h32M24 16h4M24 20h4M24 41h4M24 45h4" /><circle cx="40" cy="22" r="3" /><path d="M40 25v4" /></>,
-  drink: <><path d="M27 6h10M28 6v8l-6 8v34a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V22l-6-8V6" /><path d="M22 32h20M22 44h20" /></>,
-  shield: <><path d="M32 6 12 14v14c0 13 8 24 20 30 12-6 20-17 20-30V14Z" /><path d="m23 32 6 6 12-13" /></>,
+  nofood: <><circle cx="32" cy="32" r="23" /><path d="M24 17v9a4 4 0 0 0 8 0v-9M28 17v30" /><path d="M41 47V17c-3.5 2.5-5 7-5 13h5" /><path d="m15.7 15.7 32.6 32.6" /></>,
+  heart: <><path d="M32 53S9 40 9 24a11.5 11.5 0 0 1 23-3.5A11.5 11.5 0 0 1 55 24c0 16-23 29-23 29Z" /><path d="M6 34h14l4-8 6 15 5-12 3 5h20" /></>,
 };
 
 const STORE = "egroup-outing:protocols";
@@ -44,14 +45,8 @@ const PRINT = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeW
  * them off until the agent is ready to deploy. Kept on this device.
  */
 export default function MissionProtocols() {
-  const list = useRef<HTMLOListElement>(null), [on, setOn] = useState(false);
+  const [list, on] = useInView<HTMLOListElement>();
   const [done, setDone] = useState<boolean[]>(() => FIELD_MANUAL.map(() => false));
-  useEffect(() => {
-    const el = list.current; if (!el) return;
-    const io = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setOn(true); io.disconnect(); } }, { rootMargin: "0px 0px -15% 0px" });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
   useEffect(() => {
     try { const saved = JSON.parse(localStorage.getItem(STORE) || "[]") as string[]; setDone(FIELD_MANUAL.map(item => saved.includes(item.key))); } catch {}
   }, []);

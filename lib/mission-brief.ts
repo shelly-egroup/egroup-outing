@@ -6,9 +6,9 @@ export const MISSION_IMAGES = {
   teams: "/assets/mission/teams.webp",
   gear: "/assets/mission/gear.webp",
   tea: "/assets/mission/tea.webp",
-  squad: "/assets/mission/squad.webp",
+  walkout: "/assets/mission/walkout.webp",
   /** the captains as cut-outs, aiming at each other: red mirrored to face right, blue facing left */
-  captainRed: "/assets/mission/captain-red.webp?v=2",
+  captainRed: "/assets/mission/captain-red.webp?v=3",
   captainBlue: "/assets/mission/captain-blue.webp",
   smoke: "/assets/mission/smoke.webp",
 } as const;
@@ -33,13 +33,13 @@ export const MISSION_MODES = [
   { code: "M-06", name: "狼人 vs 吸血鬼", line: "狼人起始命數多，吸血鬼能偷走對手的命，誰撐到最後？" },
 ] as const;
 
-export type ManualIcon = "gear" | "clock" | "locker" | "drink" | "shield";
+export type ManualIcon = "gear" | "clock" | "locker" | "nofood" | "heart";
 export const FIELD_MANUAL: { key: string; icon: ManualIcon; title: string; body: string }[] = [
   { key: "服裝", icon: "gear", title: "好活動的衣服＋運動鞋", body: "避開裙子、拖鞋與尖銳飾品；手環、手錶上場前先收好。" },
   { key: "準時", icon: "clock", title: "提早 10–15 分鐘到", body: "遊戲依預約時間開始計算，遲到只能中途加入、少玩場次。" },
   { key: "置物", icon: "locker", title: "手機、錢包鎖進置物櫃", body: "大包包和外套放休息區，貴重物品先上鎖。" },
-  { key: "補給", icon: "drink", title: "每人一瓶飲料", body: "場內不提供餐點，也不能帶食物進場，肚子留給下午茶。" },
-  { key: "安全", icon: "shield", title: "安全不痛", body: "Class II 雷射對人體無害，不像漆彈會痛；嚴重心臟疾病或懷孕不建議上場。" },
+  { key: "飲食", icon: "nofood", title: "禁止攜帶外食", body: "場內不提供餐點，也不能帶食物進場；肚子留給戰後的下午茶。" },
+  { key: "身心", icon: "heart", title: "愉快團結的心、健康的身體", body: "帶著好心情和隊友默契上場、彼此掩護。Class II 雷射對人體無害，不像漆彈會痛；嚴重心臟疾病或懷孕不建議上場。" },
 ];
 
 export const ARENA_TRANSIT = [

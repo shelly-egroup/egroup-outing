@@ -25,15 +25,31 @@ const RATIO: Record<string, number> = { "a-aim": .57, "a-stand": .255, "a-walk":
 const UP_MS = [1500, 2300], GAP_MS = [2200, 5200], RUN_MS = 1900;
 const rand = ([a, b]: number[]) => a + Math.random() * (b - a);
 const pick = <T,>(list: T[]) => list[(Math.random() * list.length) | 0];
+const shuffle = <T,>(list: T[]) => { const out = [...list]; for (let i = out.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [out[i], out[j]] = [out[j], out[i]]; } return out; };
+/**
+ * Who turns up where next: a shuffled round in which each captain takes every spot once — so both of them lean out, rise, stand
+ * down the corridor and stride across the floor — alternating captains, never the same spot twice in a row.
+ */
+function dealRound(lastSpot: string): { who: Who; spot: Spot }[] {
+  for (let tries = 0; tries < 40; tries++) {
+    const a = shuffle(SPOTS), b = shuffle(SPOTS), first: Who = Math.random() < .5 ? "a" : "b", round: { who: Who; spot: Spot }[] = [];
+    for (let i = 0; i < SPOTS.length; i++) { round.push({ who: first, spot: (first === "a" ? a : b)[i] }); round.push({ who: first === "a" ? "b" : "a", spot: (first === "a" ? b : a)[i] }); }
+    if (round.every((deal, i) => deal.spot.key !== (i ? round[i - 1].spot.key : lastSpot))) return round;
+  }
+  return SPOTS.flatMap(spot => [{ who: "a" as Who, spot }, { who: "b" as Who, spot }]);
+}
 
 /**
  * An easter egg in the arena's surveillance feed: now and then a captain turns up — leaning out from behind a pillar, rising
- * from behind the barrels, standing far down the corridor or sprinting across the floor, in a random pose — and a tap or
- * click fires the laser at them. A hit flashes them, throws sparks and knocks them out of the picture; the feed keeps count.
+ * from behind the barrels, standing far down the corridor or striding across the floor, in a pose that suits the spot — and a
+ * tap or click fires the laser at them. A hit flashes them, throws sparks and knocks them out of the picture; the feed keeps
+ * count. The mouse pointer itself is the rifle sight (a cursor image — no lag) and turns red over a target; on a touch
+ * screen a sight snaps onto each tap.
  * Only while the feed is on screen, and never with reduced motion.
  */
 export default function ReconTargets() {
-  const box = useRef<HTMLDivElement>(null), fx = useRef<HTMLDivElement>(null), sprite = useRef<HTMLImageElement>(null), win = useRef<HTMLDivElement>(null);
+  const box = useRef<HTMLDivElement>(null), fx = useRef<HTMLDivElement>(null), sprite = useRef<HTMLImageElement>(null), win = useRef<HTMLDivElement>(null), sight = useRef<HTMLDivElement>(null);
+  const deck = useRef<{ who: Who; spot: Spot }[]>([]), tapTimer = useRef(0);
   const [target, setTarget] = useState<Target | null>(null), [hits, setHits] = useState(0), [hint, setHint] = useState(false);
   const [live, setLive] = useState(false), [visible, setVisible] = useState(false);
   const shown = useRef(0), serial = useRef(0), lastSpot = useRef("");
@@ -50,9 +66,10 @@ export default function ReconTargets() {
   useEffect(() => {
     if (!live || !visible || target) return;
     const timer = setTimeout(() => {
-      const spot = pick(SPOTS.filter(s => s.key !== lastSpot.current)); lastSpot.current = spot.key;
+      if (!deck.current.length) deck.current = dealRound(lastSpot.current);
+      const { who, spot } = deck.current.shift()!; lastSpot.current = spot.key;
       const pose = pick(spot.poses), flip = spot.from === "run" ? Math.random() < .5 : !!spot.flip;
-      setTarget({ id: ++serial.current, who: Math.random() < .5 ? "a" : "b", pose, spot, flip, state: "up" });
+      setTarget({ id: ++serial.current, who, pose, spot, flip, state: "up" });
       if (shown.current++ === 0) { setHint(true); setTimeout(() => setHint(false), 3200); }
     }, shown.current === 0 ? 1500 : rand(GAP_MS));
     return () => clearTimeout(timer);
@@ -69,6 +86,10 @@ export default function ReconTargets() {
     return () => clearTimeout(timer);
   }, [target]);
 
+  // a target that ducks away or goes down releases the lock; a pending tap sight is cleared on unmount
+  useEffect(() => { if (target?.state !== "up") { if (sight.current) sight.current.dataset.lock = "false"; if (box.current) box.current.dataset.lock = "false"; } }, [target]);
+  useEffect(() => () => clearTimeout(tapTimer.current), []);
+
   /** Transient effects (beam, flash, sparks, labels) are plain elements that animate once and remove themselves. */
   const burst = useCallback((cls: string, x: number, y: number, keyframes: Keyframe[], options: KeyframeAnimationOptions, style: Partial<CSSStyleDeclaration> = {}) => {
     const layer = fx.current; if (!layer) return;
@@ -76,18 +97,42 @@ export default function ReconTargets() {
     layer.appendChild(e); e.animate(keyframes, options).finished.then(() => e.remove(), () => e.remove());
   }, []);
 
+  /** Whether a point (client coordinates) lands on the visible body: the sprite's box, trimmed of its transparent edges, inside
+   *  the spot's window. */
+  const onBody = (cx: number, cy: number): boolean => {
+    const s = sprite.current?.getBoundingClientRect(), w = win.current?.getBoundingClientRect();
+    return !!(s && w && target?.state === "up" && cx > Math.max(s.left + s.width * .14, w.left) && cx < Math.min(s.right - s.width * .14, w.right)
+      && cy > Math.max(s.top + s.height * .02, w.top) && cy < Math.min(s.bottom, w.bottom));
+  };
+  /** The mouse pointer itself is the sight (a cursor image, so it never trails the mouse); over a target it switches to the
+   *  red, tightened one — checked once a frame. */
+  const pointer = useRef({ x: 0, y: 0, frame: 0 });
+  function aim(event: React.PointerEvent<HTMLDivElement>) {
+    if (!live || event.pointerType !== "mouse") return;
+    const p = pointer.current; p.x = event.clientX; p.y = event.clientY;
+    if (!p.frame) p.frame = requestAnimationFrame(() => { p.frame = 0; const el = box.current; if (el) el.dataset.lock = String(onBodyRef.current(p.x, p.y)); });
+  }
+  function leave() { if (box.current) box.current.dataset.lock = "false"; }
+
+  const onBodyRef = useRef(onBody); onBodyRef.current = onBody;
+  useEffect(() => () => cancelAnimationFrame(pointer.current.frame), []);
+
   function fire(event: React.PointerEvent<HTMLDivElement>) {
     const el = box.current; if (!el || !live) return;
     const r = el.getBoundingClientRect(), x = event.clientX - r.left, y = event.clientY - r.top;
+    // the sight: on a touch screen it snaps onto the tap; with a mouse it kicks with the shot
+    const ret = sight.current;
+    if (ret && event.pointerType !== "mouse") {
+      ret.style.transform = `translate(${x}px, ${y}px)`; ret.dataset.lock = String(onBody(event.clientX, event.clientY));
+      ret.dataset.tap = "false"; void ret.offsetWidth; ret.dataset.tap = "true";
+      clearTimeout(tapTimer.current); tapTimer.current = window.setTimeout(() => { ret.dataset.tap = "false"; }, 700);
+    }
     // the shot: from the gun at the bottom of the frame to where it was aimed
     const gx = r.width / 2, gy = r.height + 6, len = Math.hypot(x - gx, y - gy), ang = Math.atan2(y - gy, x - gx);
     burst("rt-beam", gx, gy, [{ opacity: 1, transform: `rotate(${ang}rad) scaleX(0)` }, { opacity: 1, transform: `rotate(${ang}rad) scaleX(1)`, offset: .25 }, { opacity: 0, transform: `rotate(${ang}rad) scaleX(1)` }], { duration: 220, easing: "ease-out" }, { width: len + "px" });
     burst("rt-muzzle", gx, r.height - 4, [{ opacity: 1, transform: "translate(-50%, -50%) scale(.6)" }, { opacity: 0, transform: "translate(-50%, -50%) scale(1.6)" }], { duration: 220, easing: "ease-out" });
-    // a hit lands on the visible body: the sprite's box, trimmed of its transparent edges, inside the spot's window
-    const s = sprite.current?.getBoundingClientRect(), w = win.current?.getBoundingClientRect();
-    const inBody = s && w && target?.state === "up" && event.clientX > Math.max(s.left + s.width * .14, w.left) && event.clientX < Math.min(s.right - s.width * .14, w.right)
-      && event.clientY > Math.max(s.top + s.height * .02, w.top) && event.clientY < Math.min(s.bottom, w.bottom);
-    if (inBody && target) {
+    // a hit lands on the visible body
+    if (onBody(event.clientX, event.clientY) && target) {
       setTarget({ ...target, state: "hit" }); setHits(h => h + 1);
       burst("rt-flash", x, y, [{ opacity: .95, transform: "translate(-50%, -50%) scale(.3)" }, { opacity: 0, transform: "translate(-50%, -50%) scale(2.4)" }], { duration: 380, easing: "ease-out" });
       for (let k = 0; k < 14; k++) {
@@ -105,7 +150,7 @@ export default function ReconTargets() {
   }
 
   const t = target, pose = t ? (t.state === "hit" ? "hit" : t.pose) : "aim";
-  return <div ref={box} className="rt" data-live={live} aria-hidden="true" onPointerDown={fire}>
+  return <div ref={box} className="rt" data-live={live} aria-hidden="true" onPointerDown={fire} onPointerMove={aim} onPointerLeave={leave}>
     {t && <div key={t.id} ref={win} className="rt-win" data-from={t.spot.from} data-state={t.state} data-flip={t.flip} style={t.spot.win}>
       <div className="rt-body" style={{ "--feet": t.spot.feet + "%", "--h": t.spot.height + "%", "--ratio": RATIO[t.who + "-" + pose], "--run": RUN_MS + "ms" } as CSSProperties}>
         <img ref={sprite} className={"rt-sprite is-" + t.who} src={SPRITE(t.who, pose)} alt="" draggable={false} />
@@ -113,6 +158,9 @@ export default function ReconTargets() {
       </div>
     </div>}
     <div ref={fx} className="rt-fx" />
+    {live && <div ref={sight} className="rt-sight" data-on="false" data-lock="false" data-tap="false">
+      <svg viewBox="-32 -32 64 64"><g className="rt-sight-ring"><circle r="19" pathLength={100} /></g><path d="M0-29v13M0 16v13M-29 0h13M16 0h13" /><circle className="rt-sight-dot" r="1.7" /></svg>
+    </div>}
     {live && <span className="rt-hits">HITS <b>{String(hits).padStart(2, "0")}</b></span>}
     {hint && <span className="rt-hint"><i />偵測到目標・點擊射擊</span>}
   </div>;

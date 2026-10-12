@@ -1,23 +1,30 @@
 "use client";
 import { useId, type CSSProperties } from "react";
-import { MARK_AGENT, MARK_DOT, MARK_GLYPHS, MARK_MUZZLE } from "@/lib/title-mark-paths";
+import { MARK_AGENT, MARK_AGENT_AIM, MARK_DOT, MARK_GLYPHS, MARK_MUZZLE, MARK_MUZZLE_UP } from "@/lib/title-mark-paths";
 
 /** Each character's centre in the 430 × 100 box (glyph i spans 110 i … 110 i + 100). */
 const CENTRES = MARK_GLYPHS.map((_, i) => i * 110 + 50);
+/** The red glow sits just inside the raised pistol's muzzle (the barrel points straight up). */
+const TIP = { x: MARK_MUZZLE_UP.cx, y: +(MARK_MUZZLE_UP.cy + .9).toFixed(2) };
 
 /**
- * 秋遊特務, the site's mark, with the agent inside the type: in 遊 the 子 is an agent in a dinner jacket, pistol raised, and the
- * dot of 特's 寸 is his red laser sight. Brushed chrome with red and blue rim light. `motion="intro"` plays it like the 007
- * opening: four white dots slide in and each irises open into a character, then the agent fires and the laser dot lights;
- * `motion="scan"` keeps the laser sight pulsing (loading). Without motion, or with reduced motion, it is the finished mark.
+ * 秋遊特務, the site's mark, with the agent inside the type: in 遊 the 子 is a gunmetal agent in a dinner jacket, outlined in
+ * chrome, his pistol raised beside his face, its muzzle glowing red; the dot of 特's 寸 is where his laser landed. Brushed chrome
+ * with red and blue rim light. `motion="intro"` plays it like the 007 opening: four white dots slide in and each irises open
+ * into a character; the agent, arm out, fires at 特 — the beam leaves the red dot — and then raises his pistol. `motion="scan"`
+ * (loading) keeps aiming, firing and raising. Without motion, or with reduced motion, it is the finished mark.
  */
 export default function TitleMark({ className = "", sub, motion = "none", play = true }: { className?: string; sub?: string; motion?: "none" | "intro" | "scan"; play?: boolean }) {
   const u = "tm" + useId().replace(/[^a-zA-Z0-9]/g, "");
   const ref = (name: string) => `url(#${u}${name})`;
   const [en1, en2] = (sub || "").split(" ");
+  // 遊 carries the agent: pistol raised (the finished mark) and, for the intro, aiming at 特
   const shape = (i: number, fill: string, className?: string, transform?: string) => <>
     <path className={className} d={MARK_GLYPHS[i]} fill={fill} transform={transform} />
-    {i === 1 && <path className={className ? className + " tm-agent" : "tm-agent"} d={MARK_AGENT} fill={fill === ref("c") ? ref("g") : fill} transform={transform} />}
+    {i === 1 && <>
+      <path className={(className ? className + " " : "") + "tm-agent tm-pose-up"} d={MARK_AGENT} fill={fill === ref("c") ? ref("g") : fill} transform={transform} />
+      {motion !== "none" && <path className={(className ? className + " " : "") + "tm-agent tm-pose-aim"} d={MARK_AGENT_AIM} fill={fill === ref("c") ? ref("g") : fill} transform={transform} />}
+    </>}
   </>;
   return <div className={"title-mark " + className} data-motion={motion} data-play={play} role="img" aria-label={sub ? "秋遊特務 " + sub : "秋遊特務"}>
     <svg className="tm-word" viewBox="0 0 430 100" focusable="false" aria-hidden="true">
@@ -49,6 +56,9 @@ export default function TitleMark({ className = "", sub, motion = "none", play =
           <g filter={ref("rim")}>{shape(i, ref("rr"), undefined, "translate(-1.6 -.3)")}{shape(i, ref("rb"), undefined, "translate(1.6 -.3)")}</g>
           {shape(i, ref("c"))}
           {shape(i, "none", "tm-edge")}
+          {i === 1 && <><path className="tm-agent-line tm-pose-up" d={MARK_AGENT} fill="none" stroke={ref("c")} />
+            {motion !== "none" && <path className="tm-agent-line tm-pose-aim" d={MARK_AGENT_AIM} fill="none" stroke={ref("c")} />}
+            <g className="tm-muzzle"><circle cx={TIP.x} cy={TIP.y} r="3.6" fill={ref("glow")} /><circle cx={TIP.x} cy={TIP.y} r="1.2" fill={ref("dot")} /></g></>}
         </g>)}
       </g>
       <g clipPath={ref("w")}><rect className="tm-sheen" x="-120" y="-10" width="120" height="120" fill={ref("sh")} /></g>

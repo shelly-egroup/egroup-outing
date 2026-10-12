@@ -419,6 +419,7 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
   pianoHit(C.end, "D1", 0.55, 2.2); choir(C.end, ["D3", "A3", "D4"], C.duration - C.end - 0.6, { vel: 0.4, attack: 0.4, gain: 0.03 });
   // self-destruct: the line types itself, a match strikes, the frame catches with a deep fwoomp, the fire runs through it
   // crackling and roaring, and what is left drifts off as smoke
+  typing(C.disavow[0], C.disavow[1]);   // as always, the organisers will disavow any knowledge
   typing(C.destruct, C.destruct + 0.6);
   matchStrike(C.burn - 0.1);
   revCymbal(C.burn, 0.32, 0.22);

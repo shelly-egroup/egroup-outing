@@ -16,7 +16,10 @@ const SEEDS: BurnSeed[] = [{ x: .32, y: .52, delay: 0 }, { x: .8, y: .3, delay: 
  * message burns away in a film burn with sparks, embers and smoke, "訊息已銷毀" stays a while — then it types itself again.
  * Its height never changes, so nothing below moves. With reduced motion it is a still briefing that says it will self-destruct.
  */
-export default function MissionBriefing({ lines, onAlarm }: { lines: [string, string][]; onAlarm?: (alarm: BriefingAlarm) => void }) {
+/** A briefing line: key, value, and optionally how the value reads — "ok" (green) or "wait" (amber, pulsing). */
+export type BriefingLine = [string, string] | [string, string, "ok" | "wait"];
+
+export default function MissionBriefing({ lines, onAlarm }: { lines: BriefingLine[]; onAlarm?: (alarm: BriefingAlarm) => void }) {
   const box = useRef<HTMLDivElement>(null), canvas = useRef<HTMLCanvasElement>(null);
   const total = lines.reduce((sum, [k, v]) => sum + k.length + v.length, 0);
   const [stage, setStage] = useState<Stage>("typing"), [count, setCount] = useState(0), [secs, setSecs] = useState(COUNTDOWN);
@@ -96,12 +99,12 @@ export default function MissionBriefing({ lines, onAlarm }: { lines: [string, st
   return <div ref={box} className="boot" data-state={still ? "still" : stage} style={height !== undefined ? { minHeight: height } : undefined}>
     <p className="sr-only">{lines.map(([k, v]) => k + "：" + v).join("；")}；本訊息將自動銷毀</p>
     <div className="boot-lines" aria-hidden="true" hidden={!live}>
-      {lines.map(([key, value], index) => {
+      {lines.map(([key, value, tone], index) => {
         const k = key.slice(0, Math.max(0, left)); left -= key.length;
         const v = value.slice(0, Math.max(0, left)); left -= value.length;
         const typing = stage === "typing" && left < 0 && left > -(key.length + value.length) - 1 && (k.length || index === 0);
         return <p key={key} className="boot-line">
-          <span className="boot-prompt">&gt;</span><span className="boot-key">{k}</span>{k.length === key.length && <span className="boot-dots" />}<b className="boot-value">{v}</b>{typing && <i className="boot-caret" />}
+          <span className="boot-prompt">&gt;</span><span className="boot-key">{k}</span>{k.length === key.length && <span className="boot-dots" />}<b className="boot-value" data-tone={tone}>{v}</b>{typing && <i className="boot-caret" />}
         </p>;
       })}
       {(still || stage !== "typing") && <p className="boot-line boot-destruct">

@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import TitleMark from "./title-mark";
+import AccountMenu from "./account-menu";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useScrollReveal } from "./use-scroll-reveal";
 
@@ -14,10 +15,10 @@ type TickerItem = { key: string; text: string; content?: ReactNode };
 /** The mission page's four parts; phones show the short labels. */
 const SECTIONS = [
   { id: "mission", label: "任務流程", short: "流程" },
+  { id: "accept", label: "接受任務", short: "接受" },
   { id: "arena", label: "作戰場地", short: "場地" },
   { id: "tea", label: "戰後下午茶", short: "下午茶" },
   { id: "manual", label: "行前須知", short: "須知" },
-  { id: "accept", label: "接受任務", short: "接受" },
 ];
 const BOLT = "M25 2 3 41h15l-7 29 26-44H21l8-24z";
 
@@ -153,6 +154,7 @@ export default function OutingHeader({ active, heroActions, title, eventDate }: 
           <span className="header-link-full">{label}</span><span className="header-link-short" aria-hidden="true">{short}</span>
         </a>)}
       </nav>
+      <div className="header-actions"><AccountMenu organizerInMenu agent /></div>
     </div>
   </div>;
 }

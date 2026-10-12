@@ -266,7 +266,7 @@ export function OutingProvider({ children }: { children: ReactNode }) {
       await runTransaction(profileRef, (current) => ({
         ...current,
         email: normalizedEmail(user.email),
-        displayName: typeof claims.name === "string" ? claims.name : "同事",
+        displayName: typeof claims.name === "string" ? claims.name : "探員",
         photoURL: typeof claims.picture === "string" ? claims.picture : "",
         role: adminEmails.includes(normalizedEmail(user.email)) ? "admin" : current?.role || "member",
         createdAt: current?.createdAt || serverTimestamp(),
@@ -326,7 +326,7 @@ export function OutingProvider({ children }: { children: ReactNode }) {
     const publicVote = {
       planId: draft.planId,
       displayName:
-        typeof token.claims.name === "string" ? token.claims.name : "同事",
+        typeof token.claims.name === "string" ? token.claims.name : "探員",
       photoURL:
         typeof token.claims.picture === "string" ? token.claims.picture : "",
       updatedAt: serverTimestamp(),
@@ -363,7 +363,7 @@ export function OutingProvider({ children }: { children: ReactNode }) {
     if (getFirebase().auth.currentUser?.uid !== user.uid) throw new Error("登入帳號已變更，請重新確認。");
     try {
       await update(ref(getFirebase().database, "outing"), {
-        ["votes/" + user.uid]: { planId, displayName: typeof token.claims.name === "string" ? token.claims.name : "同事", photoURL: typeof token.claims.picture === "string" ? token.claims.picture : "", updatedAt: serverTimestamp() },
+        ["votes/" + user.uid]: { planId, displayName: typeof token.claims.name === "string" ? token.claims.name : "探員", photoURL: typeof token.claims.picture === "string" ? token.claims.picture : "", updatedAt: serverTimestamp() },
         ["voteDetails/" + user.uid]: { ...privateDetails, updatedAt: serverTimestamp() },
       });
     } catch {
