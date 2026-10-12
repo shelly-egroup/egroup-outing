@@ -173,3 +173,7 @@ img { display: block; max-width: none; user-select: none; }
 .desk-ink.notes { flex-direction: column; align-items: flex-start; }
 .desk-ink.notes p { margin: 0; display: flex; align-items: center; }
 .desk-ink.notes i { display: inline-block; background: rgb(26 23 20 / .88); border-radius: 1px; }
+/* the shock ring sent off by each slam in the end frame */
+.shock { position: absolute; width: 14cqh; height: 14cqh; translate: -50% -50%; border-radius: 50%; border: .5cqh solid rgb(255 244 232 / .95); box-shadow: 0 0 2.4cqh rgb(255 255 255 / .8), inset 0 0 2.4cqh rgb(255 255 255 / .55); opacity: 0; mix-blend-mode: screen; pointer-events: none; }
+.shock.warm { border-color: rgb(255 200 130 / .95); box-shadow: 0 0 2.4cqh rgb(255 176 74 / .8), inset 0 0 2.4cqh rgb(255 176 74 / .5); }
+.shock.red { border-color: rgb(255 96 116 / .95); box-shadow: 0 0 2.4cqh rgb(255 42 68 / .8), inset 0 0 2.4cqh rgb(255 42 68 / .5); }

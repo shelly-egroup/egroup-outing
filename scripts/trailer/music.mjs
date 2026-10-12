@@ -8,16 +8,15 @@
 // The picture is cut to the music, not the music stretched to the picture: every event in scripts/trailer/timeline.json
 // sits on a beat measured in these takes, so the recordings play at their own tempo, untouched. timeline.json "music":
 //   bond     007 2.6–13.3 s → 0 s: the dark intro under the dots and the barrel; the band comes in on the shot (7.64 s → 5.04 s);
-//            the cards change with its chords (every 0.83 s); its accent at 13.04 s is the last card's button (→ 10.44 s), and
-//            it rings out into a hall instead of stopping.
-//   mission  the Mission 8.6–28.79 s → 10.1 s: its bongos come up under the 007 tail, the match strikes on one of them
-//            (9.52 s → 11.02 s), the fuse catches as the bass comes in (12.07 s → 13.57 s), the briefing runs on its beats,
-//            the montage starts on the drum fill (17.28 s → 18.78 s) and the action on the full band (21.05 s → 22.55 s);
-//            its last hit before the accent (28.10 s) is the knee slide's shot (→ 29.60 s), and it is cut there into the hall:
-//            a third of a second of breath (and black) before the title.
-//   coda     007 94.57–104.8 s → 30.21 s: the band's beat at 94.58 s slams the title in (→ 30.22 s), its brass entrance
-//            (96.28 s → 31.92 s) drops the date in, the classic line is typed over the last phrase, and its closing chord
-//            (101.02 s → 36.65 s) slams in the self-destruct; it rings under the burn.
+//            the cards change with its chords (every 0.83 s); its accent at 13.04 s is the last card's button (→ 10.44 s), where
+//            it hands straight over — the same beat is the Mission's first bass note — and rings out under it in a hall.
+//   mission  the Mission 12.03–33.97 s → 10.40 s, one take with no stops: its bass comes in on the button (12.07 s → 10.44 s,
+//            the wire's flash and the fuse catching), the briefing runs on its beats, the montage starts on the drum fill
+//            (17.28 s → 15.65 s), the action on the full band (21.05 s → 19.42 s), the stunts on its strongest accent
+//            (26.16 s → 24.54 s), the title on the accent at 28.73 s (→ 27.10 s, the fuse reaching its end) and the date on
+//            30.02 s (→ 28.39 s); it carries a little more under the end frame and stops on its accent at 33.85 s (→ 32.22 s)…
+//   coda     …where 007's last chord (101.02 s) is the button under the self-destruct and rings on through the burn.
+// No black and no silence anywhere: one song hands to the other on a shared downbeat, and the end is the loudest place.
 // 007 is in F♯ minor and moves up a semitone (pitch only, the tempo stays) to G minor — the Mission's key — so the two meet
 // without a clash.
 //
@@ -172,22 +171,29 @@ const piece = (src, { from, to, semitones = 0 }, extra, out) =>
   run(["-i", f(src + "-clean.wav"), "-af", `atrim=start=${from}:end=${to},asetpts=PTS-STARTPTS${pitch(semitones)},${extra}`, "-c:a", "pcm_f32le", f(out)]);
 const B = MU.bond, M = MU.mission, C = MU.coda;
 const bondButton = T.button - B.at;                       // where 007's last accent falls, relative to the piece
-piece("bond", B, `afade=t=in:d=0.25,afade=t=out:st=${(bondButton + 0.1).toFixed(3)}:d=0.4`, "bond.wav");
+piece("bond", B, `afade=t=in:d=0.25,afade=t=out:st=${(bondButton + 0.04).toFixed(3)}:d=0.16`, "bond.wav");   // the ring carries its last accent
 piece("bond", { ...B, from: B.from + bondButton - 0.3, to: B.from + bondButton + 0.35 }, "afade=t=in:d=0.04,afade=t=out:st=0.5:d=0.15", "bond-ring.wav");
-const missionEnd = M.to - M.from, bass = T.catch - M.at;   // the Mission's bass comes in where the fuse catches
-/** +2.5 dB until `until` (seconds into the piece), eased back to unity over the quarter second before it */
-const lift = (until) => `volume='if(lt(t,${(until - 0.3).toFixed(3)}),1.334,if(lt(t,${(until - 0.05).toFixed(3)}),1.334-0.334*(t-${(until - 0.3).toFixed(3)})/0.25,1))':eval=frame`;
-// its bongos carry the match a little forward, easing back just before the bass so the entrance still lifts
-piece("mission", M, `${lift(bass)},afade=t=in:d=0.9:curve=qsin,afade=t=out:st=${(missionEnd - 0.025).toFixed(3)}:d=0.025`, "mission.wav");
-piece("mission", { ...M, from: M.to - 0.4, to: M.to }, "afade=t=in:d=0.02,afade=t=out:st=0.37:d=0.03", "mission-ring.wav");
-// the coda's bars under the title carry as much as the action before them, easing back as its brass comes in with the date
+const missionEnd = M.to - M.from;
+piece("mission", M, `afade=t=in:d=0.04,afade=t=out:st=${(missionEnd - 0.07).toFixed(3)}:d=0.07`, "mission.wav");
+/** a gain envelope (piece time → linear gain), smooth to the sample, applied in place */
+function shape(file, gainAt) { const x = decode(f(file)); for (let i = 0; i < x.length; i++) x[i] *= gainAt(i / SR); writeWav(f(file), [x]); }
+const ramp = (t, a, b, from, to) => t <= a ? from : t >= b ? to : from + (to - from) * (0.5 - 0.5 * Math.cos(Math.PI * (t - a) / (b - a)));
+// the music never stops for the end, it draws breath: a fifth of a second down before the title and (less) before the date,
+// and from the title on it plays 3 dB up — the end frame is the loudest place in the film
+{
+  const tt = T.title - M.at, td = T.date - M.at, UP = 1.41, DIP = 0.5;
+  shape("mission.wav", (t) => t < tt - 0.3 ? 1 : t < tt ? (t < tt - 0.06 ? ramp(t, tt - 0.3, tt - 0.22, 1, DIP) : ramp(t, tt - 0.06, tt, DIP, UP))
+    : t < td - 0.22 ? UP : t < td ? (t < td - 0.05 ? ramp(t, td - 0.22, td - 0.16, UP, UP * 0.7) : ramp(t, td - 0.05, td, UP * 0.7, UP)) : UP);
+}
+piece("mission", { ...M, from: M.to - 0.4, to: M.to }, "afade=t=in:d=0.02,afade=t=out:st=0.33:d=0.07", "mission-ring.wav");
+// 007's last chord, ringing on under the self-destruct and the burn
 const codaLen = Math.min(C.to - C.from, T.duration - C.at);
-piece("bond", { ...C, to: C.from + codaLen }, `${lift(T.date - C.at)},afade=t=in:d=0.03,afade=t=out:st=${(codaLen - 1.1).toFixed(3)}:d=1.1`, "coda.wav");
+piece("bond", { ...C, to: C.from + codaLen }, `afade=t=in:d=0.01,afade=t=out:st=${(codaLen - 1).toFixed(3)}:d=1`, "coda.wav");
 // each cut-off runs into the hall; and every piece gets a quiet stereo send into it, for width and a room to sit in
 for (const k of ["bond-ring", "mission-ring", "bond", "mission", "coda"]) inHall(k + ".wav", k + "-hall.wav");
 
-// 4 · balance by loudness: the 007 cold open a touch under the Mission's action, the coda up with it, the hits under all
-const target = { bond: -17, mission: -15.5, coda: -15.5 };
+// 4 · balance by loudness: the 007 cold open a touch under the Mission's action, 007's last chord over it, the hits under all
+const target = { bond: -17, mission: -15.5, coda: -14.5 };
 const gain = {};
 for (const [k, lufs] of Object.entries(target)) { const { i } = loudness(f(k + ".wav")); gain[k] = lufs - i; console.log(k, "measured", i, "LUFS → gain", gain[k].toFixed(2), "dB"); }
 const sfx = path.join(BUILD, "sfx.wav");
@@ -195,16 +201,15 @@ if (!fs.existsSync(sfx)) { console.error("render the sound design first: node sc
 const sfxGain = -22 - loudness(sfx).i;
 
 // 5 · lay everything on the timeline and mix
-// [file, at, gain dB, mono, gone by (timeline s)?]: the Mission's room is shut a moment after it stops, so the breath before
-// the title is a real one (only the drawn-in swell of the sound design is left in it)
+// [file, at, gain dB, mono, gone by (timeline s)?]: the Mission's room is shut soon after it stops, so 007's chord rings clean
 const SEND = -15;   // the hall under the dry takes
 const stems = [
   ["bond.wav", B.at, gain.bond, true],
   ["bond-hall.wav", B.at, gain.bond + SEND, false],
   ["bond-ring-hall.wav", B.at + bondButton - 0.3, gain.bond - 5, false],
   ["mission.wav", M.at, gain.mission, true],
-  ["mission-hall.wav", M.at, gain.mission + SEND, false, T.suckout + 0.1],
-  ["mission-ring-hall.wav", M.at + missionEnd - 0.4, gain.mission - 8, false, T.suckout + 0.18],
+  ["mission-hall.wav", M.at, gain.mission + SEND, false, T.destruct + 0.3],
+  ["mission-ring-hall.wav", M.at + missionEnd - 0.4, gain.mission - 10, false],
   ["coda.wav", C.at, gain.coda, true],
   ["coda-hall.wav", C.at, gain.coda + SEND, false],
   [sfx, 0, sfxGain, false],
@@ -212,7 +217,7 @@ const stems = [
 const inputs = stems.flatMap(([file]) => ["-i", path.isAbsolute(file) ? file : f(file)]);
 const shut = (end) => end ? `,afade=t=out:st=${(end - 0.12).toFixed(3)}:d=0.12` : "";
 const chains = stems.map(([, at, g, mono, end], i) => `[${i}]${mono ? "pan=stereo|c0=c0|c1=c0," : ""}aformat=sample_rates=${SR}:channel_layouts=stereo,volume=${g.toFixed(2)}dB,adelay=${Math.round(at * 1000)}:all=1,apad=whole_dur=${T.duration + 0.2}${shut(end)}[s${i}]`);
-const mix = `${chains.join(";")};${stems.map((_, i) => `[s${i}]`).join("")}amix=inputs=${stems.length}:normalize=0:duration=longest,atrim=end=${T.duration + 0.15},acompressor=threshold=-20dB:ratio=2.2:attack=10:release=180:makeup=1[m]`;
+const mix = `${chains.join(";")};${stems.map((_, i) => `[s${i}]`).join("")}amix=inputs=${stems.length}:normalize=0:duration=longest,atrim=end=${T.duration + 0.15},acompressor=threshold=-17dB:ratio=1.7:attack=12:release=200:makeup=1[m]`;
 run([...inputs, "-filter_complex", mix, "-map", "[m]", "-c:a", "pcm_f32le", f("mix.wav")]);
 
 // 6 · master: gain into a look-ahead limiter until it sits at −11 LUFS

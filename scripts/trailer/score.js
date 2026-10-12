@@ -313,16 +313,14 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
   // ── Act I: the dots tick in, the shot rings out over the band's entrance, the last card's wire hums and burns down ──
   C.dots.forEach((t, i) => tick(t, 0.32 + 0.06 * i, 2050 + i * 110));
   gunshot(C.fire); impact(C.fire, 0.9);
-  hum(C.titles[3] + 0.05, C.button + 0.42, 0.9);
-  whoosh(C.button + 0.02, 0.5, { f0: 4200, f1: 900, vel: 0.22, p0: 0.25, p1: 0.05, q: 2.2 });
+  hum(C.titles[3] + 0.05, C.button, 0.9);
+  // the wire catches at both ends and burns in, drawn up into its flash
+  crackle(C.button - 0.45, 0.47, 0.55); revCymbal(C.button, 0.5, 0.26);
 
-  // ── Act II: the match struck in the dark, the flame taking, the fuse catching as the bass comes in and burning under
-  //    everything until the title ──
-  matchStrike(C.ignite);
-  whoosh(C.flame - 0.04, 0.42, { f0: 180, f1: 900, vel: 0.28, p0: 0.1, p1: 0.1, q: 0.8 });
-  revCymbal(C.catch, 1.1, 0.22); whoosh(C.catch - 0.45, 0.45, { f0: 300, f1: 2800, vel: 0.2, p0: -0.3, p1: 0.3, q: 0.9 });   // drawn in, into the bass
-  impact(C.catch, 0.7);
-  fuse(C.catch, C.suckout, [[C.catch + 0.12, 0.42], [C.mission - 0.2, 0.2], [C.mission + 0.3, 0.1], [M0, 0.09], [C.suckout - 0.35, 0.24]]);
+  // ── Act II: the wire's flash is the fuse catching on the Mission's first bass downbeat; it burns under everything to the
+  //    title ──
+  impact(C.catch, 1.0); whoosh(C.catch, 0.5, { f0: 2600, f1: 300, vel: 0.3, p0: 0, p1: -0.4, q: 0.8 });
+  fuse(C.catch, C.title, [[C.catch + 0.12, 0.42], [C.mission - 0.2, 0.2], [C.mission + 0.3, 0.1], [M0, 0.09], [C.title - 0.35, 0.24]]);
   typing(C.typing[0][0], C.typing[0][1]); typing(C.typing[1][0], C.typing[1][1]);
   shutter(C.cardA); shutter(C.cardB); lock(C.cardA + 0.12); lock(C.cardB + 0.12);
   impact(C.missionLine, 0.6);
@@ -337,10 +335,9 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
   whoosh(M.stuntB - 0.04, 0.5, { f0: 1200, f1: 300, vel: 0.3, p0: 0.5, p1: -0.3, q: 0.7 });
   if (C.slideFire) zap(C.slideFire, 0.9, -0.3);
 
-  // ── Act III: the breath (the fuse gone, a swell drawn in), the title slammed out of the blast, the agent's shot, the date on
-  //    the brass, the classic line typed, a two-beep warning, the self-destruct slammed in on the band's last chord, the burn ──
-  revCymbal(C.title, C.title - C.suckout + 0.05, 0.42);
-  whoosh(C.suckout + 0.02, C.title - C.suckout - 0.02, { f0: 140, f1: 1600, vel: 0.2, p0: 0, p1: 0, q: 0.7 });
+  // ── Act III: the fuse reaches its end and blows the title out (the Mission plays on), the agent's shot, the date, the
+  //    classic line typed, a two-beep warning, the self-destruct slammed in on 007's last chord, the burn ──
+  revCymbal(C.title, 0.55, 0.36);
   impact(C.title, 1.6); crash(C.title, 0.5, 2.8); braam(C.title, "G1", 2.8, true);
   zap(C.laser, 0.7, 0.1);
   revCymbal(C.date, 0.3, 0.2); impact(C.date, 1.15); crash(C.date, 0.32, 2.2);
