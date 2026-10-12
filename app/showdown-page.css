@@ -131,95 +131,6 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
   .header-link, .outing-header .header-vote { transition: none; }
 }
 
-/* ── Hero: the poster's two bosses stand on the blue/red split; the logo lands on their crossed arms ── */
-.show-hero { --poster-h: clamp(300px, calc(100svh - 470px), 540px); position: relative; isolation: isolate; overflow: hidden; padding: 0 20px 56px; color: #fff; text-align: center; background: var(--paper); }
-.hero-field, .hero-field > i { position: absolute; inset: 0; }
-.hero-field { z-index: -2; --seam-t: 58%; --seam-b: 42%; }
-.hero-field-a { background: radial-gradient(120% 90% at 30% 30%, #2443e6, var(--field-a) 55%, #0f27a8); clip-path: polygon(0 0, calc(var(--seam-t) + 1px) 0, calc(var(--seam-b) + 1px) 100%, 0 100%); }
-.hero-field-b { background: radial-gradient(120% 90% at 70% 30%, #e3065e, var(--field-b) 55%, #b80048); clip-path: polygon(var(--seam-t) 0, 100% 0, 100% 100%, var(--seam-b) 100%); }
-.hero-field::after { content: ""; position: absolute; inset: 0; background: rgb(255 255 255 / .35); clip-path: polygon(calc(var(--seam-t) - 1px) 0, calc(var(--seam-t) + 1px) 0, calc(var(--seam-b) + 1px) 100%, calc(var(--seam-b) - 1px) 100%); }
-.hero-stage { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: clamp(16px, 3vw, 48px); max-width: 1440px; margin: 0 auto; }
-.hero-poster { grid-column: 2; position: relative; width: calc(var(--poster-h) * 1.75); max-width: calc(100vw - 40px); aspect-ratio: 1.75; }
-.hero-poster > img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 15%, #000 85%, transparent 100%), linear-gradient(180deg, #000 72%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 15%, #000 85%, transparent 100%), linear-gradient(180deg, #000 72%, transparent 100%); -webkit-mask-composite: source-in; mask-composite: intersect; }
-.hero-team { display: flex; flex-direction: column; gap: 8px; margin: 0; text-shadow: 0 2px 10px rgb(0 0 0 / .2); }
-.hero-team-a { grid-column: 1; align-items: flex-end; text-align: right; }
-.hero-team-b { grid-column: 3; align-items: flex-start; text-align: left; }
-.hero-team small { padding: 6px 9px 5px; background: #fff; font-size: 10px; letter-spacing: .32em; text-shadow: none; }
-.hero-team-a small { color: var(--field-a); }
-.hero-team-b small { color: var(--field-b); }
-.hero-team strong { font-size: clamp(22px, 2.2vw, 32px); font-weight: 900; line-height: 1.15; letter-spacing: .02em; }
-.hero-team span { font-size: 13px; opacity: .9; }
-.hero-center { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; max-width: 660px; margin: 0 auto; }
-.hero-lockup { --logo-size: clamp(60px, calc(var(--poster-h) * .2), 112px); margin-top: calc(var(--logo-size) * -1.35); filter: drop-shadow(0 10px 16px rgb(0 0 0 / .28)); }
-.hero-headline { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 16px; margin-top: 18px; }
-.hero-title { margin: 0; font-size: clamp(26px, 3vw, 40px); font-weight: 900; line-height: 1.3; letter-spacing: .04em; text-shadow: 0 2px 10px rgb(0 0 0 / .18); }
-.hero-title em { display: inline-block; margin-left: .3em; padding: 0 .32em .04em; background: #fff; color: var(--field-b); font-style: normal; transform: skewX(-8deg); text-shadow: none; }
-.show-hero .hero-joke { margin: 0; padding: 5px 11px 4px; background: var(--yellow); color: var(--ink); font-size: 14px; font-weight: 900; white-space: nowrap; transform: rotate(4deg); box-shadow: 3px 3px 0 var(--ink); }
-.show-hero .hero-joke span { color: inherit; font-weight: 700; }
-.hero-kicker { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 12px; margin: 18px 0 0; font-size: 11px; letter-spacing: .32em; }
-.hero-kicker > i { width: 18px; height: 1px; background: currentColor; opacity: .7; }
-.hero-copy { max-width: 33em; margin: 12px 0 0; font-size: 15px; line-height: 1.85; color: rgb(255 255 255 / .95); text-shadow: 0 1px 6px rgb(0 0 0 / .25); }
-.hero-nowrap { white-space: nowrap; }
-.show-hero .hero-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 12px 14px; margin: 24px 0 0; }
-.show-hero .hero-actions > .button { width: auto; min-height: 54px; padding: 12px 26px; font-size: 16px; }
-.show-hero .hero-primary { border-color: var(--ink); box-shadow: 5px 5px 0 var(--ink); }
-.show-hero .hero-primary:hover:not(:disabled) { box-shadow: 7px 7px 0 var(--ink); }
-.hero-replay { display: inline-flex; align-items: center; gap: 7px; padding: 8px 6px; border: 0; background: none; color: #fff; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-decoration: underline; text-underline-offset: 5px; text-decoration-color: rgb(255 255 255 / .5); }
-.hero-replay:hover { text-decoration-color: #fff; }
-
-/* Entrance once the film hands over (or on a return visit). */
-.show-hero[data-ready="true"] .hero-field-a, .show-hero[data-ready="true"] .hero-field-b { transform-origin: 50% 50%; animation: hero-open .7s cubic-bezier(.55,0,.15,1) both; }
-.show-hero[data-ready="true"] .hero-poster { animation: hero-poster .9s .25s cubic-bezier(.2,.8,.2,1) both; }
-.show-hero[data-ready="true"] .hero-team-a { animation: hero-side-a .7s .45s cubic-bezier(.2,.8,.2,1) both; }
-.show-hero[data-ready="true"] .hero-team-b { animation: hero-side-b .7s .45s cubic-bezier(.2,.8,.2,1) both; }
-.show-hero[data-ready="true"] .hero-lockup .logo-art { animation: hero-logo .7s .5s cubic-bezier(.2,1.3,.35,1) both; }
-/* Same flicker as the opening gate's bolt, once the lockup has landed. */
-.show-hero[data-ready="true"] .hero-lockup .logo-bolt { animation: bolt-flicker 3.2s 1.2s steps(1) infinite, bolt-shake 3.2s 1.2s steps(1) infinite; }
-.show-hero[data-ready="true"] .hero-joke { animation: hero-sticker .5s 1s cubic-bezier(.2,1.6,.4,1) both; }
-.show-hero[data-ready="true"] .hero-headline { animation: hero-up .7s .62s cubic-bezier(.2,.8,.2,1) both; }
-.show-hero[data-ready="true"] .hero-kicker, .show-hero[data-ready="true"] .hero-copy { animation: hero-up .7s .7s cubic-bezier(.2,.8,.2,1) both; }
-.show-hero[data-ready="true"] .hero-actions { animation: hero-up .7s .78s cubic-bezier(.2,.8,.2,1) both; }
-@keyframes hero-open { from { transform: scaleX(0); } }
-@keyframes hero-poster { from { opacity: 0; transform: translateY(24px) scale(1.04); } }
-@keyframes hero-side-a { from { opacity: 0; transform: translateX(-24px); } }
-@keyframes hero-side-b { from { opacity: 0; transform: translateX(24px); } }
-@keyframes hero-up { from { opacity: 0; transform: translateY(18px); } }
-@keyframes hero-logo { from { opacity: 0; transform: rotate(-6deg) skewX(-10deg) scale(1.35); } }
-@keyframes hero-sticker { from { opacity: 0; transform: rotate(30deg) scale(.3); } }
-.show-hero .hero-primary.is-cued { animation: hero-cue 1.2s ease-out 3; }
-@keyframes hero-cue { 0% { box-shadow: 5px 5px 0 var(--ink), 0 0 0 0 rgb(245 200 66 / .9); } 30% { transform: translateY(-3px); } 60% { box-shadow: 5px 5px 0 var(--ink), 0 0 0 16px rgb(245 200 66 / 0); transform: none; } 100% { box-shadow: 5px 5px 0 var(--ink), 0 0 0 0 rgb(245 200 66 / 0); } }
-
-/* Below desktop width everything stacks in one column and the two teams close the hero as a row, so nothing sits over the bosses. */
-@media (max-width: 1099px) {
-  .show-hero { --poster-h: clamp(240px, 46vw, 420px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 14px; justify-items: center; }
-  .hero-stage, .hero-center { display: contents; }
-  .hero-poster, .hero-lockup, .hero-headline, .hero-kicker, .hero-copy, .hero-actions { grid-column: 1 / -1; }
-  .hero-poster { order: 0; }
-  .hero-lockup { order: 1; }
-  .hero-headline { order: 2; }
-  .hero-kicker { order: 3; }
-  .hero-copy { order: 4; max-width: 560px; }
-  .hero-actions { order: 5; }
-  .hero-team { order: 6; margin-top: 30px; gap: 6px; }
-  .hero-team-a { grid-column: 1; justify-self: end; }
-  .hero-team-b { grid-column: 2; justify-self: start; }
-  .hero-team strong { font-size: 18px; }
-  .hero-team span { font-size: 12px; }
-}
-@media (max-width: 700px) {
-  .show-hero { --poster-h: 100vw; padding: 0 16px 40px; }
-  .hero-field { --seam-t: 66%; --seam-b: 34%; }
-  .hero-poster { width: 100vw; max-width: none; aspect-ratio: 1.22; }
-  .hero-poster > img { object-position: 50% 0; }
-  .hero-lockup { --logo-size: clamp(54px, 15vw, 84px); }
-  .hero-title { font-size: clamp(24px, 6.6vw, 32px); }
-  .hero-title em { margin: 4px 0 0; }
-  .show-hero .hero-joke { font-size: 13px; }
-  .hero-kicker { font-size: 10px; letter-spacing: .24em; }
-  .hero-copy { font-size: 14px; }
-  .show-hero .hero-actions > .button { flex: 1 1 100%; max-width: 360px; }
-}
-
 /* ── Step rail ── */
 .journey { margin: 34px 0 0; border: 0; border-bottom: 1px solid var(--hairline); background: none; box-shadow: none; }
 .journey li, .journey li + li { border: 0; background: none; }
@@ -291,12 +202,11 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
 .footer-partners b { margin: 0 .5em; font-weight: 300; }
 
 @media (prefers-reduced-motion: reduce) {
-  .show-hero *, .show-hero .hero-lockup .logo-art { animation: none !important; }
   .plan-stage-photo, .plan-stage-feast { transition: none; }
 }
 
 /* ── Flat controls inside the page (the old offset shadows are retired here) ── */
-.outing-page .button:not(.hero-primary), .outing-page .account-trigger, .outing-page .quick-plan-option, .outing-page .draw-icon, .outing-page .vote-countdown, .outing-page .plan-switch-dock { box-shadow: none !important; }
+.outing-page .button, .outing-page .account-trigger, .outing-page .quick-plan-option, .outing-page .draw-icon, .outing-page .vote-countdown, .outing-page .plan-switch-dock { box-shadow: none !important; }
 .round-no { color: transparent; -webkit-text-stroke: 1px var(--ink); }
 .arcade-section .round-no { -webkit-text-stroke-color: rgb(255 255 255 / .8); }
 .outing-page .account-trigger { border-width: 2px; }
@@ -341,6 +251,14 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
 .outing-page .match-label[data-state="waiting"] { background: #fff; color: var(--ink); }
 .outing-page .match-label[data-state="live"]::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; background: linear-gradient(100deg, transparent, rgb(255 255 255 / .45), transparent); transform: translateX(-120%); animation: match-sheen 3.2s 1s ease-in-out infinite; pointer-events: none; }
 .match-bolt { flex: none; width: 14px; height: 25px; overflow: visible; animation: bolt-flicker 3.2s steps(1) infinite, bolt-shake 3.2s steps(1) infinite; }
+@keyframes bolt-flicker { 0%, 88%, 92%, 100% { opacity: 1; } 90% { opacity: .2; } }
+/* A short electric shiver mid-cycle and a stronger one around the flicker; em offsets scale with the logo. */
+@keyframes bolt-shake {
+  0%, 40%, 48%, 84%, 96%, 100% { translate: 0; rotate: 0deg; }
+  42% { translate: -.01em .01em; rotate: -2deg; } 44% { translate: .01em -.01em; rotate: 2deg; } 46% { translate: -.006em 0; rotate: -1deg; }
+  86% { translate: .016em -.01em; rotate: 4deg; } 88% { translate: -.016em .01em; rotate: -4deg; } 90% { translate: .012em .01em; rotate: 3deg; }
+  92% { translate: -.01em -.01em; rotate: -2deg; } 94% { translate: .006em 0; rotate: 1deg; }
+}
 .match-bolt path { fill: var(--yellow); stroke: var(--ink); stroke-width: 5; stroke-linejoin: round; paint-order: stroke; }
 .outing-page .match-label + p { margin-top: 12px; }
 @keyframes match-sheen { 0% { transform: translateX(-120%); } 35%, 100% { transform: translateX(320%); } }
@@ -538,43 +456,12 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
 .outing-page .quiet, .outing-page .section-heading > p { color: #3f4751; }
 .outing-page .plan-stage-word { z-index: 1; }
 
-/* ── Hero background: the hard split lives behind the poster, then dissolves into a deep blue→pink blend behind the text ── */
-.show-hero { --split-end: calc(var(--poster-h) + 60px); background: linear-gradient(100deg, #1029b8 0%, #2330c8 32%, #8a1a9e 52%, #cc0058 70%, #d1005a 100%); }
-.hero-field { -webkit-mask-image: linear-gradient(180deg, #000 calc(var(--split-end) - 200px), transparent var(--split-end)); mask-image: linear-gradient(180deg, #000 calc(var(--split-end) - 200px), transparent var(--split-end)); }
-@media (max-width: 700px) { .show-hero { --split-end: calc(100vw / 1.22 + 40px); } }
-
-/* Below desktop the teams close the hero as two equal cards. */
-@media (max-width: 1099px) {
-  .show-hero .hero-team { justify-self: stretch; align-items: flex-start; flex-direction: column; flex-wrap: nowrap; gap: 3px; margin-top: 32px; padding: 12px 14px 13px; background: #fff; color: var(--ink); text-align: left; text-shadow: none; border-top: 4px solid var(--field-a); box-shadow: 0 12px 26px -16px rgb(0 0 0 / .55); }
-  .show-hero .hero-team-b { border-top-color: var(--field-b); }
-  .show-hero .hero-team small { padding: 0; background: none; font-size: 10px; letter-spacing: .28em; }
-  .show-hero .hero-team-a strong { color: var(--field-a); }
-  .show-hero .hero-team-b strong { color: var(--field-b); }
-  .show-hero .hero-team strong { font-size: clamp(16px, 4.4vw, 20px); }
-  .show-hero .hero-team span { font-size: 12px; color: #4a525c; opacity: 1; }
-}
-
 /* Plan card A mirrors card B: each camp's word sits on the outside edge. */
 .plan-card.tone-yellow .plan-stage-word { right: auto; left: 5%; }
 .plan-card.tone-yellow .plan-stage-photo { left: auto; right: -3%; rotate: 7deg; transform: scaleX(-1); }
 .plan-card.tone-yellow:hover .plan-stage-photo { transform: scaleX(-1) translate(-1.5%, -2%) rotate(-2deg); }
 .plan-card.tone-yellow .plan-stage-feast { right: auto; left: 22%; }
 .plan-card.tone-yellow .plan-stage-letter { left: auto; right: 5%; }
-
-/* ── Hero poster at its own proportions, so the fishing scene (left) and laser scene (right) stay in view ── */
-.hero-poster { width: min(calc(100vw - 460px), calc(var(--poster-h) * 2.34), 1180px); aspect-ratio: 1672 / 714; }
-.hero-poster > img { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%), linear-gradient(180deg, #000 74%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%), linear-gradient(180deg, #000 74%, transparent 100%); }
-.show-hero { --poster-h: clamp(300px, calc(100svh - 470px), 500px); --split-end: calc(min(calc(100vw - 460px), calc(var(--poster-h) * 2.34), 1180px) / 2.34 + 60px); }
-.hero-lockup { margin-top: calc(var(--logo-size) * -1.1); }
-@media (max-width: 1099px) {
-  .show-hero { --split-end: calc(100vw / 2.34 + 60px); }
-  .hero-poster { width: 100vw; }
-}
-@media (max-width: 700px) {
-  .show-hero { --split-end: calc(100vw / 1.5 + 40px); }
-  .hero-poster { width: 100vw; aspect-ratio: 1.5; }
-  .hero-poster > img { -webkit-mask-image: linear-gradient(180deg, #000 74%, transparent 100%); mask-image: linear-gradient(180deg, #000 74%, transparent 100%); }
-}
 
 /* ── Draw panels: a clear framed card with a tumbling die ── */
 .outing-page .plan-draw-panel, .outing-page .preference-draw { border: 2px solid var(--ink); background: #fff; box-shadow: 5px 5px 0 var(--ink); }
@@ -611,7 +498,6 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
 /* ── Contrast touch-ups for small labels on the colour fields ── */
 .outing-page .score-count small, .outing-page .score-title p, .outing-page .score-team-meta { color: #fff; }
 .outing-page .battle-footnote { color: #3f4751; }
-.show-hero .hero-team span { opacity: 1; }
 
 /* ── Menu book: framed like the rest of the page, letterbox filled with the page itself, thumbnails to jump ── */
 .outing-page .menu-book { width: min(100%, 520px); padding: 0; border: 2px solid var(--ink); background: #fff; box-shadow: 5px 5px 0 var(--team, var(--ink)); }
@@ -651,15 +537,6 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
 .outing-page .store-link-circle { border-color: rgb(11 13 16 / .55); }
 .outing-page .vote-review dl > div { border-bottom-color: rgb(11 13 16 / .25); }
 
-/* ── Desktop hero: each side column always fits its team name on one line ── */
-@media (min-width: 1100px) {
-  .hero-stage { max-width: none; grid-template-columns: minmax(170px, 1fr) auto minmax(170px, 1fr); }
-  .hero-poster { width: min(calc(100vw - 520px), calc(var(--poster-h) * 2.34), 1180px); }
-  .show-hero { --split-end: calc(min(calc(100vw - 520px), calc(var(--poster-h) * 2.34), 1180px) / 2.34 + 60px); }
-  .hero-team strong { font-size: clamp(20px, 1.9vw, 30px); white-space: nowrap; }
-  .hero-team span { white-space: nowrap; }
-}
-
 /* ── Caution tape: hazard-striped edges and a running label. Used as round dividers and in the footer ── */
 .outing-page { overflow-x: clip; }
 .caution-tape { position: relative; display: flex; align-items: center; height: 50px; overflow: hidden; box-shadow: 0 14px 26px -14px rgb(0 0 0 / .55); }
@@ -698,40 +575,9 @@ body:has(.outing-page)::before { content: ""; position: fixed; inset: 0; z-index
 }
 
 
-.hero-copy-cta { display: block; margin-top: 4px; }
-@media (min-width: 1100px) { .hero-copy { max-width: 36em; } }
-.hero-clause { display: inline-block; }
-@media (max-width: 700px) {
-  .show-hero { --split-end: calc(100vw / 1.75 + 40px); }
-  .hero-poster { aspect-ratio: 1.75; }
-}
 /* The date is the footer's headline: a stamped ticket, not a whisper. */
 .footer-kicker { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 0 0 40px; }
 .footer-kicker > span { font: 600 clamp(14px, 1.5vw, 18px)/1 var(--sd-cond); letter-spacing: .42em; color: #fff; text-shadow: 0 2px 8px rgb(0 0 0 / .3); }
 .footer-kicker > b { padding: 7px 16px 6px; background: #fff; color: var(--ink); font: 600 clamp(28px, 3.4vw, 42px)/1 var(--sd-cond); letter-spacing: .06em; transform: skewX(-10deg); box-shadow: 5px 5px 0 var(--ink); }
 @media (max-width: 600px) { .footer-kicker { gap: 10px; margin-bottom: 30px; } .footer-kicker > span { letter-spacing: .3em; } }
-
-/* Headroom: the poster sits a little below the header and its top edge dissolves into the field,
-   so the bosses' heads (which start ~4% into the image) are never pressed against the edge. */
-.show-hero { --poster-gap: 36px; padding-top: var(--poster-gap); }
-.hero-field { -webkit-mask-image: linear-gradient(180deg, #000 calc(var(--split-end) + var(--poster-gap) - 200px), transparent calc(var(--split-end) + var(--poster-gap))); mask-image: linear-gradient(180deg, #000 calc(var(--split-end) + var(--poster-gap) - 200px), transparent calc(var(--split-end) + var(--poster-gap))); }
-.hero-poster > img { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%), linear-gradient(180deg, transparent 0, #000 3.4%, #000 74%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%), linear-gradient(180deg, transparent 0, #000 3.4%, #000 74%, transparent 100%); -webkit-mask-composite: source-in; mask-composite: intersect; }
-@media (max-width: 1099px) { .show-hero { --poster-gap: 28px; } }
-@media (max-width: 700px) {
-  .show-hero { --poster-gap: 22px; }
-  .hero-poster > img { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 3.4%, #000 74%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 3.4%, #000 74%, transparent 100%); }
-}
-
-/* ── Poster: one place for its size. The box is the original picture (1672x714); the image file adds a soft,
-      out-of-focus margin with an oval fade to transparent (300px each side, 90px on top), so it spills past the
-      box and has no edge or rectangular outline. The top gap equals that margin, so nothing is clipped. ── */
-.show-hero { --poster-w: min(calc(100vw - 520px), calc(var(--poster-h) * 2.342), 1180px); --poster-gap: calc(var(--poster-w) * .0538 + 2px); --split-end: calc(var(--poster-w) / 2.342 + 60px); }
-.hero-poster { position: relative; width: var(--poster-w); max-width: none; aspect-ratio: 1672 / 714; }
-.hero-poster > .hero-poster-img { position: absolute; left: -17.943%; top: -12.605%; width: 135.885%; height: 112.605%; max-width: none; object-fit: fill; -webkit-mask: none; mask: none; }
-.hero-team { position: relative; z-index: 2; }
-@media (max-width: 1099px) { .show-hero { --poster-w: calc(100vw - 40px); } }
-@media (max-width: 700px) {
-  .show-hero { --poster-w: 100vw; --split-end: calc(100vw / 2.342 + 40px); }
-  .hero-lockup { margin-top: calc(var(--logo-size) * -.8); }
-}
 

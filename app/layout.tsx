@@ -6,6 +6,7 @@ import "./globals.css";
 import "./showdown.css";
 import "./opening-film.css";
 import "./showdown-page.css";
+import "./mission-hero.css";
 
 // Runs with the HTML, before any bundle: first-time visitors start the trailer's shots at once,
 // ahead of the Chinese font slices, so START unlocks sooner. Returning visitors skip the download.

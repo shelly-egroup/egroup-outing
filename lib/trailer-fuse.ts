@@ -7,7 +7,6 @@ type Spark = { x: number; y: number; dx: number; dy: number };
 /** Height of the line the fuse burns along in the first mission shot (fraction of the picture). Matches .tr-wire. */
 export const WIRE_Y = 0.3;
 const EMBER = "#ffb04a";
-const HERO_FIELD: [number, string][] = [[0, "#1029b8"], [0.32, "#2330c8"], [0.52, "#8a1a9e"], [0.7, "#cc0058"], [1, "#d1005a"]];
 const HARMONICS = [[2, 0.05, 0.4, 1.3], [3, 0.06, 2.1, -2.2], [5, 0.035, 4.0, 3.1], [7, 0.03, 1.2, -4.4], [11, 0.022, 5.3, 5.2], [17, 0.014, 0.7, -6.8], [29, 0.009, 3.3, 8.1], [43, 0.006, 2.6, -9.5]];
 const smooth = (x: number) => x * x * (3 - 2 * x);
 const clamp = (x: number) => Math.min(1, Math.max(0, x));
@@ -81,8 +80,8 @@ function spark(g: CanvasRenderingContext2D, t: number, r: FilmRect, s: Spark, dp
   }
 }
 
-/** The self-destruct: a ragged hole burns out from the centre with an ember rim and leaves the hero's own blue-to-pink
-    field behind, so the page opens on exactly what the last frame shows. */
+/** The self-destruct: a ragged hole burns out from the centre with an ember rim and leaves black behind, the black the
+    mission poster on the page fades up from. */
 function burn(g: CanvasRenderingContext2D, t: number, r: FilmRect, dpr: number) {
   const p = clamp((t - T.burn) / 0.78), cx = r.vw / 2, cy = r.vh / 2;
   const R = Math.hypot(r.vw, r.vh) * 0.62 * smooth(p) * 1.15;
@@ -92,11 +91,7 @@ function burn(g: CanvasRenderingContext2D, t: number, r: FilmRect, dpr: number) 
   const path = (scale: number) => { g.beginPath(); for (let i = 0; i <= 240; i++) { const a = (i / 240) * Math.PI * 2, e = edge(a) * scale; const x = cx + Math.cos(a) * e, y = cy + Math.sin(a) * e; if (i) g.lineTo(x * dpr, y * dpr); else g.moveTo(x * dpr, y * dpr); } g.closePath(); };
   g.fillStyle = "rgba(20, 12, 8, .85)"; path(1.06); g.fill();
   g.save(); g.shadowColor = "rgba(255, 110, 20, .9)"; g.shadowBlur = 26 * dpr; g.strokeStyle = EMBER; g.lineWidth = 5 * dpr; path(1.015); g.stroke(); g.restore();
-  // matches .show-hero's background (linear-gradient(100deg, …)) across the viewport
-  const angle = (100 - 90) * Math.PI / 180, half = (r.vw * Math.cos(angle) + r.vh * Math.sin(angle)) / 2;
-  const field = g.createLinearGradient((cx - Math.cos(angle) * half) * dpr, (cy - Math.sin(angle) * half) * dpr, (cx + Math.cos(angle) * half) * dpr, (cy + Math.sin(angle) * half) * dpr);
-  for (const [at, color] of HERO_FIELD) field.addColorStop(at, color);
-  g.fillStyle = field; path(1); g.fill();
+  g.fillStyle = "#050506"; path(1); g.fill();
 }
 
 /** Draw everything the canvas owns at time t (nothing outside the mission and the burn). */

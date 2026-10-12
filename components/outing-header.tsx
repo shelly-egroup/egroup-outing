@@ -134,17 +134,17 @@ export default function OutingHeader({ active, heroActions, vote, title, eventDa
   const [month, day] = eventDate.slice(5).split("-");
   const weekday = eventDate ? new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "Asia/Taipei" }).format(new Date(eventDate + "T12:00:00+08:00")).toUpperCase() : "";
   const tone = (color: string) => color === "coral" ? "pink" : "blue";
-  const ticker: TickerItem[] = [{ key: "對決", text: "雙方案對決・你的一票決定全員行程" }];
+  const ticker: TickerItem[] = [{ key: "定案", text: "行程定案・熱血對戰派：雷射槍戰＋飯店下午茶" }];
   if (countdown) ticker.push({ key: "倒數", text: countdown.state === "closed" ? "投票已截止"
     : countdown.days > 0 ? "投票截止還有 " + countdown.days + " 天 " + countdown.hours + " 小時" : "最後 " + countdown.hours + " 小時 " + countdown.minutes + " 分" });
   if (teams?.length === 2) ticker.push({ key: "比數", text: teams[0].name + " " + teams[0].count + " 比 " + teams[1].count + " " + teams[1].name,
     content: <><em data-team={tone(teams[0].color)}>{teams[0].name}</em><b className="ticker-score">{teams[0].count} : {teams[1].count}</b><em data-team={tone(teams[1].color)}>{teams[1].name}</em></> });
   if (total !== undefined) ticker.push({ key: "投票", text: expected > 0 ? "已投 " + total + " / " + expected + " 人" : "已投 " + total + " 人" });
-  ticker.push({ key: "行程", text: title + "・兩個方案皆自行前往" });
+  ticker.push({ key: "行程", text: title + "・中午 12:00 六度空間集合，自行前往" });
 
   const links = [
-    { href: "#plans", label: "看方案，選陣營", current: section === "plans" || section === "selection", todo: votingLive && !hasVoted },
-    { href: "#results", label: "看即時戰況", current: section === "results", todo: false },
+    { href: "#plans", label: "看任務行程", current: section === "plans" || section === "selection", todo: votingLive && !hasVoted },
+    { href: "#results", label: "看投票結果", current: section === "results", todo: false },
   ];
   const quickNavRetracted = compact && mobile && !quickNavRevealed;
   const hideQuickNav = !inlineNav && (!compact || quickNavRetracted);

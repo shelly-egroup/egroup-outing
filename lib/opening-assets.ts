@@ -16,10 +16,11 @@ export const TRAILER_IMAGES = {
   agentB: "/assets/trailer/agent-b-pose.webp",
   hostA: OPENING_IMAGES.hostA,
   hostB: OPENING_IMAGES.hostB,
-  rings: "/assets/trailer/agent-a-rings.webp",
-  ninja: "/assets/trailer/ninja.webp",
-  feast: "/assets/trailer/feast.webp",
   arena: "/assets/trailer/arena.webp",
+  gear: "/assets/trailer/gear.webp",
+  teams: "/assets/trailer/teams.webp",
+  fireA: "/assets/trailer/agent-a-laser.webp",
+  target: "/assets/trailer/target-hit.webp",
   aimB: "/assets/trailer/agent-b-aim.webp",
   squad: "/assets/trailer/squad.webp",
   tea: "/assets/trailer/tea.webp",
@@ -39,5 +40,3 @@ export const TRAILER_FONTS = [
 ];
 
 export const OPENING_SCORE = "/assets/trailer-score.m4a?v=1";
-// Keep one project asset as the single source of truth for the current hero poster.
-export const HERO_POSTER = "/assets/show-poster.png";

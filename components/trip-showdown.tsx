@@ -3,7 +3,7 @@ import { sortedGroups } from "@/lib/trips";
 import Link from "next/link";
 import { useSectionReveal } from "./use-section-reveal";
 import { useTallSticky } from "./use-tall-sticky";
-import { HERO_POSTER, OPENING_IMAGES } from "@/lib/opening-assets";
+import { OPENING_IMAGES } from "@/lib/opening-assets";
 import ShowLogo from "./show-logo";
 import CautionTape from "./caution-tape";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -26,6 +26,7 @@ import VenueReviews from "./venue-reviews";
 import VillagerBook from "./villager-book";
 import { goodFoodStore, lazerTreksStore, ninjaStore } from "@/lib/store-references";
 import OpeningAnimation from "./opening-animation";
+import MissionHero from "./mission-hero";
 import OutingLoading from "./outing-loading";
 import { openingHistory } from "@/lib/opening-history";
 import { useOuting } from "./outing-provider";
@@ -213,6 +214,9 @@ export default function TripShowdown() {
       setCopyStatus("無法自動複製，請選取摘要文字複製。");
     }
   }
+  // The trailer announces the decided trip (plan B) with the final tally, looked up by plan code rather than position.
+  const planByCode = (code: string) => Object.entries(catalog.plans).find(([, plan]) => plan.code === code);
+  const tally = (code: string) => { const id = planByCode(code)?.[0]; return id ? Object.values(votes).filter(item => item.planId === id).length : 0; };
   if (!introReady) return <OutingLoading />;
   return (
     <>
@@ -220,13 +224,8 @@ export default function TripShowdown() {
         <OpeningAnimation
           onFinish={finishIntro}
           date={catalog.settings.eventDate.slice(5).replace("-", ".")}
-          plans={[
-            plans[0]?.[1].shortName || "極限體能派",
-            plans[1]?.[1].shortName || "熱血對戰派",
-          ]}
-          standings={votesReady && plans.length === 2
-            ? [0, 1].map(index => Object.values(votes).filter(item => item.planId === plans[index][0]).length) as [number, number]
-            : null}
+          plans={[planByCode("A")?.[1].shortName || "極限體能派", planByCode("B")?.[1].shortName || "熱血對戰派"]}
+          standings={votesReady ? [tally("A"), tally("B")] : null}
         />
       )}
       <div ref={pageRef} hidden={intro} className="outing-page">
@@ -234,42 +233,8 @@ export default function TripShowdown() {
           title={catalog.settings.title} eventDate={catalog.settings.eventDate} closesAt={catalog.settings.closesAt} votingEnabled={catalog.settings.votingOpen} now={now}
           teams={votesReady ? plans.map(([id, plan]) => ({ name: plan.shortName, color: plan.color, count: Object.values(votes).filter(item => item.planId === id).length })) : undefined}
           total={votesReady ? Object.keys(votes).length : undefined} expected={catalog.settings.expectedVoters} hasVoted={!!actualVote} />
-        <header className="show-hero" data-ready={introReady && !intro}>
-          <div className="hero-field" aria-hidden="true"><i className="hero-field-a" /><i className="hero-field-b" /></div>
-          <div className="hero-stage">
-            <p className="hero-team hero-team-a"><small className="sd-micro">TEAM A</small><strong>{plans[0]?.[1].shortName || "極限體能派"}</strong><span>{planLine(plans[0]?.[1]) || "忍者闖關＋好食在食堂"}</span></p>
-            <div className="hero-poster">
-              <img className="hero-poster-img" src={HERO_POSTER} width={2272} height={804} alt="兩位老闆對決：左邊忍者闖關與好食在食堂的極限體能派，右邊雷射槍戰下午茶的熱血對戰派" fetchPriority="high" />
-            </div>
-            <p className="hero-team hero-team-b"><small className="sd-micro">TEAM B</small><strong>{plans[1]?.[1].shortName || "熱血對戰派"}</strong><span>{planLine(plans[1]?.[1]) || "雷射槍戰＋飯店下午茶"}</span></p>
-          </div>
-          <div className="hero-center">
-            <ShowLogo className="hero-lockup" tag="" />
-            <div className="hero-headline">
-              <h1 className="hero-title">秋遊去哪？<em>揪 差你一票</em></h1>
-              <p className="hero-joke"><span>這次不吃</span> 牛肉麵！</p>
-            </div>
-            <p className="hero-kicker sd-micro">
-              <span>THE AUTUMN OUTING</span><i aria-hidden="true" />
-              <span>{catalog.settings.eventDate.replaceAll("-", ".")}</span><i aria-hidden="true" />
-              <span>預計 {catalog.settings.expectedVoters} 人</span>
-            </p>
-            <p className="hero-copy">
-              <span className="hero-clause">到底是忍者闖關後吃台菜聚餐吸引人，</span><span className="hero-clause">還是雷射團戰享用飯店 Buffet 令人嚮往？</span>
-              <span className="hero-copy-cta">看完行程，選一個你最想去的方案。</span>
-            </p>
-            <div className="hero-actions" ref={heroActionsRef}>
-              <a ref={nextStepRef} href="#plans" className={"button button-yellow hero-primary" + (cueNext ? " is-cued" : "")}>
-                看方案，選陣營
-              </a>
-              <a href="#results" className="button button-ghost">看即時戰況</a>
-              <button type="button" className="hero-replay" onClick={() => setIntro(true)}>
-                <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10a9 9 0 1 1 2.6 8.4" /><path d="M3 4v6h6" /></svg>
-                重播預告
-              </button>
-            </div>
-          </div>
-        </header>
+        <MissionHero eventDate={catalog.settings.eventDate} plan={planByCode("B")?.[1]} ready={introReady && !intro} cued={cueNext}
+          actionsRef={heroActionsRef} primaryRef={nextStepRef} onReplay={() => setIntro(true)} />
         <main className="wrap">
           <ol className="journey" aria-label="投票步驟">
             <li className="current">

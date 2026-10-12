@@ -15,12 +15,13 @@ const DURATION = T.duration;
 // One entry per cut, in seconds on the score's timeline; sub-cuts inside a shot run on that shot's own clock.
 const SHOTS = [
   ["dots", 0], ["barrel", T.irisOpen], ["title-1", T.titles[0]], ["title-2", T.titles[1]], ["title-3", T.titles[2]], ["title-4", T.titles[3]],
-  ["ignite", T.ignite], ["dossier", T.mission], ["plan-a", T.planA], ["plan-b", T.planB], ["montage", T.montage], ["intel", T.intel],
+  ["ignite", T.ignite], ["dossier", T.mission], ["brief-a", T.briefA], ["brief-b", T.briefB], ["montage", T.montage], ["result", T.result],
   ["riser", T.riser], ["blackout", T.blackout], ["logo", T.logo], ["destruct", T.destruct],
 ] as const;
 type ShotId = (typeof SHOTS)[number][0];
 const LAST = SHOTS.length - 1;
 const shotIndex = (time: number) => Math.max(0, SHOTS.findLastIndex(([, at]) => at <= time));
+/** [plan A, plan B] short names; plan B (熱血對戰派) is the trip that was decided. */
 type Plans = [string, string];
 
 // Every animation inside a shot runs on that shot's own clock, so a late frame can be re-synced to the score.
@@ -47,8 +48,8 @@ function Typed({ text, at, step = 0.05 }: { text: string; at: number; step?: num
     {[...text].map((char, i) => <span key={i} className="tr-ch" style={{ animationDelay: at + i * step + "s" }}>{char}</span>)}
   </span>;
 }
-/** Plan copy: a chip, one big word, one line under it — each line rises out of its own mask. */
-function Caption({ chip, big, sub, tone, at = 0 }: { chip?: string; big: string; sub?: string; tone?: "a" | "b"; at?: number }) {
+/** Mission copy: a chip, one big word, one line under it — each line rises out of its own mask. */
+function Caption({ chip, big, sub, tone, at = 0 }: { chip?: string; big: string; sub?: string; tone?: "red" | "blue" | "amber"; at?: number }) {
   return <div className={"tr-cap" + (tone ? " tone-" + tone : "")} style={{ ["--at" as string]: at + "s" }}>
     {chip && <span className="tr-line"><span className="tr-chip">{chip}</span></span>}
     <span className="tr-line"><strong className="tr-big">{big}</strong></span>
@@ -318,8 +319,8 @@ function OpeningAnimation({ onFinish, plans, date = "10.29", standings = null }:
   const shot = SHOTS[step][0];
   const [votesA, votesB] = reviewStandings ?? standings ?? [0, 0];
   const total = votesA + votesB;
-  const leader = total === 0 ? null : votesA === votesB ? "tie" : votesA > votesB ? 0 : 1;
-  const intelLine = leader === null ? "情報：雙方蓄勢待發" : leader === "tie" ? "情報：目前雙方平手" : "情報：" + plans[leader] + " 暫時領先";
+  // The tally only shows when it agrees with the decision; otherwise the card just announces the trip.
+  const showTally = votesB > votesA;
   const share = (votes: number) => total ? Math.max(4, Math.round(votes / total * 100)) : 50;
 
   return <section className="film-opening" data-audio-state={audioState} role="dialog" aria-modal="true" aria-label="揪是要對決預告片">
@@ -335,7 +336,7 @@ function OpeningAnimation({ onFinish, plans, date = "10.29", standings = null }:
       <div className="tr-cover-body">
         <span className="tr-cover-eyebrow">OFFICIAL TRAILER<b>官方預告</b></span>
         <ShowLogo title className="tr-cover-logo" />
-        <div className="tr-cover-match" aria-label={plans.join("對決")}><span>{plans[0]}</span><i>VS</i><span>{plans[1]}</span></div>
+        <div className="tr-cover-match"><b>行程定案</b><span>{plans[1]}・雷射槍戰＋飯店下午茶</span></div>
         <button type="button" className="tr-play" disabled={loadingAssets} aria-busy={preparing || launchVisible} aria-describedby="film-start-hint"
           onPointerDown={event => { if (event.pointerType === "mouse" && event.button === 0 && !loadingAssets) launch(); }} onClick={launch}>
           {preparing
@@ -388,16 +389,15 @@ function OpeningAnimation({ onFinish, plans, date = "10.29", standings = null }:
           <div className="tr-title"><small>TWO BOSSES</small><strong>兩位老闆</strong></div>
         </Shot>}
         {shot === "title-3" && <Shot at={T.titles[2]} id="title-3">
-          <div className="tr-half tr-half-a"><Img src={IMG.ninja} /><i /></div>
-          <div className="tr-half tr-half-b"><Img src={IMG.arena} /><i /></div>
-          <i className="tr-seam" />
-          <div className="tr-title"><small>TWO ROUTES</small><strong>兩條路線</strong></div>
+          <div className="tr-duo"><Img src={IMG.arena} /><i /></div>
+          <i className="tr-scan tr-scan-low" />
+          <div className="tr-title"><small>ONE BATTLEFIELD</small><strong>一個戰場</strong></div>
         </Shot>}
         {shot === "title-4" && <Shot at={T.titles[3]} id="title-4">
           <i className="tr-wire" />
           <Silhouette src={IMG.agentWalk} ratio={592 / 1200} className="tr-face tr-face-a" />
           <Silhouette src={IMG.agentB} ratio={320 / 1200} className="tr-face tr-face-b" />
-          <div className="tr-title"><small>ONLY ONE WINS</small><strong>只有一條能贏</strong></div>
+          <div className="tr-title"><small>ONLY ONE TEAM WINS</small><strong>只有一隊能贏</strong></div>
         </Shot>}
         {shot === "ignite" && <Shot at={T.ignite} id="ignite">
           <div className="tr-brief">
@@ -409,56 +409,56 @@ function OpeningAnimation({ onFinish, plans, date = "10.29", standings = null }:
           <i className="tr-grid" />
           <div className="tr-orders">
             <p className="tr-orders-typed"><Typed text="你的任務，如果你選擇接受——" at={0} step={0.042} /></p>
-            <p className="tr-orders-big"><span>選出 {date}</span><span>秋遊路線</span></p>
+            <p className="tr-orders-big"><span>{date} 攻佔</span><span>六度空間</span></p>
           </div>
           <div className="tr-files">
-            <figure className="tr-file tr-file-a"><div><Img src={IMG.hostA} /><i className="tr-lock" /></div><figcaption><b>A</b>{plans[0]}<small>FILE 1029-A</small></figcaption></figure>
-            <figure className="tr-file tr-file-b"><div><Img src={IMG.hostB} /><i className="tr-lock" /></div><figcaption><b>B</b>{plans[1]}<small>FILE 1029-B</small></figcaption></figure>
-            <span className="tr-stamp">機密<small>TOP SECRET</small></span>
+            <figure className="tr-file tr-file-a"><div><Img src={IMG.hostA} /><i className="tr-lock" /></div><figcaption><b>紅</b>紅隊隊長<small>FILE 1029-RED</small></figcaption></figure>
+            <figure className="tr-file tr-file-b"><div><Img src={IMG.hostB} /><i className="tr-lock" /></div><figcaption><b>藍</b>藍隊隊長<small>FILE 1029-BLUE</small></figcaption></figure>
+            <span className="tr-stamp">定案<small>CONFIRMED</small></span>
           </div>
         </Shot>}
-        {shot === "plan-a" && <Shot at={T.planA} id="plan-a">
-          <Cut src={IMG.rings} from={0} to={0.8} className="kb-push"><Caption chip="方案 A" big="忍者闖關" sub="教練帶領・體能王包班" tone="a" /></Cut>
-          <Cut src={IMG.ninja} from={0.8} to={1.2} className="kb-snap"><Caption chip="方案 A" big="90 分鐘" sub="闖關挑戰＋自由練習" tone="a" at={0.8} /></Cut>
-          <Cut src={IMG.feast} from={1.2} to={2.1} className="kb-push kb-punch"><Caption chip="＋ 午餐" big="好食在食堂" sub="戰後聚餐・步行就到" tone="a" at={1.2} /></Cut>
+        {shot === "brief-a" && <Shot at={T.briefA} id="brief-a">
+          <Cut src={IMG.arena} from={0} to={0.8} className="kb-push"><i className="tr-beams" /><Caption chip="任務地點" big="六度空間" sub="LazerTreks・中山北路二段 185 號 B1" tone="red" /></Cut>
+          <Cut src={IMG.gear} from={0.8} to={1.2} className="kb-snap"><Caption chip="任務裝備" big="感應背心" sub="雷射槍上膛・中彈就亮燈" tone="blue" at={0.8} /></Cut>
+          <Cut src={IMG.teams} from={1.2} to={2.1} className="kb-push kb-punch"><Caption chip="集合時間" big={date + " 12:00"} sub="週四中午・六度空間 B1 集合" tone="red" at={1.2} /></Cut>
           <i className="tr-flash" />
           <i className="tr-flash tr-flash-at" style={{ animationDelay: "1.6s" }} />
         </Shot>}
-        {shot === "plan-b" && <Shot at={T.planB} id="plan-b">
-          <Cut src={IMG.arena} from={0} to={0.8} className="kb-push"><i className="tr-beams" /><Caption chip="方案 B" big="雷射槍戰" sub="六度空間 LazerTreks・霓虹迷宮" tone="b" /></Cut>
-          <Cut src={IMG.aimB} from={0.8} to={1.2} className="kb-snap"><i className="tr-shot-beam" /><Caption chip="方案 B" big="300㎡" sub="煙霧迷宮・感應背心" tone="b" at={0.8} /></Cut>
-          <Cut src={IMG.squad} from={1.2} to={1.6} className="kb-snap"><Caption chip="方案 B" big="26 人同場" sub="電腦即時計分・當場揭曉 MVP" tone="b" at={1.2} /></Cut>
-          <Cut src={IMG.tea} from={1.6} to={2.1} className="kb-push"><Caption chip="＋ 下午茶" big="飯店 Buffet" sub="三間飯店・票選決定" tone="b" at={1.6} /></Cut>
+        {shot === "brief-b" && <Shot at={T.briefB} id="brief-b">
+          <Cut src={IMG.squad} from={0} to={0.8} className="kb-push"><Caption chip="任務模式" big="團隊對戰" sub="堡壘攻防・團隊死鬥・300㎡ 煙霧迷宮" tone="blue" /></Cut>
+          <Cut src={IMG.fireA} from={0.8} to={1.2} className="kb-snap"><i className="tr-shot-beam" /><Caption chip="VIP 模式" big="保護老闆" sub="老闆陣亡・全隊落敗" tone="red" at={0.8} /></Cut>
+          <Cut src={IMG.target} from={1.2} to={1.6} className="kb-snap"><Caption chip="電腦計分" big="MVP" sub="每一槍都算數・當場揭曉" tone="blue" at={1.2} /></Cut>
+          <Cut src={IMG.tea} from={1.6} to={2.1} className="kb-push"><Caption chip="戰後補給" big="下午茶 Buffet" sub="飯店下午茶・吃到飽" tone="amber" at={1.6} /></Cut>
           <i className="tr-flash" />
         </Shot>}
         {shot === "montage" && <Shot at={T.montage} id="montage">
           <Cut src={IMG.vault} from={0} to={0.8} className="kb-descend"><i className="tr-grid-lasers" /></Cut>
-          <Cut src={IMG.targetA} from={0.8} to={1.2} className="kb-target"><i className="tr-reticle" /><span className="tr-tag">TARGET A<b>{plans[0]}</b></span></Cut>
-          <Cut src={IMG.targetB} from={1.2} to={1.6} className="kb-target kb-target-b"><i className="tr-reticle" /><span className="tr-tag">TARGET B<b>{plans[1]}</b></span></Cut>
-          <Cut src={IMG.keyArt} from={1.6} to={2.1} className="kb-keyart"><p className="tr-who">誰會勝出？</p></Cut>
+          <Cut src={IMG.targetA} from={0.8} to={1.2} className="kb-target"><i className="tr-reticle" /><span className="tr-tag">TARGET<b>紅隊隊長</b></span></Cut>
+          <Cut src={IMG.targetB} from={1.2} to={1.6} className="kb-target kb-target-b"><i className="tr-reticle" /><span className="tr-tag">TARGET<b>藍隊隊長</b></span></Cut>
+          <Cut src={IMG.keyArt} from={1.6} to={2.1} className="kb-keyart"><p className="tr-who">誰會是 MVP？</p></Cut>
           <i className="tr-flash" />
         </Shot>}
-        {shot === "intel" && <Shot at={T.intel} id="intel">
+        {shot === "result" && <Shot at={T.result} id="result">
           <div className="tr-intel">
             <i className="tr-grid" />
-            <p className="tr-intel-head"><i />LIVE INTEL<b>即時戰況</b></p>
-            {[0, 1].map(i => <div key={i} className={"tr-intel-row row-" + (i ? "b" : "a")} style={{ ["--n" as string]: i ? votesB : votesA, ["--w" as string]: share(i ? votesB : votesA) + "%" }}>
+            <p className="tr-intel-head"><i />FINAL RESULT<b>投票結果</b></p>
+            {showTally ? [1, 0].map(i => <div key={i} className={"tr-intel-row row-" + (i ? "b" : "a")} style={{ ["--n" as string]: i ? votesB : votesA, ["--w" as string]: share(i ? votesB : votesA) + "%" }}>
               <span className="tr-intel-name"><b>{i ? "B" : "A"}</b>{plans[i]}</span>
-              <span className="tr-intel-num">{total ? null : "—"}</span>
+              <span className="tr-intel-num" />
               <i className="tr-intel-bar" />
-            </div>)}
-            <p className="tr-intel-line">{intelLine}</p>
+            </div>) : <p className="tr-intel-winner">{plans[1]}</p>}
+            <p className="tr-intel-line">{showTally ? plans[1] + " 勝出・行程定案" : "雷射槍戰＋飯店下午茶・行程定案"}</p>
           </div>
-          <div className="tr-verdict"><strong>勝負未定</strong></div>
+          <div className="tr-verdict"><strong>行程定案</strong></div>
           <Cut src={IMG.vault} from={1.2} to={1.4} className="kb-strobe" />
           <Cut src={IMG.aimB} from={1.4} to={1.6} className="kb-strobe" />
-          <Cut src={IMG.rings} from={1.6} to={1.8} className="kb-strobe" />
+          <Cut src={IMG.fireA} from={1.6} to={1.8} className="kb-strobe" />
           <Cut src={IMG.keyArt} from={1.8} to={2.1} className="kb-strobe" />
           <i className="tr-flash" />
         </Shot>}
         {shot === "riser" && <Shot at={T.riser} id="riser">
-          <p className="tr-last tr-last-1">最後一票</p>
-          <p className="tr-last tr-last-2">在你手上</p>
+          <p className="tr-last tr-last-1">{date}</p>
+          <p className="tr-last tr-last-2">全員出動</p>
           <i className="tr-whiteout" />
         </Shot>}
         {shot === "blackout" && <Shot at={T.blackout} id="blackout" />}
@@ -466,9 +466,9 @@ function OpeningAnimation({ onFinish, plans, date = "10.29", standings = null }:
           <Img src={IMG.arena} className="tr-logo-plate" />
           <i className="tr-logo-ray ray-a" /><i className="tr-logo-ray ray-b" />
           <div className="tr-logo-lockup"><ShowLogo className="tr-logo" tag={"MISSION " + date} /></div>
-          <p className="tr-logo-code">任務代號 {date}<b>·</b>秋季員工旅遊</p>
-          <p className="tr-logo-line">你的一票，<strong>決定秋遊去哪！</strong></p>
-          <p className="tr-billing">馴錢師 × EGROUP 出品　主演 <b>兩位老闆</b>　特別演出 <b>全體同仁</b>　{plans[0]} vs {plans[1]}　投票截止前 全員出動</p>
+          <p className="tr-logo-code">任務代號 {date}<b>·</b>六度空間雷射對戰</p>
+          <p className="tr-logo-line">熱血對戰，<strong>正式開打！</strong></p>
+          <p className="tr-billing">馴錢師 × EGROUP 出品　主演 <b>兩位老闆</b>　特別演出 <b>全體同仁</b>　場地 六度空間 LazerTreks　{date}（四）12:00 集合・戰後飯店下午茶</p>
           {shot === "destruct" && <div className="tr-destruct" data-at={T.destruct}>
             <p><i /><Typed text="本訊息將於 3 秒後自動銷毀" at={0} step={0.03} /></p>
             <span className="tr-count">{[3, 2, 1].map(n => <b key={n} className={"n" + n}>{n}</b>)}</span>

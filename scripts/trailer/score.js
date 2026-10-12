@@ -324,7 +324,7 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
   const E8 = 0.2, BAR = 2, roots = ["D2", "D2", "D2", "E2", "F2", "G2"];
   const pat = [0, 0, 3, 0, 0, 5, 0, 6, 5, 3], accents = new Set([0, 2, 5, 7]);
   matchStrike(C.ignite);
-  fuse(C.ignite, C.blackout, [[C.ignite + 0.15, 0.22], [C.mission, 0.12], [C.planA, 0.05], [C.riser, 0.06], [C.blackout - 0.05, 0.4]]);
+  fuse(C.ignite, C.blackout, [[C.ignite + 0.15, 0.22], [C.mission, 0.12], [C.briefA, 0.05], [C.riser, 0.06], [C.blackout - 0.05, 0.4]]);
   roots.forEach((root, b) => {
     const t0 = C.ignite + b * BAR;
     pat.forEach((s, i) => {
@@ -358,12 +358,12 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
     if (fx === "zap") { zap(t, 0.9, (t * 7 % 2) - 1); snare(t, 0.4); impact(t, 0.45); }
     if (fx === "lock") { lock(t); taiko(t, 0.45, 1.2); impact(t, 0.55); }
   }
-  [C.planA, C.planB, C.montage, C.intel].forEach((t) => { crash(t, 0.35, 1.6); pianoHit(t, rootAt(t).replace(/\d/, "1"), 0.55, 1.6); impact(t, 1); });
+  [C.briefA, C.briefB, C.montage, C.result].forEach((t) => { crash(t, 0.35, 1.6); pianoHit(t, rootAt(t).replace(/\d/, "1"), 0.55, 1.6); impact(t, 1); });
   C.titles.forEach((t) => impact(t, 0.6));
   impact(C.fire, 1.2); impact(C.turn, 0.5);
-  zap(C.planB + 0.05, 0.7, 0.4);
+  zap(C.briefB + 0.05, 0.7, 0.4);
   brass(C.montage, ["D3", "A3", "D4", "F4", "A4"], 0.6, { vel: 1, attack: 0.012, release: 0.35, gain: 0.07 });
-  snareRoll(C.intel + 1, C.riser, 0.15, 0.7, 0.05);
+  snareRoll(C.result + 1, C.riser, 0.15, 0.7, 0.05);
   riser(C.riser, C.blackout, "A2");
   revCymbal(C.blackout, 0.6, 0.25);
 
