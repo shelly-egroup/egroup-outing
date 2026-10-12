@@ -6,7 +6,7 @@ type Key = "red" | "blue";
 type Side = { key: Key; src: string; title: string; en: string };
 /** Each cut-out's size and where the face sits in it (left, top, right, bottom as fractions), for the recognition box. */
 const CUT: Record<Key, { w: number; h: number; face: [number, number, number, number]; muzzle: [number, number] }> = {
-  red: { w: 1218, h: 900, face: [.32, .08, .6, .56], muzzle: [.963, .479] },
+  red: { w: 1132, h: 900, face: [.19, .06, .48, .52], muzzle: [.965, .475] },
   blue: { w: 1221, h: 900, face: [.44, .09, .68, .57], muzzle: [.03, .524] },
 };
 

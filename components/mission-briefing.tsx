@@ -17,7 +17,7 @@ const SEEDS: BurnSeed[] = [{ x: .32, y: .52, delay: 0 }, { x: .8, y: .3, delay: 
  * Its height never changes, so nothing below moves. With reduced motion it is a still briefing that says it will self-destruct.
  */
 /** A briefing line: key, value, and optionally how the value reads — "ok" (green) or "wait" (amber, pulsing). */
-export type BriefingLine = [string, string] | [string, string, "ok" | "wait"];
+export type BriefingLine = [string, string] | [string, string, "ok" | "wait" | "off"];
 
 export default function MissionBriefing({ lines, onAlarm }: { lines: BriefingLine[]; onAlarm?: (alarm: BriefingAlarm) => void }) {
   const box = useRef<HTMLDivElement>(null), canvas = useRef<HTMLCanvasElement>(null);

@@ -6,7 +6,7 @@ export const MISSION_IMAGES = {
   tea: "/assets/mission/tea.webp",
   walkout: "/assets/mission/walkout.webp",
   /** the captains as cut-outs, aiming at each other: red mirrored to face right, blue facing left */
-  captainRed: "/assets/mission/captain-red.webp?v=4",
+  captainRed: "/assets/mission/captain-red.webp?v=5",
   captainBlue: "/assets/mission/captain-blue.webp",
   smoke: "/assets/mission/smoke.webp",
 } as const;

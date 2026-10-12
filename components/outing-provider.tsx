@@ -41,6 +41,19 @@ import {
   type VoteDetails,
   type VoteDraft,
 } from "@/lib/trips";
+/** An agent who said they are out this time (outing/declines/{uid}). */
+export type MissionDecline = { displayName: string; photoURL: string; at: number };
+function parseDeclines(value: unknown): Record<string, MissionDecline> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const out: Record<string, MissionDecline> = {};
+  for (const [uid, raw] of Object.entries(value as Record<string, unknown>)) {
+    if (!raw || typeof raw !== "object") continue;
+    const v = raw as Record<string, unknown>;
+    out[uid] = { displayName: typeof v.displayName === "string" ? v.displayName : "探員", photoURL: typeof v.photoURL === "string" ? v.photoURL : "", at: typeof v.at === "number" ? v.at : 0 };
+  }
+  return out;
+}
+
 type ContextValue = {
   user: User | null;
   authReady: boolean;
@@ -83,6 +96,9 @@ type ContextValue = {
   teamDraw: TeamDraw | null | undefined;
   drawAgent: (team?: Team) => Promise<{ uid: string; team: Team } | null>;
   drawEveryone: () => Promise<number>;
+  /** Agents who are out this time; `declineMission` takes the signed-in agent off the roster (accepting brings them back). */
+  declines: Record<string, MissionDecline>;
+  declineMission: () => Promise<void>;
   saveCatalog: (catalog: Catalog, version: number | null, acceptedImpacts?: string) => Promise<void>;
   stores: StoreDirectory;
   storedStores: StoreDirectory;
@@ -125,6 +141,7 @@ export function OutingProvider({ children }: { children: ReactNode }) {
   const [teams, setTeams] = useState<TeamMap>({}), [teamsReady, setTeamsReady] = useState(false);
   const [teamConfig, setTeamConfig] = useState<TeamConfig>(DEFAULT_TEAM_CONFIG), [teamConfigReady, setTeamConfigReady] = useState(false);
   const [teamDraw, setTeamDraw] = useState<TeamDraw | null | undefined>(undefined);
+  const [declines, setDeclines] = useState<Record<string, MissionDecline>>({});
   const [myDetails, setMyDetails] = useState<VoteDetails | null>(null),
     [detailsReady, setDetailsReady] = useState(false);
   const [connected, setConnected] = useState(false),
@@ -257,6 +274,11 @@ export function OutingProvider({ children }: { children: ReactNode }) {
     try {
       return onValue(ref(getFirebase().database, "outing/teamConfig"), (snap) => { setTeamConfig(parseTeamConfig(snap.val())); setTeamConfigReady(true); }, () => setTeamConfigReady(false));
     } catch { setTeamConfigReady(false); }
+  }, [authReady, user?.uid]);
+  // Who is out this time.
+  useEffect(() => {
+    if (!authReady) return;
+    try { return onValue(ref(getFirebase().database, "outing/declines"), (snap) => setDeclines(parseDeclines(snap.val())), () => {}); } catch {}
   }, [authReady, user?.uid]);
   // The organisers' last draw, played on every open page.
   useEffect(() => {
@@ -405,9 +427,26 @@ export function OutingProvider({ children }: { children: ReactNode }) {
       await update(ref(getFirebase().database, "outing"), {
         ["votes/" + user.uid]: { planId, displayName: typeof token.claims.name === "string" ? token.claims.name : "探員", photoURL: typeof token.claims.picture === "string" ? token.claims.picture : "", updatedAt: serverTimestamp() },
         ["voteDetails/" + user.uid]: { ...privateDetails, updatedAt: serverTimestamp() },
+        ["declines/" + user.uid]: null,
       });
     } catch {
       throw new Error("任務登記沒有送出，請稍後再試一次。");
+    }
+  }
+  /** Out this time: off the roster and off any team, with a note for the organisers; the private details stay, so the file
+   *  opens as it was if the agent comes back. */
+  async function declineMission() {
+    if (!user) throw new Error("請先使用 Google 登入。");
+    if (!connected) throw new Error("目前連線中斷，請恢復連線後再試。");
+    const token = await user.getIdTokenResult();
+    try {
+      await update(ref(getFirebase().database, "outing"), {
+        ["votes/" + user.uid]: null,
+        ["teams/" + user.uid]: null,
+        ["declines/" + user.uid]: { displayName: typeof token.claims.name === "string" ? token.claims.name : user.displayName || "探員", photoURL: typeof token.claims.picture === "string" ? token.claims.picture : "", at: serverTimestamp() },
+      });
+    } catch {
+      throw new Error("沒有送出，請稍後再試一次。");
     }
   }
   async function saveTeams(next: TeamMap) {
@@ -549,6 +588,8 @@ export function OutingProvider({ children }: { children: ReactNode }) {
         teamDraw,
         drawAgent,
         drawEveryone,
+        declines,
+        declineMission,
         saveCatalog,
         stores,
         storedStores,

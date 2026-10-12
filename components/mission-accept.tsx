@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import LoadingIndicator from "./loading-indicator";
 import AgentHat from "./agent-hat";
 import { useOuting } from "./outing-provider";
@@ -63,7 +63,7 @@ const SEEDS: BurnSeed[] = [{ x: .35, y: .6, delay: 0 }, { x: .82, y: .25, delay:
  * The briefing on the tape: typed line by line when it comes on screen. Once the agent has accepted, it counts down and burns
  * away like the message in the films, leaving one line behind.
  */
-function Briefing({ name, destroy, onDestroyed }: { name?: string; destroy: boolean; onDestroyed: () => void }) {
+function Briefing({ name, destroy, gone, onDestroyed }: { name?: string; destroy: boolean; gone: string; onDestroyed: () => void }) {
   const box = useRef<HTMLDivElement>(null), canvas = useRef<HTMLCanvasElement>(null);
   const done = useRef(onDestroyed); done.current = onDestroyed;
   const lines = [
@@ -74,7 +74,8 @@ function Briefing({ name, destroy, onDestroyed }: { name?: string; destroy: bool
     "一如往常，若你被雷射擊中，主辦單位將否認知情。",
   ];
   const total = lines.join("").length;
-  const [typed, setTyped] = useState(0), [run, setRun] = useState(false), [stage, setStage] = useState<"live" | "count" | "burn" | "gone">("live"), [secs, setSecs] = useState(3);
+  const [typed, setTyped] = useState(0), [run, setRun] = useState(false), [stage, setStage] = useState<"live" | "count" | "burn" | "gone" | "rewind" | "play">("live"), [secs, setSecs] = useState(3);
+  const [replay, setReplay] = useState(false);
   const stageRef = useRef(stage); stageRef.current = stage;
   useEffect(() => {
     const el = box.current; if (!el) return;
@@ -94,6 +95,33 @@ function Briefing({ name, destroy, onDestroyed }: { name?: string; destroy: bool
     const t = setTimeout(() => { if (secs > 1) setSecs(s => s - 1); else setStage("burn"); }, 1000);
     return () => clearTimeout(t);
   }, [stage, secs]);
+  // the archive copy: the ashes run back into the message (the burn, played backwards, VCR style), then it plays again
+  useLayoutEffect(() => {
+    if (stage !== "rewind") return;
+    const c = canvas.current, el = box.current; if (!c || !el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setStage("live"); return; }
+    const dpr = Math.min(2, window.devicePixelRatio || 1), W = el.clientWidth, H = el.clientHeight;
+    c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
+    const ctx = c.getContext("2d"); if (!ctx) return;
+    const burn = createFilmBurn(W, H, SEEDS, 5), BACK = 1500, END = .1 + .3 * 2.2, t0 = performance.now();
+    let frame = 0;
+    const draw = (now: number) => {
+      const x = Math.min(1, (now - t0) / BACK), k = x < .5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2;
+      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, c.width, c.height);
+      if (x < 1) { burn.draw(ctx, END * (1 - k), { mode: "cover", backing: [11, 12, 15] }, 2.2 * (1 - k)); frame = requestAnimationFrame(draw); }
+      else { setTyped(0); setStage("play"); }
+    };
+    draw(t0);
+    return () => cancelAnimationFrame(frame);
+  }, [stage]);
+  useEffect(() => { if (stage !== "play") return; const t = setTimeout(() => { setRun(true); setStage("live"); }, 700); return () => clearTimeout(t); }, [stage]);
+  // played from the archive, it destroys itself again a little after the last line
+  useEffect(() => {
+    if (!replay || stage !== "live" || typed < total) return;
+    const t = setTimeout(() => { setSecs(5); setStage("count"); }, 6000);
+    return () => clearTimeout(t);
+  }, [replay, stage, typed, total]);
+  function rewind() { setReplay(true); setTyped(total); setStage("rewind"); }
   useEffect(() => {
     if (stage !== "burn") return;
     const c = canvas.current, el = box.current; if (!c || !el) return;
@@ -119,6 +147,8 @@ function Briefing({ name, destroy, onDestroyed }: { name?: string; destroy: bool
   let left = typed;
   return <div ref={box} className="tape" data-stage={stage}>
     <p className="sr-only">{lines.join("")}</p>
+    {stage === "rewind" && <span className="tape-osd" aria-hidden="true"><b>◀◀</b>REWIND<i>ARCHIVE 10.29</i></span>}
+    {stage === "play" && <span className="tape-osd is-play" aria-hidden="true"><b>▶</b>PLAY</span>}
     {stage !== "gone" ? <div className="tape-lines" aria-hidden="true">
       {lines.map((line, i) => { const shown = line.slice(0, Math.max(0, left)); const caret = left > 0 && left <= line.length && typed < total; left -= line.length;
         const classic = i === lines.length - 1, hot = classic ? line.indexOf(DISAVOW) : -1;
@@ -126,7 +156,10 @@ function Briefing({ name, destroy, onDestroyed }: { name?: string; destroy: bool
           {hot < 0 ? shown : <>{shown.slice(0, hot)}<em className="tape-hot">{shown.slice(hot, hot + DISAVOW.length)}</em>{shown.slice(hot + DISAVOW.length)}</>}{caret && <i className="tape-caret" />}
         </p>; })}
       {stage === "count" && <p className="tape-line is-destruct">本訊息將在 <b key={secs}>{secs}</b> 秒後自動銷毀</p>}
-    </div> : <p className="tape-gone">簡報已銷毀・祝任務順利</p>}
+    </div> : <div className="tape-gone-box">
+      <p className="tape-gone">{gone}</p>
+      <button type="button" className="tape-rewind" onClick={rewind}><b aria-hidden="true">◀◀</b>調閱備份<small>重看簡報</small></button>
+    </div>}
     <canvas ref={canvas} className="tape-burn" aria-hidden="true" />
   </div>;
 }
@@ -177,15 +210,48 @@ function AgentFile({ vote, name, team, leading = false, familyCount, note, fresh
   </div>;
 }
 
+/** Out this time, said the spy way: a quiet line under the file; asked once more, playfully; then the file goes dark. */
+function Decline({ busy, failed, onDecline }: { busy: boolean; failed: string; onDecline: () => void }) {
+  const [asking, setAsking] = useState(false);
+  if (!asking) return <button type="button" className="accept-link is-quiet accept-decline" onClick={() => setAsking(true)}>本探員另有要務<span aria-hidden="true">→</span></button>;
+  return <div className="decline-ask" role="group" aria-label="確認這次不出任務">
+    <p><b>確定要缺席這次行動？</b>雷射槍跟下午茶 buffet 都會很想你。</p>
+    <div className="decline-ask-actions">
+      <button type="button" className="accept-link" onClick={() => setAsking(false)}>我再想想</button>
+      <button type="button" className="decline-go" disabled={busy} onClick={onDecline}>{busy ? "轉入潛伏中…" : "確定，轉入潛伏"}</button>
+    </div>
+    {failed && <p className="accept-error" role="alert">{failed}</p>}
+  </div>;
+}
+
+/** The agent who is out this time: the file goes dark — eyes barred, whereabouts blacked out, a DORMANT stamp, and the
+ *  organisers, as always, disavow any knowledge. */
+function DormantFile({ name, photo, fresh, actions }: { name: string; photo: string; fresh: boolean; actions: React.ReactNode }) {
+  return <div className={"agent-card is-dormant" + (fresh ? " is-new" : "")}>
+    <span className="agent-stamp" aria-hidden="true">潛伏中・DORMANT</span>
+    <div className="agent-card-head">
+      <span className="agent-photo"><Face vote={{ planId: "B", displayName: name, photoURL: photo, updatedAt: 0 } as PublicVote} size="lg" /><i className="dormant-bar" aria-hidden="true" /></span>
+      <span><small>AGENT FILE</small><strong>{name}</strong><em>STATUS・DORMANT</em></span>
+    </div>
+    <dl className="accept-facts">
+      <div><dt>任務</dt><dd>本次缺席・下次再約</dd></div>
+      <div><dt>行蹤</dt><dd><span className="dormant-redact">機密，無可奉告</span></dd></div>
+    </dl>
+    <p className="dormant-line" role="status"><span aria-hidden="true">&gt;</span>收到。這次任務你不在場——<em>主辦單位將否認知情</em>。</p>
+    <p className="accept-actions">{actions}</p>
+  </div>;
+}
+
 /**
  * Accept the mission, Mission: Impossible style: a briefing tape addressed to the agent, a fingerprint scanner to sign in and
  * to accept, the agent's file (note, family), a MISSION ACCEPTED stamp — and the tape burns itself. No vote any more: the
  * trip is set; this is how the people who never voted join, and how everyone keeps their note and family up to date.
  */
 export default function MissionAccept() {
-  const { user, authReady, profileReady, signingIn, votingAccess, canVote, votes, myDetails, detailsReady, connected, teams, teamConfig, login, logout, acceptMission } = useOuting();
-  const mine = user ? votes[user.uid] : undefined;
+  const { user, authReady, profileReady, signingIn, votingAccess, canVote, votes, myDetails, detailsReady, connected, teams, teamConfig, login, acceptMission, declines, declineMission } = useOuting();
+  const mine = user ? votes[user.uid] : undefined, out = user && !mine ? declines[user.uid] : undefined;
   const [editing, setEditing] = useState(false), [saving, setSaving] = useState(false), [failed, setFailed] = useState(""), [justAccepted, setJustAccepted] = useState(false), [burnt, setBurnt] = useState(false);
+  const [declining, setDeclining] = useState(false), [declineFailed, setDeclineFailed] = useState(""), [justDeclined, setJustDeclined] = useState(false), [rejoining, setRejoining] = useState(false);
   const [note, setNote] = useState(""), [family, setFamily] = useState(false), [familyCount, setFamilyCount] = useState(1), [familyNote, setFamilyNote] = useState("");
   // the file opens on what was saved before
   useEffect(() => {
@@ -193,7 +259,7 @@ export default function MissionAccept() {
     const count = myDetails?.familyCount || 0;
     setNote(myDetails?.note || ""); setFamily(count > 0); setFamilyCount(Math.max(1, count)); setFamilyNote(count > 0 ? myDetails?.familyNote || "" : "");
   }, [detailsReady, myDetails]);
-  useEffect(() => { setEditing(false); setJustAccepted(false); setFailed(""); }, [user?.uid]);
+  useEffect(() => { setEditing(false); setJustAccepted(false); setFailed(""); setJustDeclined(false); setRejoining(false); setDeclineFailed(""); }, [user?.uid]);
   const countValid = !family || (Number.isSafeInteger(familyCount) && familyCount >= 1 && familyCount <= 20);
   // your team only once the organisers publish the teams; captains are always on the team they lead
   const team: Team | undefined = user && teamConfig.published ? withCaptains(teams, teamConfig.captains)[user.uid] : undefined;
@@ -203,9 +269,17 @@ export default function MissionAccept() {
     setSaving(true); setFailed("");
     try {
       await acceptMission({ note: note.trim(), bringingFamily: family, familyCount: family ? familyCount : 0, familyNote: family ? familyNote.trim() : "" });
-      setEditing(false); setJustAccepted(true);
+      setEditing(false); setRejoining(false); setJustDeclined(false); setBurnt(false); setJustAccepted(true);
     } catch (error) { setFailed(error instanceof Error ? error.message : "任務登記沒有送出，請稍後再試一次。"); }
     finally { setSaving(false); }
+  }
+
+  async function decline() {
+    if (declining) return;
+    setDeclining(true); setDeclineFailed("");
+    try { await declineMission(); setEditing(false); setRejoining(false); setJustAccepted(false); setBurnt(false); setJustDeclined(true); }
+    catch (error) { setDeclineFailed(error instanceof Error ? error.message : "沒有送出，請稍後再試一次。"); }
+    finally { setDeclining(false); }
   }
 
   let panel: React.ReactNode;
@@ -221,9 +295,11 @@ export default function MissionAccept() {
     <button type="button" className="accept-link" onClick={login}>改用公司 Google 帳號 →</button>
   </div>;
   else if (mine && !editing) panel = <AgentFile vote={mine} name={mine.displayName || user.displayName || "特務"} team={team} leading={leading} familyCount={myDetails?.familyCount || 0} note={myDetails?.note?.trim() || ""} fresh={justAccepted}
-    actions={<><button type="button" className="accept-link" onClick={() => { setEditing(true); setJustAccepted(false); }}>修改任務資料</button><button type="button" className="accept-link is-quiet" onClick={logout}>登出</button></>} />;
+    actions={<><button type="button" className="accept-link" onClick={() => { setEditing(true); setJustAccepted(false); }}>修改任務資料</button><Decline busy={declining} failed={declineFailed} onDecline={() => void decline()} /></>} />;
+  else if (out && !rejoining) panel = <DormantFile name={out.displayName || user.displayName || "探員"} photo={out.photoURL || user.photoURL || ""} fresh={justDeclined}
+    actions={<button type="button" className="accept-link" onClick={() => { setRejoining(true); setJustDeclined(false); }}>改變心意，歸隊 →</button>} />;
   else panel = <form className="accept-form" onSubmit={event => { event.preventDefault(); void accept(); }}>
-    <p className="accept-who"><span className="ms-label">AGENT FILE</span>特務 <strong>{user.displayName || user.email}</strong><button type="button" className="accept-link is-quiet" onClick={logout}>不是你？登出</button></p>
+    <p className="accept-who"><span className="ms-label">AGENT FILE</span>特務 <strong>{user.displayName || user.email}</strong></p>
     <label className="accept-field">
       <span>注意事項（選填）<small>健康狀況、飲食需求都可以寫，只有你和主辦看得到。</small></span>
       <textarea rows={2} maxLength={1000} value={note} onChange={event => setNote(event.target.value)} placeholder="例如：膝蓋舊傷、不吃牛" />
@@ -246,14 +322,16 @@ export default function MissionAccept() {
     {failed && <p className="accept-error" role="alert">{failed}</p>}
     <div className="accept-actions">
       <Scanner mode="hold" label={mine ? "按住指紋，更新任務資料" : "按住指紋，接受任務"} sub={!connected ? "連線恢復後才能送出" : "按住直到圓環走完"} busy={saving} disabled={!connected || !countValid} onConfirm={() => void accept()} />
-      {mine && <button type="button" className="accept-link is-quiet" onClick={() => setEditing(false)}>取消</button>}
+      {mine ? <button type="button" className="accept-link is-quiet" onClick={() => setEditing(false)}>取消</button>
+        : out ? <button type="button" className="accept-link is-quiet" onClick={() => setRejoining(false)}>取消</button>
+        : <Decline busy={declining} failed={declineFailed} onDecline={() => void decline()} />}
     </div>
   </form>;
 
   return <div className="accept">
     <div className="dossier">
       <div className="dossier-head"><span>AGENT BRIEFING</span><b>FILE 10.29</b><i className="dossier-classified">機密・TOP SECRET</i></div>
-      <Briefing name={user?.displayName || undefined} destroy={justAccepted && !burnt} onDestroyed={() => setBurnt(true)} />
+      <Briefing name={user?.displayName || undefined} destroy={(justAccepted || justDeclined) && !burnt} gone={out ? "簡報已銷毀・這段對話從未發生" : "簡報已銷毀・祝任務順利"} onDestroyed={() => setBurnt(true)} />
       {panel}
     </div>
     <AgentRoster me={user?.uid} />

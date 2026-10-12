@@ -189,10 +189,10 @@ function MissionFuse({ onLit }: { onLit: (lit: boolean) => void }) {
 /** Below the key visual, only the trip itself, on the IMF console: the day's log, which hands straight over to accepting the
  *  mission, then the arena recon, the tea extraction and the protocols. */
 export default function MissionSections({ plan, planId, eventDate, now }: { plan?: TripPlan; planId?: string; eventDate: string; now: number }) {
-  const { stores, user, votes, teamConfig } = useOuting();
+  const { stores, user, votes, teamConfig, declines } = useOuting();
   const boardVisible = useTeamBoardVisible();
   // the briefing's status follows this agent: waiting for an answer, or accepted
-  const accepted = !!(user && votes[user.uid]);
+  const accepted = !!(user && votes[user.uid]), dormant = !accepted && !!(user && declines[user.uid]);
   const [alarm, setAlarm] = useState<BriefingAlarm>({ armed: false, seconds: 5 }), [lit, setLit] = useState(false);
   const schedule = plan?.schedule || [];
   const meet = schedule[0];
@@ -221,7 +221,7 @@ export default function MissionSections({ plan, planId, eventDate, now }: { plan
         <SectionHead no="01" en="MISSION TIMELINE" id="ms-mission-title" title={<>{date} <em>任務流程</em></>}
           lead={plan?.description} aside={meet && <MissionCountdown eventDate={eventDate} start={meet.time} now={now} />} />
         <Terminal name="MISSION_TIMELINE.LOG" status={alarm.armed ? "SELF-DESTRUCT T-" + alarm.seconds : alarm.gone ? "MESSAGE DESTROYED" : "SECURE LINK"} tone={alarm.armed ? "red" : alarm.gone ? "amber" : "green"} className={alarm.armed ? "is-alarm" : ""}>
-          <MissionBriefing lines={[["SECURE LINK", "OK"], ["AGENTS", "全體探員"], ["MISSION FILE", "秋遊特務 / " + date], accepted ? ["STATUS", "ACCEPTED・任務已接受", "ok"] : ["STATUS", "等待特務接受", "wait"]]} onAlarm={setAlarm} />
+          <MissionBriefing lines={[["SECURE LINK", "OK"], ["AGENTS", "全體探員"], ["MISSION FILE", "秋遊特務 / " + date], accepted ? ["STATUS", "ACCEPTED・任務已接受", "ok"] : dormant ? ["STATUS", "DORMANT・另有要務", "off"] : ["STATUS", "等待特務接受", "wait"]]} onAlarm={setAlarm} />
           <ol className="ms-log">
             {schedule.map((stop, index) => <li key={index} className="ms-log-row">
               <span className="ms-log-node" aria-hidden="true"><i /></span>
