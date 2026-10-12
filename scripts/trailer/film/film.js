@@ -529,11 +529,11 @@ cut("arena", null, (el) => {
   };
 });
 cut("gear", null, (el) => {
-  const bg = plate(el, A("gear.webp"), TALL ? "42% 50%" : null); const cap = caption(el, "GEAR", "感應背心・雷射槍");
+  const bg = plate(el, A("gear-rack.webp"), TALL ? "46% 50%" : null); const cap = caption(el, "GEAR", "感應背心・雷射槍");
   return (t) => { const l = t - M.gear.t; tf(bg, `scale(${mix(1.22, 1.05, p(l, 0, .4, E.outE)).toFixed(4)}) rotate(${mix(-1.2, 0, p(l, 0, .4, E.outE)).toFixed(2)}deg)`); cap(t, M.gear.t + .02); };
 });
 cut("teams", null, (el) => {
-  const bg = plate(el, A("teams.webp"), TALL ? "20% 50%" : null); const fl = $("i", "flare", el); const cap = caption(el, "10.29 THU 12:00", "週四中午・六度空間集合");
+  const bg = plate(el, A("walkout.webp"), TALL ? "50% 50%" : null); const fl = $("i", "flare", el); const cap = caption(el, "10.29 THU 12:00", "週四中午・六度空間集合");
   return (t) => { const l = t - M.teams.t; tf(bg, `scale(${mix(1.04, 1.16, p(l, 0, .8, E.outQ)).toFixed(4)})`); css(fl, { left: "50%", top: "44%" }); op(fl, .55 + .25 * Math.sin(l * 9)); tf(fl, `scaleX(${(.8 + .3 * p(l, 0, .8)).toFixed(3)})`); cap(t, M.teams.t + .04); };
 });
 function duel(el, cutSrc, muzzle, color, tShots, capEn, capCn) {
@@ -604,18 +604,26 @@ function lock(name, src, color, en, cn) {
 }
 lock("lockA", "close-a.webp", "", "TARGET · RED LEADER", "紅隊隊長");
 lock("lockB", "close-b.webp", "blue", "TARGET · BLUE LEADER", "藍隊隊長");
-cut("squad", null, (el) => { const bg = plate(el, A("squad.webp")); return (t) => { const l = t - M.squad.t; tf(bg, `scale(${mix(1.1, 1.32, p(l, 0, .4, E.inQ)).toFixed(4)})`); }; });
+// the captains' stunts: the red captain's combat roll (the camera whips along with it), the blue captain's knee slide, firing
+cut("stuntA", null, (el) => {
+  const bg = plate(el, A("stunt-roll.webp"), TALL ? "40% 50%" : null);
+  return (t) => { const l = t - M.stuntA.t, d = p(l, 0, .4, E.outQ); tf(bg, `translateX(${mix(-4, 3, d).toFixed(2)}%) scale(${mix(1.28, 1.12, d).toFixed(4)}) rotate(${mix(-2.5, 1, d).toFixed(2)}deg)`); };
+});
+cut("stuntB", null, (el) => {
+  const bg = plate(el, A("stunt-slide.webp"), TALL ? "60% 50%" : null); hit(M.stuntB.t, .7, .1, .22, "#9fc2ff");
+  return (t) => { const l = t - M.stuntB.t, d = p(l, 0, .4, E.outQ); tf(bg, `translateX(${mix(4, -3, d).toFixed(2)}%) scale(${mix(1.24, 1.1, d).toFixed(4)})`); };
+});
 
-const STROBE = ["arena.webp", "fire-a.webp", "aim-b.webp", "teams.webp", "vault-bg.webp", "target-hit.webp", "gear.webp", "key-art.webp"];
+const STROBE = ["arena.webp", "fire-a.webp", "stunt-roll.webp", "aim-b.webp", "stunt-slide.webp", "key-art.webp"];
 T.strobe.forEach((t0, i) => {
   byName["strobe" + i] = shot(t0, i < T.strobe.length - 1 ? T.strobe[i + 1] : T.blackout, (el) => {
     const bg = plate(el, A(STROBE[i])); hit(t0, .7 + i * .12, .08, .25 + i * .04);
     const white = $("i", "layer", el); white.style.background = "#fff";
-    return (t) => { const l = t - t0; tf(bg, `scale(${mix(1.35, 1.1, p(l, 0, .2, E.outE)).toFixed(4)})`); op(white, i === 7 ? p(l, 0, .2, E.inQ) : 0); };
+    return (t) => { const l = t - t0; tf(bg, `scale(${mix(1.35, 1.1, p(l, 0, .2, E.outE)).toFixed(4)})`); op(white, i === T.strobe.length - 1 ? p(l, 0, .2, E.inQ) : 0); };
   });
 });
 shot(T.blackout, T.title, () => () => {});
-whip("gear", "teams", -1); whip("lockA", "lockB", -1, .07); whip("squad", "strobe0", 1);
+whip("gear", "teams", -1); whip("lockA", "lockB", -1, .07); whip("lockB", "stuntA", 1); whip("stuntA", "stuntB", 1, .07); whip("stuntB", "strobe0", -1);
 
 // ════ ACT III — the title lit by the fuse, the date, the stinger ════
 let titleFuse = null;

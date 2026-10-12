@@ -28,9 +28,10 @@
     { "t": 18, "shot": "vault", "fx": "hit" },
     { "t": 18.8, "shot": "lockA", "fx": "lock" },
     { "t": 19.2, "shot": "lockB", "fx": "lock" },
-    { "t": 19.6, "shot": "squad", "fx": "stab" }
+    { "t": 19.6, "shot": "stuntA", "fx": "stab" },
+    { "t": 20, "shot": "stuntB", "fx": "zap" }
   ],
-  "strobe": [20, 20.2, 20.4, 20.6, 20.8, 21, 21.2, 21.4],
+  "strobe": [20.4, 20.6, 20.8, 21, 21.2, 21.4],
   "blackout": 21.6,
   "title": 22,
   "date": 24.6,

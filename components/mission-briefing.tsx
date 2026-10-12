@@ -5,8 +5,8 @@ import { createEmbers, createFilmBurn, type BurnSeed } from "@/lib/film-burn";
 export type BriefingAlarm = { armed: boolean; seconds: number; gone?: boolean };
 type Stage = "typing" | "armed" | "glitch" | "burning" | "gone";
 /** Paced to be read: a character every 46 ms, a breath at each line end, five seconds of countdown, a slow burn, and the
- *  ashes left alone for a good while before the briefing comes in again. */
-const COUNTDOWN = 5, TYPE_MS = 46, LINE_MS = 340, GLITCH_MS = 700, BURN_MS = 2800, GONE_MS = 9000;
+ *  ashes left alone for half a minute before the briefing comes in again (at once if it is scrolled away and back). */
+const COUNTDOWN = 5, TYPE_MS = 46, LINE_MS = 340, GLITCH_MS = 700, BURN_MS = 2800, GONE_MS = 30000;
 const BACKING: [number, number, number] = [10, 11, 13];
 const SEEDS: BurnSeed[] = [{ x: .32, y: .52, delay: 0 }, { x: .8, y: .3, delay: .18 }, { x: .1, y: .16, delay: .32 }, { x: .6, y: .95, delay: .42 }];
 

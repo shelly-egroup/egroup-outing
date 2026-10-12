@@ -575,7 +575,7 @@ body:has(.mission-page), body:has(.mission-page)::before { background: #050506; 
 @keyframes agent-jolt { 0% { transform: none; } 22% { transform: translate(2px, 4px) rotate(.3deg); } 55% { transform: translate(-2px, -1px); } 100% { transform: none; } }
 .agent-scan { position: absolute; left: -1px; right: -1px; top: 0; z-index: 3; height: 2px; background: #c9ffe4; box-shadow: 0 0 14px 3px rgb(93 242 166 / .75), 0 -30px 40px rgb(93 242 166 / .12); pointer-events: none; animation: agent-scan .55s var(--ms-out) both; }
 @keyframes agent-scan { 0% { top: 0; opacity: 1; } 85% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
-.agent-photo { position: relative; flex: none; margin-top: 16px; }
+.agent-photo { position: relative; flex: none; margin-top: 24px; }
 .agent-lock { position: absolute; inset: -7px; color: var(--ms-green); opacity: 0; pointer-events: none; }
 .agent-lock i { position: absolute; width: 11px; height: 11px; border: 0 solid currentColor; filter: drop-shadow(0 0 4px currentColor); }
 .agent-lock i:nth-child(1) { left: 0; top: 0; border-width: 2px 0 0 2px; } .agent-lock i:nth-child(2) { right: 0; top: 0; border-width: 2px 2px 0 0; }
@@ -618,7 +618,7 @@ body:has(.mission-page), body:has(.mission-page)::before { background: #050506; 
 .roster-offline { display: flex; align-items: center; gap: 10px; margin: 0; padding: 12px 14px; border: 1px dashed rgb(255 176 74 / .45); font: 600 13px/1.6 var(--ms-sans); color: var(--ms-amber); }
 .roster-offline i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; animation: ms-blink 1s step-end infinite; }
 .dossier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; max-height: 460px; overflow: auto; scrollbar-width: thin; }
-.dossier-grid li { position: relative; display: grid; justify-items: center; gap: 8px; padding: 26px 6px 9px; border: 1px solid rgb(242 237 228 / .1); background: rgb(242 237 228 / .02); font: 600 12px/1.3 var(--ms-sans); text-align: center; animation: roster-in .5s var(--ms-out) both; }
+.dossier-grid li { position: relative; display: grid; justify-items: center; gap: 8px; padding: 24px 6px 9px; border: 1px solid rgb(242 237 228 / .1); background: rgb(242 237 228 / .02); font: 600 12px/1.3 var(--ms-sans); text-align: center; animation: roster-in .5s var(--ms-out) both; }
 .dossier-grid li .agent-face { width: 54px; height: 54px; font-size: 15px; }
 .dossier-grid li > span:nth-child(2) { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dossier-grid li b { position: absolute; top: 6px; right: 6px; padding: 2px 5px; background: var(--ms-green); color: var(--ms-ink); font: 800 10px/1 var(--ms-sans); }
@@ -743,9 +743,12 @@ body:has(.mission-page), body:has(.mission-page)::before { background: #050506; 
 @media (max-width: 600px) { .agent-signin { min-height: 36px; padding: 0 10px; letter-spacing: .1em; } .agent-signin span { display: none; } .outing-header .header-actions { margin-left: 8px; } }
 /* every agent's photo wears a fedora */
 .hat-wrap { position: relative; display: inline-grid; flex: none; place-items: center; }
-.agent-hat { position: absolute; left: 50%; top: 0; z-index: 3; width: 122%; height: auto; transform: translate(-50%, -52%) rotate(-11deg); pointer-events: none; filter: drop-shadow(0 2px 2px rgb(0 0 0 / .6)); }
-.hat-wrap.is-round .agent-hat { width: 128%; transform: translate(-50%, -50%) rotate(-12deg); }
-.outing-header .account-trigger .hat-wrap { margin-top: 6px; }
+/* the hat is worn: the brim comes down to the hairline (never over the eyes) and shades the forehead beneath it */
+.agent-hat { position: absolute; left: 50%; top: 0; z-index: 3; width: 108%; height: auto; transform: translate(-50%, -57%) rotate(-7deg); pointer-events: none; filter: drop-shadow(0 2px 2px rgb(0 0 0 / .6)); }
+.hat-wrap > .agent-face { position: relative; }
+.hat-wrap > .agent-face::after, .hat-wrap > .avatar::after { content: ""; position: absolute; inset: 0 0 auto; z-index: 2; height: 36%; background: linear-gradient(rgb(0 0 0 / .55), rgb(0 0 0 / .18) 60%, transparent); pointer-events: none; }
+.hat-wrap.is-round .agent-hat { width: 116%; transform: translate(-50%, -56%) rotate(-9deg); }
+.outing-header .account-trigger .hat-wrap { margin-top: 10px; }
 .outing-header .avatar { background: #1c1f25; border-color: rgb(242 237 228 / .55); box-shadow: none; color: #f2ede4; }
 @media (max-width: 600px) {
   .mission-page .outing-header .header-link-full { display: none; }

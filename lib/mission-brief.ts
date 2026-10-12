@@ -3,8 +3,6 @@
 
 export const MISSION_IMAGES = {
   arena: "/assets/mission/arena.webp",
-  teams: "/assets/mission/teams.webp",
-  gear: "/assets/mission/gear.webp",
   tea: "/assets/mission/tea.webp",
   walkout: "/assets/mission/walkout.webp",
   /** the captains as cut-outs, aiming at each other: red mirrored to face right, blue facing left */
