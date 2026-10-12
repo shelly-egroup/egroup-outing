@@ -415,6 +415,12 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
   revCymbal(C.cut, 0.3, 0.35);
   braam(C.cut, "D1", 2.4); crash(C.cut, 0.9, 3); timp(C.cut, "D2", 1.2, 2.6); impact(C.cut, 1.6);
   pianoHit(C.end, "D1", 0.55, 2.2); choir(C.end, ["D3", "A3", "D4"], C.duration - C.end - 0.6, { vel: 0.4, attack: 0.4, gain: 0.03 });
+  // self-destruct: the line types itself, a fuse catches, the frame crackles away into smoke
+  typing(C.destruct, C.destruct + 0.6);
+  matchStrike(C.burn - 0.1);
+  crackle(C.burn, 1.35, 0.6);
+  whoosh(C.burn + 0.8, 0.9, { f0: 2600, f1: 280, vel: 0.32, p0: -0.5, p1: 0.5 });
+  impact(C.burn + 1.2, 0.4);
 
   return ctx.startRendering();
 };

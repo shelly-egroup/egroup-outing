@@ -162,6 +162,13 @@ function burnWipe(el, t, t0, dur) {
   const pts = []; for (let i = 0; i <= 24; i++) { const y = i / 24 * 100; pts.push(`${(x + 3.2 * noise1(i * .9 + t0, 4) + 1.4 * noise1(i * 3.1, 5)).toFixed(2)}% ${y.toFixed(1)}%`); }
   el.style.clipPath = `polygon(0 0, ${pts.join(", ")}, 0 100%)`;
 }
+/** the opposite of burnWipe: a ragged burning edge crosses left to right and leaves only black behind it */
+function burnAway(el, t, t0, dur) {
+  if (t < t0) { el.style.clipPath = "none"; return; }
+  const x = p(t, t0, t0 + dur, E.ioC) * 112 - 6;
+  const pts = []; for (let i = 0; i <= 24; i++) { const y = i / 24 * 100; pts.push(`${(x + 3.2 * noise1(i * .9 + t0, 4) + 1.4 * noise1(i * 3.1, 5)).toFixed(2)}% ${y.toFixed(1)}%`); }
+  el.style.clipPath = `polygon(${pts.join(", ")}, 100% 100%, 100% 0)`;
+}
 function drawBurns(t) {
   for (const [t0, dur] of burns) {
     if (t < t0 || t > t0 + dur + .2) continue;
@@ -676,13 +683,30 @@ shot(T.stinger, T.cut, (el) => {
     bloomAt(gR, t, T.stingerFire, rx, ry, .55, .3); bloomAt(gB, t, T.stingerFire + .03, bx, by, .55, .3);
   };
 });
+const BURN = 1.25;
+burns.push([T.burn, BURN]);
 shot(T.cut, T.duration + 1, (el) => {
-  const smoke = img(A("smoke.webp"), "smoke", el); css(smoke, { opacity: 0 });
-  const card = $("div", "title endcard", el), word = $("div", "word", card);
+  // what burns: the end card, its smoke and the self-destruct line; what stays: the smoke the fire leaves behind
+  const frame = $("div", "layer", el), residue = img(A("smoke.webp"), "smoke", el); css(residue, { opacity: 0 });
+  const smoke = img(A("smoke.webp"), "smoke", frame); css(smoke, { opacity: 0 });
+  const card = $("div", "title endcard", frame), word = $("div", "word", card);
   $("span", "chrome", word, { textContent: "全員出動" }); const sheen = $("span", "sheen", word, { textContent: "全員出動" }); css(sheen, { position: "absolute", inset: "0" });
   const rule = $("div", "rule", card), third = $("div", "third", card, { textContent: "MISSION  10.29" });
+  const msg = $("div", "destruct", frame), msgEn = $("small", "", msg, { textContent: "THIS MESSAGE WILL SELF-DESTRUCT" }), msgLine = $("p", "", msg);
+  const msgChars = [..."本訊息將自動銷毀"].map((c) => $("span", "", msgLine, { textContent: c })), msgCur = $("i", "cur", msgLine);
+  hit(T.burn, .35, .12, .14, "#ffb04a");
+  for (let k = 0; k < 7; k++) { const v = .12 + .76 * hash(k, 41); sparkBursts.push([T.burn + .08 + k * BURN / 7, (p(T.burn + .08 + k * BURN / 7, T.burn, T.burn + BURN, E.ioC) * 1.12 - .06) * PW, v * PH, 10, 14, ""]); }
+  sparkBursts.push([T.burn, .02 * PW, .9 * PH, 22, 20, ""]);
   return (t) => {
-    const l = t - T.end, x = p(l, 0, 1.6, E.outC), out = 1 - p(t, T.duration - .8, T.duration - .25, E.inQ);
+    const l = t - T.end, x = p(l, 0, 1.6, E.outC), out = 1;
+    burnAway(frame, t, T.burn, BURN);
+    const [da, db] = [T.destruct, T.destruct + .6];
+    op(msg, p(t, da - .15, da)); reveal(msgEn, t, da - .15, .4, 1);
+    let typed = 0; msgChars.forEach((c, i) => { const on = t >= da + (db - da) * i / msgChars.length; c.style.visibility = on ? "visible" : "hidden"; if (on) typed = i + 1; });
+    if (msgCur.previousSibling !== (msgChars[typed - 1] || null)) msgLine.insertBefore(msgCur, msgChars[typed] || null);
+    op(msgCur, t < db ? 1 : Math.floor((t - db) / .22) % 2 ? 0 : 1);
+    op(residue, .26 * p(t, T.burn + .3, T.burn + 1.1) * (1 - p(t, T.burn + BURN + .1, T.duration - .25)));
+    tf(residue, `translateY(${(-10 * p(t, T.burn, T.duration)).toFixed(2)}%) scale(${(1.3 + .15 * p(t, T.burn, T.duration)).toFixed(4)})`);
     op(card, p(l, 0, .45, E.outC) * out); op(smoke, .3 * p(l, 0, 1) * out); tf(smoke, `scale(${(1.3 + .08 * l).toFixed(4)}) rotate(${(2 - 2 * l).toFixed(2)}deg)`);
     const ls = mix(.42, .2, x).toFixed(3); word.style.letterSpacing = ls + "em"; word.style.marginRight = "-" + ls + "em";
     word.style.filter = l < .35 ? `blur(${((.35 - l) / .35 * 1.2 * cqh).toFixed(2)}px)` : "none";

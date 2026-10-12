@@ -115,7 +115,14 @@ img { display: block; max-width: none; user-select: none; }
 [data-ar="9x16"] .datecard .d { font-size: 20cqw; }
 [data-ar="9x16"] .datecard .p { font-size: 4.2cqw; letter-spacing: .18em; white-space: normal; }
 [data-ar="9x16"] .datecard .e { font-size: 3cqw; letter-spacing: .4em; }
-.title.endcard { top: 50%; gap: 3.4cqh; }
+.title.endcard { top: 46%; gap: 3.4cqh; }
+.destruct { position: absolute; left: 50%; top: 74%; translate: -50% 0; display: flex; flex-direction: column; align-items: center; gap: 1.8cqh; white-space: nowrap; }
+.destruct small { font: 600 2.2cqh/1 var(--mono); letter-spacing: .5em; margin-right: -.5em; color: var(--laser); }
+.destruct p { display: flex; align-items: center; margin: 0; font: 700 4.6cqh/1 var(--sans); letter-spacing: .36em; color: var(--paper); text-shadow: 0 0 2cqh rgb(0 0 0 / .8); }
+.destruct .cur { display: inline-block; width: .5em; height: 1em; margin-left: .1em; background: var(--amber); }
+[data-ar="9x16"] .destruct { top: 66%; gap: 1.6cqw; }
+[data-ar="9x16"] .destruct small { font-size: 2.6cqw; letter-spacing: .3em; margin-right: -.3em; }
+[data-ar="9x16"] .destruct p { font-size: 5.6cqw; letter-spacing: .26em; }
 .title.endcard .word { font-size: 15cqh; }
 [data-ar="9x16"] .title.endcard .word { font-size: 13cqw; }
 

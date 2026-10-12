@@ -11,6 +11,6 @@ export const TRAILER_IMAGES = { keyArt: "/assets/trailer/key-art.webp", keyArtTa
 
 /** The pre-rendered trailer (scripts/trailer/render-film.mjs): widescreen, plus a vertical cut for portrait phones. */
 export const TRAILER_VIDEO = {
-  wide: "/assets/trailer/trailer-16x9.mp4?v=5",
-  tall: "/assets/trailer/trailer-9x16.mp4?v=5",
+  wide: "/assets/trailer/trailer-16x9.mp4?v=6",
+  tall: "/assets/trailer/trailer-9x16.mp4?v=6",
 } as const;

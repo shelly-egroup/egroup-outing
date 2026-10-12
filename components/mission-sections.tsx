@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import TitleMark from "./title-mark";
 import StoreLinks from "./store-links";
 import DuelSim from "./duel-sim";
@@ -38,21 +38,38 @@ function Terminal({ name, status, tone = "amber", className = "", children }: { 
   </div>;
 }
 
-/** Lines typed out one character at a time once on screen; the full text is there for screen readers from the start. */
+const DESTRUCT_SECONDS = 5;
+/** The briefing: lines typed out one character at a time once on screen, then — Mission: Impossible style — a five-second
+ *  countdown and the message burns itself away; its height is held so nothing below moves. Reduced motion keeps it static. */
 function BootLog({ lines }: { lines: [string, string][] }) {
   const [ref, seen] = useSeen<HTMLDivElement>();
   const total = lines.reduce((sum, [k, v]) => sum + k.length + v.length, 0);
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(0), [stage, setStage] = useState<"typing" | "armed" | "burning" | "gone">("typing");
+  const [secs, setSecs] = useState(DESTRUCT_SECONDS), [height, setHeight] = useState<number>(), still = useRef(false);
   useEffect(() => {
     if (!seen) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setCount(total); return; }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { still.current = true; setCount(total); return; }
     const timer = setInterval(() => setCount(c => { if (c >= total) { clearInterval(timer); return c; } return c + 1; }), 22);
     return () => clearInterval(timer);
   }, [seen, total]);
+  useEffect(() => { if (count >= total && stage === "typing") setStage("armed"); }, [count, total, stage]);
+  useLayoutEffect(() => { if (stage === "armed" && ref.current) setHeight(ref.current.offsetHeight); }, [stage, ref]);
+  useEffect(() => {
+    if (stage !== "armed" || still.current) return;
+    const timer = setInterval(() => setSecs(s => s - 1), 1000);
+    return () => clearInterval(timer);
+  }, [stage]);
+  useEffect(() => { if (stage === "armed" && secs <= 0) setStage("burning"); }, [stage, secs]);
+  useEffect(() => { if (stage !== "burning") return; const timer = setTimeout(() => setStage("gone"), 1300); return () => clearTimeout(timer); }, [stage]);
+  // once the smoke clears, the empty space folds away and the log closes up
+  useEffect(() => { if (stage !== "gone") return; const timer = setTimeout(() => setHeight(0), 1500); return () => clearTimeout(timer); }, [stage]);
   let left = count;
-  return <div ref={ref} className="boot">
-    <p className="sr-only">{lines.map(([k, v]) => k + "：" + v).join("；")}</p>
-    <div aria-hidden="true">
+  return <div ref={ref} className="boot" data-state={stage} style={height !== undefined ? { minHeight: height } : undefined}>
+    <p className="sr-only">{lines.map(([k, v]) => k + "：" + v).join("；")}；本訊息將自動銷毀</p>
+    {stage === "gone" ? <div className="boot-gone" aria-hidden="true">
+      <p className="boot-line"><span className="boot-prompt">&gt;</span><span className="boot-key">訊息已銷毀</span><i className="boot-caret is-idle" /></p>
+      <small>MESSAGE DESTROYED</small>
+    </div> : <div className="boot-lines" aria-hidden="true">
       {lines.map(([key, value], index) => {
         const k = key.slice(0, Math.max(0, left)); left -= key.length;
         const v = value.slice(0, Math.max(0, left)); left -= value.length;
@@ -61,8 +78,9 @@ function BootLog({ lines }: { lines: [string, string][] }) {
           <span className="boot-prompt">&gt;</span><span className="boot-key">{k}</span>{k.length === key.length && <span className="boot-dots" />}<b className="boot-value">{v}</b>{typing && <i className="boot-caret" />}
         </p>;
       })}
-      {count >= total && <p className="boot-line"><span className="boot-prompt">&gt;</span><i className="boot-caret is-idle" /></p>}
-    </div>
+      {stage !== "typing" && <p className="boot-line boot-destruct"><span className="boot-prompt">&gt;</span><i className="boot-alarm" />
+        <span>{still.current ? "本訊息將自動銷毀" : <>本訊息將在 <b>{Math.max(0, secs)}</b> 秒後自動銷毀</>}</span><i className="boot-caret is-idle" /></p>}
+    </div>}
   </div>;
 }
 

@@ -53,6 +53,20 @@ body:has(.mission-page), body:has(.mission-page)::before { background: #050506; 
 .boot-value { color: var(--tone); font-weight: 700; white-space: nowrap; }
 .boot-caret { display: inline-block; width: .62em; height: 1.1em; background: var(--tone); }
 .boot-caret.is-idle { animation: ms-blink 1s step-end infinite; }
+/* the self-destruct: a countdown line, then a burning edge eats the briefing from left to right */
+@property --burn { syntax: "<percentage>"; inherits: true; initial-value: -8%; }
+.boot { position: relative; transition: min-height .8s var(--ms-out); }
+.boot-destruct { color: var(--ms-laser); }
+.boot-destruct b { display: inline-block; min-width: 1.2ch; color: #fff; font-size: 1.15em; text-align: center; }
+.boot-alarm { width: 7px; height: 7px; border-radius: 50%; background: var(--ms-laser); box-shadow: 0 0 8px var(--ms-laser); animation: ms-blink .5s step-end infinite; }
+.boot[data-state="burning"] { animation: boot-burn 1.25s cubic-bezier(.55, 0, .45, 1) forwards; }
+@keyframes boot-burn { from { --burn: -8%; } to { --burn: 112%; } }
+.boot[data-state="burning"] .boot-lines { -webkit-mask-image: linear-gradient(90deg, transparent calc(var(--burn) - 3%), #000 calc(var(--burn) + 5%)); mask-image: linear-gradient(90deg, transparent calc(var(--burn) - 3%), #000 calc(var(--burn) + 5%)); }
+.boot[data-state="burning"]::after { content: ""; position: absolute; top: -4px; bottom: 16px; left: var(--burn); width: 3px; border-radius: 2px; background: linear-gradient(transparent, #ffd089 15% 85%, transparent); box-shadow: 0 0 10px 3px rgb(255 150 50 / .75), 0 0 28px 8px rgb(255 70 20 / .35); pointer-events: none; }
+.boot-gone { position: relative; display: grid; align-content: start; gap: 8px; }
+.boot-gone small { padding-left: 22px; font: 600 10px/1 var(--ms-mono); letter-spacing: .32em; color: var(--ms-faint); }
+.boot-gone::before { content: ""; position: absolute; left: -10px; width: 70%; top: -26px; height: 90px; pointer-events: none; background: radial-gradient(closest-side, rgb(242 237 228 / .14), transparent); filter: blur(10px); animation: boot-smoke 2s ease-out forwards; }
+@keyframes boot-smoke { from { opacity: 1; transform: translateY(16px) scale(.8); } to { opacity: 0; transform: translateY(-34px) scale(1.5); } }
 
 /* ── 01 The day, as a log ── */
 .ms-timeline { padding-top: clamp(64px, 7vw, 104px); border-top: 0; background: radial-gradient(60% 50% at 85% 0%, rgb(255 42 74 / .07), transparent 70%), radial-gradient(50% 40% at 0% 100%, rgb(61 125 255 / .06), transparent 70%); }
