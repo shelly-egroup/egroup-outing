@@ -118,7 +118,7 @@ function Briefing({ name, destroy, onDestroyed }: { name?: string; destroy: bool
     <p className="sr-only">{lines.join("")}</p>
     {stage !== "gone" ? <div className="tape-lines" aria-hidden="true">
       {lines.map((line, i) => { const shown = line.slice(0, Math.max(0, left)); const caret = left > 0 && left <= line.length && typed < total; left -= line.length;
-        return <p key={i} className={"tape-line" + (i === 0 ? " is-greet" : i === 1 ? " is-cue" : "")}>{shown}{caret && <i className="tape-caret" />}</p>; })}
+        return <p key={i} className={"tape-line" + (i === 0 ? " is-greet" : i === 1 ? " is-cue" : i === lines.length - 1 ? " is-classic" : "")}>{shown}{caret && <i className="tape-caret" />}</p>; })}
       {stage === "count" && <p className="tape-line is-destruct">本訊息將在 <b key={secs}>{secs}</b> 秒後自動銷毀</p>}
     </div> : <p className="tape-gone">簡報已銷毀・祝任務順利</p>}
     <canvas ref={canvas} className="tape-burn" aria-hidden="true" />

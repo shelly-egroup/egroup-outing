@@ -388,7 +388,11 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
     if (fx === "zap") { zap(t, 1, (t * 7 % 2) - 1); snare(t, 0.45); impact(t, 0.55); }
     if (fx === "impact") { impact(t, 1.3); taiko(t, 0.9, 0.9); crackle(t, 0.5, 0.55); zap(t, 0.6, 0.3); }
     if (fx === "lock") { lock(t); taiko(t, 0.45, 1.2); impact(t, 0.55); }
+    if (fx === "roll") { whoosh(t - 0.05, 0.32, { f0: 260, f1: 2600, vel: 0.65, p0: -0.7, p1: 0.5 }); taiko(t, 0.55, 1.1, -0.4); impact(t, 0.5); }
   }
+  // the red captain's roll: his shoulder meets the floor, he swings up, he fires
+  if (C.rollBeats) { taiko(C.rollBeats[1], 0.8, 0.78, 0); whoosh(C.rollBeats[2] - 0.04, 0.16, { f0: 900, f1: 4200, vel: 0.45, p0: 0, p1: 0.6 }); }
+  if (C.rollFire) { zap(C.rollFire, 1, 0.45); impact(C.rollFire, 0.9); snare(C.rollFire, 0.5); }
   C.titles.forEach((t) => impact(t, 0.6));
   impact(C.fire, 1.2); impact(C.turn, 0.5);
   // strobe: each flash cut is a drum, the riser climbs to the cut-off

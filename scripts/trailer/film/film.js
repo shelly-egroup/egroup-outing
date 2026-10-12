@@ -606,15 +606,28 @@ lock("lockA", "close-a.webp", "", "TARGET · RED LEADER", "紅隊隊長");
 lock("lockB", "close-b.webp", "blue", "TARGET · BLUE LEADER", "藍隊隊長");
 // the captains' stunts: the red captain's combat roll (the camera whips along with it), the blue captain's knee slide, firing
 cut("stuntA", null, (el) => {
-  const bg = plate(el, A("stunt-roll.webp"), TALL ? "40% 50%" : null);
-  return (t) => { const l = t - M.stuntA.t, d = p(l, 0, .4, E.outQ); tf(bg, `translateX(${mix(-4, 3, d).toFixed(2)}%) scale(${mix(1.28, 1.12, d).toFixed(4)}) rotate(${mix(-2.5, 1, d).toFixed(2)}deg)`); };
+  // dive, tucked roll, rising, up on one knee firing — one set-up, each frame nudged so he keeps travelling left to right
+  // [file, nudge (% of the frame), wide framing, tall framing] — framed high enough that his head stays in as he comes up
+  const FRAMES = [["stunt-roll-1.webp", 0, "50% 38%", "33% 50%"], ["stunt-roll.webp", -3, "50% 30%", "64% 50%"], ["stunt-roll-3.webp", 0, "50% 12%", "48% 50%"], ["stunt-roll-4.webp", -2, "50% 14%", "72% 50%"]];
+  const frames = FRAMES.map(([src, , wide, tall]) => plate(el, A(src), TALL ? tall : wide));
+  const flash = $("i", "layer", el); flash.style.background = `radial-gradient(circle at ${TALL ? 62 : 80}% 46%, rgb(255 120 135 / .7), rgb(255 42 74 / .25) 22%, transparent 48%)`;
+  hit(T.rollFire, .95, .1, .26, "#ff8a96");
+  return (t) => {
+    const l = t - M.stuntA.t, d = p(l, 0, .8, E.ioQ), k = T.rollBeats.reduce((n, b, i) => (t >= b ? i : n), 0);
+    frames.forEach((f, i) => {
+      f.style.opacity = i === k ? "1" : "0";
+      const dx = TALL ? 0 : FRAMES[i][1], tilt = i === 1 ? -1.5 : i === 0 ? -2.5 : 0;
+      tf(f, `translateX(${(dx + mix(1, -1, d)).toFixed(2)}%) scale(${mix(1.12, 1.06, d).toFixed(4)}) rotate(${tilt}deg)`);
+    });
+    op(flash, t >= T.rollFire ? Math.max(0, 1 - (t - T.rollFire) / .22) : 0);
+  };
 });
 cut("stuntB", null, (el) => {
   const bg = plate(el, A("stunt-slide.webp"), TALL ? "60% 50%" : null); hit(M.stuntB.t, .7, .1, .22, "#9fc2ff");
   return (t) => { const l = t - M.stuntB.t, d = p(l, 0, .4, E.outQ); tf(bg, `translateX(${mix(4, -3, d).toFixed(2)}%) scale(${mix(1.24, 1.1, d).toFixed(4)})`); };
 });
 
-const STROBE = ["arena.webp", "fire-a.webp", "stunt-roll.webp", "aim-b.webp", "stunt-slide.webp", "key-art.webp"];
+const STROBE = ["stunt-roll-4.webp", "aim-b.webp", "stunt-slide.webp", "key-art.webp"];
 T.strobe.forEach((t0, i) => {
   byName["strobe" + i] = shot(t0, i < T.strobe.length - 1 ? T.strobe[i + 1] : T.blackout, (el) => {
     const bg = plate(el, A(STROBE[i])); hit(t0, .7 + i * .12, .08, .25 + i * .04);

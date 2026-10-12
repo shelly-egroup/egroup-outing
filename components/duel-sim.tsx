@@ -51,7 +51,7 @@ export default function DuelSim() {
   const stage = useRef<HTMLDivElement>(null), bolts = useRef<HTMLDivElement>(null);
   const boss = { a: useRef<HTMLDivElement>(null), b: useRef<HTMLDivElement>(null) }, img = { a: useRef<HTMLImageElement>(null), b: useRef<HTMLImageElement>(null) };
   const meter = { a: useRef<HTMLElement>(null), b: useRef<HTMLElement>(null) };
-  const [mode, setMode] = useState<Mode>("cpu"), [phase, setPhase] = useState<Phase>("ready"), [call, setCall] = useState("背對背站好"), [result, setResult] = useState("");
+  const [mode, setMode] = useState<Mode>("cpu"), [phase, setPhase] = useState<Phase>("ready"), [call, setCall] = useState("雙方就位"), [result, setResult] = useState("");
   const [lives, setLives] = useState({ a: LIVES, b: LIVES }), [reach, setReach] = useState(.32), [human, setHuman] = useState<Side>("a");
   const game = useRef({ phase: "ready" as Phase, mode: "cpu" as Mode, human: "a" as Side, a: fresh(), b: fresh(), bolts: [] as Bolt[], reach: .32, last: 0, frame: 0, timers: [] as number[] });
   const sound = useDuelSound();
@@ -88,7 +88,7 @@ export default function DuelSim() {
     const g = game.current; g.a = fresh(); g.b = fresh(); setLives({ a: LIVES, b: LIVES });
     g.human = g.mode === "cpu" && Math.random() < .5 ? "b" : "a"; setHuman(g.human);
     pose("a", "stand", .5 - .035, -1); pose("b", "stand", .5 + .035, 1);
-    go("ready"); setCall("背對背站好"); setResult("");
+    go("ready"); setCall("雙方就位"); setResult("");
   }
   useEffect(() => {
     reduced.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;

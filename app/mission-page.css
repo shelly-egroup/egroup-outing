@@ -503,6 +503,8 @@ body:has(.mission-page), body:has(.mission-page)::before { background: #050506; 
 .tape-line { margin: 0; font: 500 clamp(15px, 1.3vw, 17px)/1.75 var(--ms-sans); letter-spacing: .06em; color: var(--ms-dim); }
 .tape-line.is-greet { font: 900 clamp(22px, 2.2vw, 30px)/1.4 var(--ms-serif); letter-spacing: .06em; color: var(--ms-paper); }
 .tape-line.is-cue { color: var(--ms-amber); font-weight: 800; letter-spacing: .14em; }
+/* the classic line: "as always, should you be hit by a laser, the organisers will disavow any knowledge" */
+.tape-line.is-classic { margin-top: 6px; font: 900 clamp(18px, 1.75vw, 24px)/1.55 var(--ms-serif); letter-spacing: .08em; color: var(--ms-paper); }
 .tape-line.is-destruct { color: var(--ms-laser); font: 800 15px/1.6 var(--ms-mono); letter-spacing: .14em; }
 .tape-line.is-destruct b { display: inline-block; min-width: 1.4ch; color: #fff; font-size: 1.5em; text-align: center; text-shadow: 0 0 14px rgb(255 42 74 / .8); animation: boot-tick .7s var(--ms-out); }
 .tape-caret { display: inline-block; width: .55em; height: 1.05em; margin-left: 2px; vertical-align: -.15em; background: var(--ms-amber); animation: ms-blink 1s step-end infinite; }

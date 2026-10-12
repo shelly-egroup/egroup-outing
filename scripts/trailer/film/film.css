@@ -116,13 +116,14 @@ img { display: block; max-width: none; user-select: none; }
 [data-ar="9x16"] .datecard .p { font-size: 4.2cqw; letter-spacing: .18em; white-space: normal; }
 [data-ar="9x16"] .datecard .e { font-size: 3cqw; letter-spacing: .4em; }
 .title.endcard { top: 46%; gap: 3.4cqh; }
-.destruct { position: absolute; left: 50%; top: 74%; translate: -50% 0; display: flex; flex-direction: column; align-items: center; gap: 1.8cqh; white-space: nowrap; }
+.destruct { position: absolute; left: 50%; top: 75.5%; translate: -50% 0; display: flex; flex-direction: column; align-items: center; gap: 1.8cqh; white-space: nowrap; }
 .destruct small { font: 600 2.2cqh/1 var(--mono); letter-spacing: .5em; margin-right: -.5em; color: var(--laser); }
 .destruct p { display: flex; align-items: center; margin: 0; font: 700 4.6cqh/1 var(--sans); letter-spacing: .36em; color: var(--paper); text-shadow: 0 0 2cqh rgb(0 0 0 / .8); }
 .destruct .cur { display: inline-block; width: .5em; height: 1em; margin-left: .1em; background: var(--amber); }
-[data-ar="9x16"] .destruct { top: 66%; gap: 1.6cqw; }
-.disavow { position: absolute; left: 50%; top: 64.5%; translate: -50% 0; margin: 0; font: 500 2.7cqh/1.4 var(--sans); letter-spacing: .2em; margin-right: -.2em; color: rgb(242 237 228 / .8); white-space: nowrap; text-shadow: 0 0 2cqh rgb(0 0 0 / .85); }
-[data-ar="9x16"] .disavow { top: 59.5%; font-size: 3.1cqw; letter-spacing: .08em; margin-right: -.08em; }
+[data-ar="9x16"] .destruct { top: 66.5%; gap: 1.6cqw; }
+/* the classic line, in the title's serif */
+.disavow { position: absolute; left: 50%; top: 62.5%; translate: -50% 0; margin: 0; font: 900 4.3cqh/1.3 var(--serif); letter-spacing: .12em; margin-right: -.12em; color: var(--paper); white-space: nowrap; text-shadow: 0 0 2.4cqh rgb(0 0 0 / .9), 0 0 .6cqh rgb(0 0 0 / .8); }
+[data-ar="9x16"] .disavow { top: 57.5%; font-size: 3.9cqw; letter-spacing: .04em; margin-right: -.04em; }
 [data-ar="9x16"] .destruct small { font-size: 2.6cqw; letter-spacing: .3em; margin-right: -.3em; }
 [data-ar="9x16"] .destruct p { font-size: 5.6cqw; letter-spacing: .26em; }
 .title.endcard .word { font-size: 15cqh; }
