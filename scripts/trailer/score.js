@@ -348,7 +348,8 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
   typing(C.disavow[0], C.disavow[1]);
   // the count: a beep and a thump on every beat, rising; then ignition on 007's chord, and the burn takes the frame
   C.countdown.forEach((c, i) => { tick(c, 0.34 + 0.05 * i, 1500 + 140 * i); impact(c, 0.35 + 0.1 * i); });
-  matchStrike(C.destruct - 0.06); impact(C.destruct, 1.5); crash(C.destruct, 0.4, 2.6);
+  C.deng.forEach((c) => impact(c, 0.7));   // under the Mission's own 燈燈
+  matchStrike(C.destruct - 0.06); impact(C.destruct, 2.4); crash(C.destruct, 0.7, 2.6); braam(C.destruct, "G1", 2.4, true);   // the blast: the loudest moment
   whoosh(C.destruct, 0.9, { f0: 120, f1: 2400, vel: 0.45, p0: 0, p1: 0, q: 0.7 });
   whoosh(C.burn + 0.04, 1.3, { f0: 160, f1: 2600, vel: 0.5, p0: -0.2, p1: 0.2, q: 0.7 });
   impact(C.burn, 1.2); crackle(C.burn, 1.9, 0.72);

@@ -790,7 +790,8 @@ shot(T.title, T.duration + 1, (el) => {
   sparkBursts.push([T.title, PW / 2, PH * (TALL ? .26 : .26), 90, TALL ? 90 : 76, ""], [T.date, PW / 2, PH * (TALL ? .42 : .54), 50, 50, ""]);
   const SHOT = T.laser - T.title, RAISE = SHOT + .46;   // the agent fires, the laser dot lands on 特 — then he raises his pistol
   hit(T.laser, .6, .1, .22, "#ff8a96"); hit(T.reprise, .5, .2, .1, "#ffe2bd"); hit(T.date, 1.5, .2, .42, "#fff3e0"); hit(T.destruct, 1.9, .22, .75, "#ffffff");   // ignition
-  T.countdown.forEach((c, i) => hit(c, .5 + .25 * i, .1, .07 + .04 * i, "#ff4a5f")); hit(T.burn, 1.4, .2, .4, "#ffb04a");   // the second 燈: the frame catches
+  T.countdown.forEach((c, i) => hit(c, .5 + .25 * i, .1, .07 + .04 * i, "#ff4a5f"));
+  T.deng.forEach((c) => hit(c, 1.6, .12, .26, "#ff4a5f"));   // the Mission's 燈燈, before zero hit(T.burn, 1.4, .2, .4, "#ffb04a");   // the second 燈: the frame catches
   const tfb = (e, v) => { e.style.transformBox = "fill-box"; e.style.transformOrigin = "center"; e.style.transform = v; };
   /** a slam: in large and hot, settled in a third of a second */
   const slam = (e, l, from, dur = .3) => {
@@ -840,13 +841,15 @@ shot(T.title, T.duration + 1, (el) => {
     vowChars.forEach((c, i) => { c.style.visibility = t >= va + (vb - va) * i / vowChars.length ? "visible" : "hidden"; });
     // the self-destruct: five counts on the Mission's beat — a red alarm pulse and the frame jolting, harder each time — then
     // ignition on 007's chord
-    const k = T.countdown.reduce((n, c, i) => (t >= c ? i : n), -1), lk = k >= 0 ? t - T.countdown[k] : 9;
+    const k = T.countdown.reduce((n, c, i) => (t >= c ? i : n), -1);
+    // every beat of the count — and the Mission's 燈燈 while it holds on 1 — slams the tile, flashes the alarm, jolts the frame
+    const beats = [...T.countdown, ...T.deng], kb = beats.reduce((n, c, i) => (t >= c ? i : n), -1), lk = kb >= 0 ? t - beats[kb] : 9;
     op(msg, t >= C0 - .02 ? 1 : 0); reveal(msgEn, t, C0 + .08, .35, 1); slam(msgLine, t - C0, 1.45, .28);
     count.textContent = t >= T.destruct ? "0" : String(5 - Math.max(0, k));
     tf(count, `scale(${mix(1.8, 1, p(t >= T.destruct ? t - T.destruct : lk, 0, .18, E.outE)).toFixed(3)})`);
     const ignite = t >= T.destruct ? Math.exp(-(t - T.destruct) / .35) : 0;
-    op(alarm, k >= 0 ? Math.max(Math.exp(-lk / .3) * (.3 + .1 * k), ignite) : 0);
-    const jolt = k >= 0 && t < T.destruct && lk < .1 ? (.4 + .3 * k) * (hash(Math.floor(t * 48), k + 3) - .5) * 2 : 0;
+    op(alarm, kb >= 0 ? Math.max(Math.exp(-lk / .3) * (.3 + .1 * Math.min(kb, 6)), ignite) : 0);
+    const jolt = kb >= 0 && t < T.destruct && lk < .1 ? (.4 + .3 * Math.min(kb, 6)) * (hash(Math.floor(t * 48), kb + 3) - .5) * 2 : 0;
     frame.style.translate = `${jolt.toFixed(2)}% 0`;
     op(residue, 0);
   };
@@ -943,7 +946,7 @@ function seek(t) {
   if (titleFuse) { const tp = titleFuse(t); if (tp) fuseHead(t, T.title, (te) => titleFuse(Math.max(te, T.title)) || tp, 1.1); }
   embers(t, T.title, T.burn + .2, 46, .7);
 }
-const fast = [[T.dots[0] - .05, T.irisOpen + .3], [T.turn - .1, T.titles[0] + .5], [T.titles[3], T.titles[3] + .3], [T.button - .05, T.button + .4], [T.catch - .3, T.catch + .5], [T.cardA, T.cardB + .3], [T.missionLine, T.missionLine + .4], [T.montage[0].t, T.title + 1.2], [T.laser - .05, T.laser + .5], [T.date - .05, T.date + .5], [T.clash - .05, T.clash + .5], ...T.countdown.map((c) => [c - .02, c + .2]), [T.destruct - .05, T.destruct + .45]];
+const fast = [[T.dots[0] - .05, T.irisOpen + .3], [T.turn - .1, T.titles[0] + .5], [T.titles[3], T.titles[3] + .3], [T.button - .05, T.button + .4], [T.catch - .3, T.catch + .5], [T.cardA, T.cardB + .3], [T.missionLine, T.missionLine + .4], [T.montage[0].t, T.title + 1.2], [T.laser - .05, T.laser + .5], [T.date - .05, T.date + .5], [T.clash - .05, T.clash + .5], ...T.deng.map((c) => [c - .02, c + .2]), ...T.countdown.map((c) => [c - .02, c + .2]), [T.destruct - .05, T.destruct + .45]];
 const samplesAt = (t) => (fast.some(([a, b]) => t >= a && t <= b) ? 8 : 4);
 
 await document.fonts.load('900 100px "Noto Serif TC"', "今年秋天兩位老闆一個戰場只有一隊能贏秋遊特務一如往常若你被雷射擊中主辦單位將否認知情");

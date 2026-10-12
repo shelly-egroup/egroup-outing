@@ -1,6 +1,6 @@
 {
   "fps": 24,
-  "duration": 46.9,
+  "duration": 47.4,
   "music": {
     "bond": { "from": 2.6, "to": 15.6, "at": 0, "semitones": 1 },
     "mission": { "from": 8.6, "to": 43.37, "at": 10.44 }
@@ -45,6 +45,7 @@
   "disavow": [33.0, 34.2],
   "reprise": 36.76,
   "countdown": [38.255, 39.555, 40.81, 42.1, 43.375],
-  "destruct": 44.72,
-  "burn": 45.06
+  "deng": [44.74, 45.06],
+  "destruct": 45.38,
+  "burn": 45.62
 }

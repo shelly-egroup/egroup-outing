@@ -214,11 +214,12 @@ const stems = [
   ["mission.wav", M.at, gain.mission, true],
   ["mission-hall.wav", M.at, gain.mission + SEND, false],
   ["mission-ring-hall.wav", M.at + missionEnd - 0.4, gain.mission - 5, false],
-  [sfx, 0, sfxGain, false],
+  // once the Mission has stopped, the blast and the burn are the loudest thing in the film
+  [sfx, 0, sfxGain, false, 0, `volume='if(gte(t,${(T.destruct - 0.05).toFixed(3)}),2,1)':eval=frame`],
 ];
 const inputs = stems.flatMap(([file]) => ["-i", path.isAbsolute(file) ? file : f(file)]);
 const shut = (end) => end ? `,afade=t=out:st=${(end - 0.12).toFixed(3)}:d=0.12` : "";
-const chains = stems.map(([, at, g, mono, end], i) => `[${i}]${mono ? "pan=stereo|c0=c0|c1=c0," : ""}aformat=sample_rates=${SR}:channel_layouts=stereo,volume=${g.toFixed(2)}dB,adelay=${Math.round(at * 1000)}:all=1,apad=whole_dur=${T.duration + 0.2}${shut(end)}[s${i}]`);
+const chains = stems.map(([, at, g, mono, end, extra], i) => `[${i}]${mono ? "pan=stereo|c0=c0|c1=c0," : ""}aformat=sample_rates=${SR}:channel_layouts=stereo,${extra ? extra + "," : ""}volume=${g.toFixed(2)}dB,adelay=${Math.round(at * 1000)}:all=1,apad=whole_dur=${T.duration + 0.2}${shut(end)}[s${i}]`);
 const mix = `${chains.join(";")};${stems.map((_, i) => `[s${i}]`).join("")}amix=inputs=${stems.length}:normalize=0:duration=longest,atrim=end=${T.duration + 0.15},acompressor=threshold=-17dB:ratio=1.7:attack=12:release=200:makeup=1[m]`;
 run([...inputs, "-filter_complex", mix, "-map", "[m]", "-c:a", "pcm_f32le", f("mix.wav")]);
 
