@@ -2,8 +2,10 @@
    Act I: spy-jazz cold open (E minor, 120 bpm, swung). Act II: a 5/4 mission ostinato (150 bpm, climbing D→E→F→G) with
    bongos and flute flicks, montage hits, a strobe riser, silence. Act III: the title burns in on a braam and choir, the
    date, the stinger's double shot and the last hit. Every cue comes from scripts/trailer/timeline.json.
-   window.composeScore({ sr, cues }) resolves to a stereo AudioBuffer. Deterministic: seeded noise, no Math.random. */
-window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
+   window.composeScore({ sr, cues, overMusic }) resolves to a stereo AudioBuffer. Deterministic: seeded noise, no Math.random.
+   overMusic plays only the trailer's weight (stabs, drums, braams, impacts, risers, shot, match, fuse) to lay over the
+   supplied recordings, retuned to them (see below). */
+window.composeScore = async function composeScore({ sr = 48000, cues: C, overMusic = false }) {
   const DUR = C.duration + 0.15;
   const ctx = new OfflineAudioContext(2, Math.ceil(sr * DUR), sr);
   let seed = 1029;
@@ -250,12 +252,12 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
   function lock(t) { for (const [dt, f] of [[0, 1760], [0.09, 2350]]) { const o = out(0, 0.15, 0.07), osc = ctx.createOscillator(); osc.type = "square"; osc.frequency.value = f; const lp = filt("lowpass", 6000), g = env(t + dt, 0.002, 1, 0.06); osc.connect(lp).connect(g).connect(o); osc.start(t + dt); osc.stop(t + dt + 0.1); } }
   function stamp(t) { taiko(t, 0.5, 1.6); const o = out(0, 0.2, 0.5), h = noiseSrc(t, 0.08), lp = filt("lowpass", 900), g = env(t, 0.001, 1, 0.07); h.connect(lp).connect(g).connect(o); }
   function beep(t, f = 1046.5, len = 0.16, vel = 0.5) { const o = out(0, 0.25, 0.11 * vel); for (const [r, a] of [[1, 1], [2, 0.18], [3, 0.06]]) { const osc = ctx.createOscillator(); osc.frequency.value = f * r; const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(a, t + 0.004); g.gain.setValueAtTime(a, t + len - 0.02); g.gain.linearRampToValueAtTime(0, t + len); osc.connect(g).connect(o); osc.start(t); osc.stop(t + len + 0.02); } }
-  function braam(t, root = "D1", dur = 3.6) {
+  function braam(t, root = "D1", dur = 3.6, open = false) {
     const o = out(0, 0.45, 0.16), ws = shaper(3), lp = filt("lowpass", 160, 1.2);
     lp.frequency.setValueAtTime(160, t); lp.frequency.exponentialRampToValueAtTime(2600, t + 0.07); lp.frequency.exponentialRampToValueAtTime(420, t + 1.6); lp.frequency.exponentialRampToValueAtTime(160, t + dur);
     const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + 0.02); g.gain.setTargetAtTime(0.55, t + 0.05, 0.4); g.gain.setTargetAtTime(0, t + dur * 0.55, dur * 0.18);
     ws.connect(lp).connect(g).connect(o);
-    for (const [s, a] of [[0, 1], [12, 0.8], [19, 0.6], [24, 0.45], [27, 0.25]]) for (const det of [-14, -4, 5, 15]) { const osc = ctx.createOscillator(); osc.type = "sawtooth"; osc.frequency.value = semi(root, s); osc.detune.value = det; const og = ctx.createGain(); og.gain.value = a * 0.35; osc.connect(og).connect(ws); osc.start(t); osc.stop(t + dur + 0.2); }
+    for (const [s, a] of [[0, 1], [12, 0.8], [19, 0.6], [24, 0.45], [27, 0.25]].slice(0, open ? 4 : 5)) for (const det of [-14, -4, 5, 15]) { const osc = ctx.createOscillator(); osc.type = "sawtooth"; osc.frequency.value = semi(root, s); osc.detune.value = det; const og = ctx.createGain(); og.gain.value = a * 0.35; osc.connect(og).connect(ws); osc.start(t); osc.stop(t + dur + 0.2); }
     const sub = ctx.createOscillator(); sub.frequency.setValueAtTime(hz(root) * 1.6, t); sub.frequency.exponentialRampToValueAtTime(hz(root), t + 0.25); const sg = env(t, 0.004, 0.9, dur * 0.8); sub.connect(sg).connect(out(0, 0, 0.5)); sub.start(t); sub.stop(t + dur);
     for (const [dt, p] of [[0, 1], [0.012, 0.85], [0.026, 1.18]]) taiko(t + dt, 1.1, p, (p - 1) * 2);
     crash(t, 0.9, 3.2);
@@ -299,6 +301,32 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
     for (const n of notes) for (const det of [-14, -5, 4, 13]) { const osc = ctx.createOscillator(); osc.type = "sawtooth"; osc.frequency.value = hz(n); osc.detune.value = det; const vib = ctx.createOscillator(); vib.frequency.value = 4.6 + rand(); const vd = ctx.createGain(); vd.gain.value = 9; vib.connect(vd).connect(osc.detune); vib.start(t); vib.stop(t + dur + 1.5); osc.connect(mixer); osc.start(t); osc.stop(t + dur + 1.5); }
   }
 
+  // Over the supplied recordings — 007 (F♯ minor) under Act I and the closing chord, the Mission (on D) under Acts II–III —
+  // the melodic instruments fall silent and only the trailer's weight plays: brass and piano stabs, timpani, taiko, crash,
+  // braam, impacts, risers, the shot, the match and the fuse. Act I moves up a tone (E → F♯), the ending to F♯; pitched drums
+  // land on the tonic underneath; past Act I the stabs are open fifths (no third against the melody) and the ostinato's
+  // climbing roots stay on D. The long fuse hiss under Act II sits lower.
+  if (overMusic) {
+    const mute = () => {};
+    guitar = bass = strings = stacc = synthBass = pluck = vibes = flute = choir = bongo = hat = ride = brush = tom = mute;
+    const act1 = (t) => t < C.ignite - 0.6, ending = (t) => t >= C.cut - 0.05;
+    const shift = (t) => (act1(t) ? 2 : ending(t) ? 4 : 0);
+    const tonic = (t) => (act1(t) || ending(t) ? "F#1" : "D1");
+    const snap = (t, n) => { const f = hz(n), r = hz(tonic(t)); return r * Math.pow(2, Math.round(Math.log2(f / r))); };
+    const fifths = (t, notes) => { const r = snap(t, notes.reduce((lo, n) => (hz(n) < hz(lo) ? n : lo))); return [r, r * 1.5, r * 2]; };
+    const brass0 = brass, piano0 = pianoHit, timp0 = timp, braam0 = braam;
+    brass = (t, notes, dur, o) => brass0(t, act1(t) ? notes.map((n) => semi(n, shift(t))) : fifths(t, notes), dur, o);
+    pianoHit = (t, n, vel, dur) => piano0(t, snap(t, n), vel, dur);
+    timp = (t, n, vel, dur) => timp0(t, snap(t, n), vel, dur);
+    braam = (t, root, dur) => braam0(t, snap(t, root || "D1"), dur, true);
+    riser = (t0, t1) => {
+      whoosh(t0, t1 - t0, { f0: 300, f1: 9000, vel: 0.9, p0: -0.3, p1: 0.3, q: 0.8 });
+      for (let t = t0; t < t1 - 0.02;) { taiko(t, 0.35 + 0.65 * ((t - t0) / (t1 - t0)), 1.3, 0); t += Math.max(0.05, 0.2 * (1 - (t - t0) / (t1 - t0))); }
+    };
+    const burning = fuse;
+    fuse = (t0, t1, levels) => burning(t0, t1, t1 - t0 > 2 ? levels.map(([t, v]) => [t, v * 0.4]) : levels);
+  }
+
   // ═══ ACT I — cold open ═══
   ["E4", "G4", "B4", "D5", "F#5"].forEach((n, i) => guitar(C.dots[i], n, 1.9 - i * 0.18, { vel: 0.78 + i * 0.05, pan: -0.55 + i * 0.27 }));
   strings(C.irisOpen, ["E3", "B3", "D#4", "G4"], C.barrel - C.irisOpen, { attack: 0.9, tremolo: 11, vel: 0.5, release: 0.25, gain: 0.05 });
@@ -338,7 +366,7 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
     bass(t, bassLine[i][0], 0.46, 0.85); bass(t + 0.5, bassLine[i][1], 0.46, 0.7);
     ride(t, 0.45); ride(t + 0.5, 0.35); ride(t + 0.833, 0.28); brush(t + 0.5, 0.5); hat(t + 0.5, 0.3);
   });
-  tune.forEach(([dt, n, len]) => { brass(C.titles[0] + dt, [n], len, { vel: 0.55, attack: 0.05, release: 0.18, gain: 0.07, bright: 0.7, pan: -0.15 }); vibes(C.titles[0] + dt, n.replace(/\d/, (d) => String(Number(d) + 1)), 1.2, 0.35, 0.3); });
+  if (!overMusic) tune.forEach(([dt, n, len]) => { brass(C.titles[0] + dt, [n], len, { vel: 0.55, attack: 0.05, release: 0.18, gain: 0.07, bright: 0.7, pan: -0.15 }); vibes(C.titles[0] + dt, n.replace(/\d/, (d) => String(Number(d) + 1)), 1.2, 0.35, 0.3); });
   revCymbal(C.ignite, 0.55, 0.3);
   whoosh(C.ignite - 0.5, 0.5, { f0: 250, f1: 7000, vel: 0.5, p0: 0.5, p1: -0.6 });
 
@@ -349,7 +377,7 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
   matchStrike(C.ignite);
   whoosh(C.typing[0][0] - 0.06, 0.16, { f0: 1800, f1: 7500, vel: 0.5, p0: -0.5, p1: 0.2 }); impact(C.typing[0][0], 0.45);
   fuse(C.ignite, C.blackout, [[C.ignite + 0.15, 0.22], [C.mission, 0.12], [M0, 0.06], [S0, 0.06], [C.blackout - 0.05, 0.4]]);
-  roots.forEach((root, b) => {
+  if (!overMusic) roots.forEach((root, b) => {
     const t0 = C.ignite + b * BAR;
     pat.forEach((s, i) => {
       const t = t0 + i * E8, acc = accents.has(i), n = semi(root, s);
@@ -377,7 +405,7 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
   shutter(C.cardA); shutter(C.cardB); lock(C.cardA + 0.12); lock(C.cardB + 0.12);
   impact(C.mission, 0.8);
   brass(C.missionLine, ["D3", "A3", "D4", "F4"], 0.3, { vel: 0.95, attack: 0.012, release: 0.2, gain: 0.08 }); pianoHit(C.missionLine, "D1", 0.7, 1.6); impact(C.missionLine, 1);
-  const rootAt = (t) => roots[Math.min(roots.length - 1, Math.max(0, Math.floor((t - C.ignite) / BAR)))];
+  const rootAt = (t) => (overMusic ? "D2" : roots[Math.min(roots.length - 1, Math.max(0, Math.floor((t - C.ignite) / BAR)))]);
   // a burst of crackle for the fuse's burn wipe and the target hit
   function crackle(t, len, vel = 0.5) { fuse(t, t + len, [[t + 0.01, vel], [t + len - 0.02, 0.0001]]); }
   crackle(M0, 0.42, 0.5);

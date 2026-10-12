@@ -1,6 +1,8 @@
 // Renders the trailer score: scripts/trailer/score.js runs in headless Chrome (OfflineAudioContext) on the cues in
 // scripts/trailer/timeline.json; ffmpeg masters it (gain into a look-ahead limiter) to a WAV that render-film.mjs muxes.
-//   CHROME_PATH=... FFMPEG_PATH=... node scripts/trailer/render-score.mjs [--out .trailer-build/score.wav]
+//   CHROME_PATH=... FFMPEG_PATH=... node scripts/trailer/render-score.mjs [--out .trailer-build/score.wav] [--over-music]
+// --over-music renders only the trailer's weight (stabs, drums, braams, impacts, shot, match, fuse), retuned to the supplied
+// recordings, as a stem for scripts/trailer/music.py to mix over them.
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -23,11 +25,12 @@ page.on("pageerror", (error) => console.error("[score]", error.message));
 await page.setContent("<!doctype html><title>score</title>");
 await page.addScriptTag({ content: fs.readFileSync(path.join(ROOT, "scripts/trailer/score.js"), "utf8") });
 const started = Date.now();
-const length = await page.evaluate(async ({ sr, cues }) => {
-  const buffer = await window.composeScore({ sr, cues });
+const overMusic = process.argv.includes("--over-music");
+const length = await page.evaluate(async ({ sr, cues, overMusic }) => {
+  const buffer = await window.composeScore({ sr, cues, overMusic });
   window.__score = buffer;
   return buffer.length;
-}, { sr: SR, cues });
+}, { sr: SR, cues, overMusic });
 console.log(`rendered ${(length / SR).toFixed(2)}s in ${((Date.now() - started) / 1000).toFixed(1)}s`);
 
 const CHUNK = SR * 5, parts = [];

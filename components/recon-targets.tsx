@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { reconSound } from "@/lib/recon-sound";
 
 type Who = "a" | "b";
 type Pose = "aim" | "stand" | "walk";
@@ -42,8 +43,9 @@ function dealRound(lastSpot: string): { who: Who; spot: Spot }[] {
 /**
  * An easter egg in the arena's surveillance feed: now and then a captain turns up — leaning out from behind a pillar, rising
  * from behind the barrels, standing far down the corridor or striding across the floor, in a pose that suits the spot — and a
- * tap or click fires the laser at them. A hit flashes them, throws sparks and knocks them out of the picture; the feed keeps
- * count. The mouse pointer itself is the rifle sight (a cursor image — no lag) and turns red over a target; on a touch
+ * tap or click fires the laser at them — with the rifle's zap; a hit flashes them, throws sparks, knocks them out of the picture
+ * and makes them cry out (a man's yell for the red captain, a woman's for the blue; lib/recon-sound.ts), a miss pings off the
+ * maze; the feed keeps count. The mouse pointer itself is the rifle sight (a cursor image — no lag) and turns red over a target; on a touch
  * screen a sight snaps onto each tap.
  * Only while the feed is on screen, and never with reduced motion.
  */
@@ -130,10 +132,11 @@ export default function ReconTargets() {
     // the shot: from the gun at the bottom of the frame to where it was aimed
     const gx = r.width / 2, gy = r.height + 6, len = Math.hypot(x - gx, y - gy), ang = Math.atan2(y - gy, x - gx);
     burst("rt-beam", gx, gy, [{ opacity: 1, transform: `rotate(${ang}rad) scaleX(0)` }, { opacity: 1, transform: `rotate(${ang}rad) scaleX(1)`, offset: .25 }, { opacity: 0, transform: `rotate(${ang}rad) scaleX(1)` }], { duration: 220, easing: "ease-out" }, { width: len + "px" });
+    reconSound.shot();
     burst("rt-muzzle", gx, r.height - 4, [{ opacity: 1, transform: "translate(-50%, -50%) scale(.6)" }, { opacity: 0, transform: "translate(-50%, -50%) scale(1.6)" }], { duration: 220, easing: "ease-out" });
     // a hit lands on the visible body
     if (onBody(event.clientX, event.clientY) && target) {
-      setTarget({ ...target, state: "hit" }); setHits(h => h + 1);
+      setTarget({ ...target, state: "hit" }); setHits(h => h + 1); reconSound.hit(target.who);
       burst("rt-flash", x, y, [{ opacity: .95, transform: "translate(-50%, -50%) scale(.3)" }, { opacity: 0, transform: "translate(-50%, -50%) scale(2.4)" }], { duration: 380, easing: "ease-out" });
       for (let k = 0; k < 14; k++) {
         const a = Math.random() * Math.PI * 2, d = 26 + Math.random() * 60;
@@ -142,6 +145,7 @@ export default function ReconTargets() {
       burst("rt-score", x, y - 18, [{ opacity: 0, transform: "translate(-50%, 0) scale(.6)" }, { opacity: 1, transform: "translate(-50%, -16px) scale(1.1)", offset: .2 }, { opacity: 0, transform: "translate(-50%, -46px) scale(1)" }], { duration: 900, easing: "ease-out" });
     } else {
       // a miss ricochets off the maze
+      reconSound.miss();
       for (let k = 0; k < 5; k++) {
         const a = -Math.PI / 2 + (Math.random() - .5) * 2.2, d = 10 + Math.random() * 22;
         burst("rt-spark is-miss", x, y, [{ opacity: 1, transform: "translate(-50%, -50%)" }, { opacity: 0, transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d}px))` }], { duration: 260 + Math.random() * 160, easing: "ease-out" });

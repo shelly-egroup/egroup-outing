@@ -28,7 +28,10 @@ let done = 0; const started = Date.now();
 const progress = setInterval(() => process.stdout.write(`\r  ${done}/${total} frames, ${((Date.now() - started) / 1000).toFixed(0)}s   `), 1000);
 
 // motion blur: average each group of SUB captures, keep one frame per group; then a gentle bloom on the highlights
-const blurAndBloom = `tmix=frames=${SUB},select='eq(mod(n\\,${SUB})\\,${SUB - 1})',setpts=N/${FPS}/TB,format=gbrp,split[a][b];[b]curves=all='0/0 0.62/0 1/1',gblur=sigma=${Math.round(W / 110)}[g];[a][g]blend=all_mode=screen:all_opacity=0.32,format=yuv420p`;
+const blurAndBloom = `tmix=frames=${SUB},select='eq(mod(n\\,${SUB})\\,${SUB - 1})',setpts=N/${FPS}/TB,format=gbrp,split[a][b];[b]curves=all='0/0 0.62/0 1/1',gblur=sigma=${Math.round(W / 110)}[g];[a][g]blend=all_mode=screen:all_opacity=0.32,scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,setparams=colorspace=bt709:color_primaries=bt709:color_trc=bt709:range=tv`;
+// The captures are JPEGs (BT.601, full range): convert explicitly to BT.709 limited range and tag it, so every ffmpeg build
+// produces the same, correctly labelled colours.
+const COLOR = ["-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv"];
 
 async function work(w) {
   const a = f0 + w * per, b = Math.min(f1, a + per); if (a >= b) return null;
@@ -40,7 +43,7 @@ async function work(w) {
   await page.waitForFunction(() => window.FILM?.isReady, null, { timeout: 180000 });
   const cdp = await page.context().newCDPSession(page);
   const ff = spawn(FFMPEG, ["-y", "-hide_banner", "-loglevel", "error", "-f", "image2pipe", "-framerate", String(FPS * SUB), "-c:v", "mjpeg", "-i", "-",
-    "-filter_complex", blurAndBloom, "-c:v", "libx264", "-preset", "medium", "-crf", "12", "-pix_fmt", "yuv420p", "-r", String(FPS), file], { stdio: ["pipe", "inherit", "inherit"] });
+    "-filter_complex", blurAndBloom, "-c:v", "libx264", "-preset", "medium", "-crf", "12", "-pix_fmt", "yuv420p", ...COLOR, "-r", String(FPS), file], { stdio: ["pipe", "inherit", "inherit"] });
   const write = (buf) => new Promise((res) => (ff.stdin.write(buf) ? res() : ff.stdin.once("drain", res)));
   for (let f = a; f < b; f++) {
     for (let s = 0; s < SUB; s++) {
@@ -67,7 +70,7 @@ if (audio) args.push("-i", path.resolve(ROOT, audio));
 if (grain) args.push("-vf", `noise=alls=${grain}:allf=t`);
 args.push("-map", "0:v"); if (audio) args.push("-map", "1:a", "-c:a", "aac", "-b:a", "160k", "-shortest");
 args.push("-c:v", "libx264", "-preset", "slow", "-crf", crf, "-pix_fmt", "yuv420p", "-profile:v", "high", "-movflags", "+faststart",
-  "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", out);
+  ...COLOR, out);
 fs.mkdirSync(path.dirname(out), { recursive: true });
 await new Promise((res, rej) => { const pr = spawn(FFMPEG, args, { stdio: "inherit" }); pr.on("close", (c) => (c === 0 ? res() : rej(new Error("encode failed " + c)))); });
 console.log("→", path.relative(ROOT, out), (fs.statSync(out).size / 1e6).toFixed(1) + " MB");

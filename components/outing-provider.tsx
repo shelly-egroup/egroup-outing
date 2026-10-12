@@ -505,13 +505,10 @@ export function OutingProvider({ children }: { children: ReactNode }) {
     return { uid, team };
   }
   /** Everyone still to be placed, drawn at once into the two teams — balanced, the one left over to either team; captains
-   *  and earlier placements stay. An organiser any time, a captain on their turn; only the people placed are written. */
+   *  and earlier placements stay. Organisers only (it places people on both teams); only the people placed are written. */
   async function drawEveryone() {
     const uids = Object.keys(votes), placed = withCaptains(teams, teamConfig.captains);
-    if (!isAdmin) {
-      const team = pickingTeam();
-      if (teamConfig.turns && pickTurn(uids, placed, teamConfig.captains, teamConfig.firstPick || "red") !== team) throw new Error("現在輪到對方隊長選人。");
-    }
+    if (!isAdmin) throw new Error("只有主辦可以一鍵隨機分隊。");
     const open = uids.filter(uid => !placed[uid]);
     if (!open.length) return 0;
     const next = assignTeams(uids, placed, { keep: true, fixed: withCaptains({}, teamConfig.captains) });

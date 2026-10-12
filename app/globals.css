@@ -2914,9 +2914,10 @@ body:has(dialog[open]) .plan-switch-dock { visibility: hidden; }
 .admin-teams-switch button:disabled { opacity: .55; cursor: not-allowed; }
 /* the team set-up: switches, the first pick, the two captains */
 .admin-teams-config { display: grid; gap: 12px; margin: 20px 0; padding: 16px; border: 2px solid var(--ink); background: #fffdf5; }
-.admin-teams-toggle { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 14px; cursor: pointer; }
+/* label.: outranks the generic `.admin-page label { display: block }`, which would stack the text under a collapsed track. */
+label.admin-teams-toggle { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 14px; cursor: pointer; }
 .admin-teams-toggle input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.admin-teams-toggle-track { position: relative; width: 52px; height: 30px; border: 2px solid var(--ink); background: #e2dfd8; transition: background .2s; }
+.admin-teams-toggle-track { position: relative; display: block; flex: none; width: 52px; height: 30px; border: 2px solid var(--ink); background: #e2dfd8; transition: background .2s; }
 .admin-teams-toggle-track i { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border: 2px solid var(--ink); background: #fff; transition: transform .2s; }
 .admin-teams-toggle[data-on="true"] .admin-teams-toggle-track { background: #1f9d55; }
 .admin-teams-toggle[data-on="true"] .admin-teams-toggle-track i { transform: translateX(22px); }
@@ -2949,6 +2950,15 @@ body:has(dialog[open]) .plan-switch-dock { visibility: hidden; }
 .admin-teams-live i { width: 10px; height: 10px; border-radius: 50%; background: #9aa1aa; }
 .admin-teams-live[data-on="true"] { border-color: #1f9d55; background: #eefbf3; } .admin-teams-live[data-on="true"] i { background: #1f9d55; box-shadow: 0 0 0 4px #1f9d5533; }
 .admin-teams-live span { color: #5b6470; font-weight: 800; }
+.admin-teams-live em { margin-left: auto; color: #a15c00; font-size: 13px; font-style: normal; font-weight: 800; }
+/* set-up changes wait for the organiser: the changed step is marked, and a bar lists what confirming will do */
+.admin-step[data-pending] { border-color: #e58a00; box-shadow: 4px 4px 0 #e58a00; }
+.admin-pending-tag { display: inline-block; margin-left: 10px; padding: 3px 8px; background: #e58a00; color: #fff; font-size: 12px; font-weight: 800; vertical-align: middle; }
+.admin-confirm { position: sticky; bottom: 12px; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; padding: 14px 18px; border: 2px solid var(--ink); background: #fff7e6; box-shadow: 4px 4px 0 var(--ink); }
+.admin-confirm strong { display: block; font-size: 15px; }
+.admin-confirm ul { margin: 6px 0 0; padding-left: 18px; font-size: 14px; line-height: 1.7; }
+.admin-confirm small { display: block; margin-top: 4px; color: #b42318; font-size: 12px; }
+.admin-confirm-actions { display: flex; gap: 10px; }
 .admin-steps { display: grid; gap: 14px; margin: 18px 0 28px; padding: 0; list-style: none; }
 .admin-step { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 16px; padding: 18px; border: 2px solid var(--ink); background: #fffdf5; }
 .admin-step-no { display: grid; place-items: center; width: 44px; height: 44px; border: 2px solid var(--ink); background: var(--ink); color: #fff; font-size: 20px; font-weight: 900; }

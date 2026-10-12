@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import { Face } from "./mission-accept";
 import { useOuting } from "./outing-provider";
 import { useInView } from "./use-in-view";
+import { draftSound, useDraftSound } from "@/lib/draft-sound";
 import { MARK_AGENT_WHOLE } from "@/lib/title-mark-paths";
 import { captainOf, otherTeam, pickTurn, TEAM_LABEL, teamCounts, TEAMS, withCaptains, type Captain, type Team, type TeamMap } from "@/lib/teams";
 import type { PublicVote } from "@/lib/trips";
@@ -34,8 +35,8 @@ function FirstPick({ team, extra }: { team: Team; extra: boolean }) {
  * of the agents still to be placed, with a scoreboard and VS on top. Whoever may act gets one desk above the cards: the
  * captain on the clock (in turn from the first pick, drawn by lot and played as a selector light, if the organisers want
  * turns) and the organisers, who can do everything a captain can for either team, any time. The desk draws one agent — a
- * light runs over the cards, slows and stops on the one drawn — or everyone left at once; a card clicked locks onto the
- * desk to be placed by hand. Every pick and draw plays on every open page.
+ * light runs over the cards, slows and stops on the one drawn — and, for the organisers only, everyone left at once; a card
+ * clicked locks onto the desk to be placed by hand. Every pick and draw plays, with its sound, on every open page.
  */
 export default function TeamBoard() {
   const outing = useOuting();
@@ -43,6 +44,7 @@ export default function TeamBoard() {
   const [spot, setSpot] = useState(""), [won, setWon] = useState(false), [revealed, setRevealed] = useState(0), [confirmAll, setConfirmAll] = useState(false);
   const [ref, seen, round] = useInView<HTMLDivElement>("0px 0px -12% 0px");
   const deskRef = useRef<HTMLDivElement>(null);
+  const sound = useDraftSound();
   const { votes, teams, teamConfig: config, isAdmin: admin, teamDraw: draw, user } = outing, { captains, picking, turns } = config;
   const me = user ? captainOf(captains, user.uid, user.email) : undefined;
   const uids = Object.keys(votes), placedNow = withCaptains(teams, captains);
@@ -89,7 +91,9 @@ export default function TeamBoard() {
         { transform: `translate(${dx * .42}px, ${dy * .42 - lift}px) scale(1.14) rotate(${tilt * .5}deg)`, filter: `brightness(1.45) drop-shadow(0 0 22px ${glow})`, offset: .5 },
         { transform: "none", filter: "brightness(1) drop-shadow(0 0 0 transparent)" },
       ], { duration: 760, delay, easing: "cubic-bezier(.3,.7,.2,1)", fill: "backwards" });
-      window.setTimeout(() => { el.classList.remove("is-landed"); void el.offsetWidth; el.classList.add("is-landed"); }, delay + 700);
+      const loud = moved.length > 4 ? .45 : 1;
+      window.setTimeout(() => draftSound.whoosh(loud), delay);
+      window.setTimeout(() => { el.classList.remove("is-landed"); void el.offsetWidth; el.classList.add("is-landed"); if (team) draftSound.stamp(loud); else draftSound.release(); }, delay + 700);
     });
     if (moved.length) setNews(moved.map(uid => name(uid) + (placed[uid] ? " 加入" + TEAM_LABEL[placed[uid]] : " 回到待分隊")).join("，"));
     spots.current = now; last.current = placed;
@@ -100,7 +104,7 @@ export default function TeamBoard() {
   useEffect(() => {
     if (!pending?.uid) return;
     const drawn = pending.uid, seq = pending.seq;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setRevealed(seq); return; }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { draftSound.lock(pending.team); setRevealed(seq); return; }
     const field = uids.filter(uid => !placedNow[uid] || uid === drawn), timers: number[] = [], STEPS = 16;
     let t = 150, at = "";
     for (let i = 0; i < STEPS; i++) {
@@ -108,9 +112,11 @@ export default function TeamBoard() {
       const options = i === STEPS - 1 ? [drawn] : field.filter(uid => uid !== at && (i < STEPS - 2 || uid !== drawn));
       const next = options.length ? options[Math.floor(Math.random() * options.length)] : at ? "" : drawn;
       at = next;
-      timers.push(window.setTimeout(() => setSpot(next), t));
+      const hop = i;
+      timers.push(window.setTimeout(() => { setSpot(next); draftSound.hop(hop, STEPS); }, t));
     }
-    timers.push(window.setTimeout(() => setWon(true), t));
+    const team = pending.team;
+    timers.push(window.setTimeout(() => { setWon(true); draftSound.lock(team); }, t));
     timers.push(window.setTimeout(() => { setRevealed(seq); setSpot(""); setWon(false); }, t + 950));
     return () => { timers.forEach(clearTimeout); setSpot(""); setWon(false); };
   }, [pending?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -150,7 +156,7 @@ export default function TeamBoard() {
     </> : <>
       <span className="draft-desk-label"><small>{actor === "admin" ? "只有主辦看得到" : "輪到你・只有你看得到"}</small>{actor === "admin" ? "主辦抽籤台" : "隊長抽籤台"}</span>
       <button type="button" className="draft-desk-one" disabled={rolling || !!busy} onClick={drawNext}>{actor === "admin" && turn ? "幫" + TEAM_LABEL[turn] + "抽一位" : "抽一位"}</button>
-      <button type="button" className="draft-desk-all" data-confirm={confirmAll || undefined} disabled={rolling || !!busy} onClick={drawAll}>{confirmAll ? "再按一次確認" : "一鍵隨機分隊"}</button>
+      {actor === "admin" && <button type="button" className="draft-desk-all" data-confirm={confirmAll || undefined} disabled={rolling || !!busy} onClick={drawAll}>{confirmAll ? "再按一次確認" : "一鍵隨機分隊"}</button>}
       <p className="draft-desk-hint">{rolling ? "抽籤中…" : confirmAll ? "剩下的人會隨機分進兩隊，多出的一位隨機。" : actor === "admin" ? "或點一張卡片，直接編入任一隊。" : "或點一張卡片，親手選人。"}</p>
     </>}
   </div>;
@@ -180,7 +186,9 @@ export default function TeamBoard() {
     <div key={round} className="draft-stage" data-hidden={!config.published || undefined}>
       <i className="draft-bg" aria-hidden="true" />
       <div className="draft-head">
-        <p className="draft-kicker"><i data-state={rolling || (picking && pool.length) ? "live" : "done"} />TEAM DRAFT<span>{status}</span></p>
+        <p className="draft-kicker"><i data-state={rolling || (picking && pool.length) ? "live" : "done"} />TEAM DRAFT<span>{status}</span>
+          <button type="button" className="draft-sound" data-state={sound.state} aria-pressed={sound.state !== "off"} onClick={sound.toggle}>{sound.state === "locked" ? "點一下開啟音效" : sound.state === "on" ? "音效 開" : "音效 關"}</button>
+        </p>
         <div className="draft-score" aria-label={TEAM_LABEL.red + " " + counts.red + " 人，" + TEAM_LABEL.blue + " " + counts.blue + " 人"}>
           <span data-team="red"><b key={"r" + counts.red}>{pad(counts.red)}</b><small>{TEAM_LABEL.red}</small></span>
           <span className="draft-vs" aria-hidden="true">VS</span>

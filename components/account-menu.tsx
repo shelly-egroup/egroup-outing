@@ -26,9 +26,9 @@ export function Avatar({ name, src, hat = false }: { name: string; src: string; 
   );
 }
 /** `organizerInMenu` tucks the organizer link into the account popover, for headers short on room. `agent` dresses it for the
- *  mission page: an agent sign-in with a fingerprint, and the photo wearing a fedora. */
+ *  mission page: an agent sign-in with a fingerprint, and — once the mission is accepted — the photo wearing a fedora. */
 export default function AccountMenu({ organizerInMenu = false, agent = false }: { organizerInMenu?: boolean; agent?: boolean }) {
-  const { user, authReady, signingIn, isAdmin, votingAccess, login, logout } = useOuting();
+  const { user, authReady, signingIn, isAdmin, votingAccess, votes, login, logout } = useOuting();
   const menuRef = useRef<HTMLDetailsElement>(null);
   const [signingOut, setSigningOut] = useState(false);
   const [logoutError, setLogoutError] = useState("");
@@ -63,7 +63,7 @@ export default function AccountMenu({ organizerInMenu = false, agent = false }: 
           if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget as Node)) event.currentTarget.open = false;
         }}>
           <summary className="account-trigger" aria-label={(user.displayName || "探員") + "的帳號選單"}>
-            <Avatar name={user.displayName || "探員"} src={user.photoURL || ""} hat={agent} />
+            <Avatar name={user.displayName || "探員"} src={user.photoURL || ""} hat={agent && !!votes[user.uid]} />
             <span className="account-name">{user.displayName || "我的帳號"}</span>
             <svg className="account-menu-dots" aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><circle cx="3" cy="9" r="1.5" /><circle cx="9" cy="9" r="1.5" /><circle cx="15" cy="9" r="1.5" /></svg>
           </summary>

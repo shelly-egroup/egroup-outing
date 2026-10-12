@@ -164,19 +164,17 @@ function Briefing({ name, destroy, gone, onDestroyed }: { name?: string; destroy
   </div>;
 }
 
-/** Everyone who has accepted, as dossier photos in the order they accepted; once the organisers publish the teams, each tile
- *  carries its team colour and the captains are marked (the team board under the console shows the teams themselves). */
+/** Everyone who has accepted, as dossier photos in the order they accepted; once the organisers publish the teams, each tile's
+ *  frame takes its team colour — no labels (the team board under the console shows the teams themselves). */
 function AgentRoster({ me }: { me?: string }) {
   const { votes, votesReady, votesError, catalogStatus, teams, teamConfig } = useOuting();
   const agents = Object.entries(votes).sort(([, a], [, b]) => (a.updatedAt || 0) - (b.updatedAt || 0));
   const shown = teamConfig.published, placed = shown ? withCaptains(teams, teamConfig.captains) : {};
   const offline = !votesReady && (catalogStatus === "error" || !!votesError);
   const grid = (rows: [string, PublicVote][]) => <ul className="dossier-grid">
-    {rows.map(([uid, vote]) => { const leads = shown ? captainOf(teamConfig.captains, uid) : undefined;
-      return <li key={uid} className={uid === me ? "is-me" : undefined} data-team={placed[uid] || "open"}>
-        <Face vote={vote} /><span>{vote.displayName || "探員"}</span>{uid === me && <b>你</b>}
-        {leads && <em className="dossier-captain" data-team={leads}>{TEAM_LABEL[leads]}隊長</em>}
-      </li>; })}
+    {rows.map(([uid, vote]) => <li key={uid} className={uid === me ? "is-me" : undefined} data-team={placed[uid] || "open"}>
+      <Face vote={vote} /><span>{vote.displayName || "探員"}</span>{uid === me && <b>你</b>}
+    </li>)}
   </ul>;
   return <div className="roster" aria-live="polite">
     <p className="roster-head"><span>AGENTS ON MISSION</span><b>{votesReady ? agents.length : "—"}</b><small>位特務已接受任務</small></p>
@@ -206,7 +204,7 @@ function AgentFile({ vote, name, team, leading = false, familyCount, note, fresh
       <div><dt>備註</dt><dd>{note || "無"}</dd></div>
     </dl>
     {fresh && <p className="agent-confirm" role="status"><span aria-hidden="true">&gt;</span>身分確認・任務已接受・10.29 戰場見<b aria-hidden="true">✓</b></p>}
-    <p className="accept-actions">{actions}</p>
+    <div className="accept-actions">{actions}</div>
   </div>;
 }
 
@@ -238,7 +236,7 @@ function DormantFile({ name, photo, fresh, actions }: { name: string; photo: str
       <div><dt>行蹤</dt><dd><span className="dormant-redact">機密，無可奉告</span></dd></div>
     </dl>
     <p className="dormant-line" role="status"><span aria-hidden="true">&gt;</span>收到。這次任務你不在場——<em>主辦單位將否認知情</em>。</p>
-    <p className="accept-actions">{actions}</p>
+    <div className="accept-actions">{actions}</div>
   </div>;
 }
 
@@ -285,14 +283,14 @@ export default function MissionAccept() {
   let panel: React.ReactNode;
   if (!authReady || (user && (!profileReady || !detailsReady))) panel = <LoadingIndicator label="確認特務身分" />;
   else if (!user) panel = <div className="accept-call">
-    <Scanner mode="tap" label={signingIn ? "驗證中…" : "驗證身分，接受任務"} sub="以公司 Google 帳號（egroup. 開頭）登入" busy={signingIn} onConfirm={login} />
+    <Scanner mode="tap" label={signingIn ? "驗證中…" : "驗證身分，接受任務"} sub="出示總部核發的 egroup. 探員證件" busy={signingIn} onConfirm={login} />
     <p className="accept-hint">登入後填上注意事項與同行家眷；之前填過的探員也可以隨時進來更新。</p>
   </div>;
   else if (!canVote) panel = <div className="accept-denied" role="status">
     <span className="ms-label">{votingAccess === "rejected" ? "ACCESS DENIED" : "CLEARANCE PENDING"}</span>
     <strong>{votingAccess === "rejected" ? "這個帳號沒有通過審核" : "等待主辦人確認身分"}</strong>
     <p>{votingAccess === "rejected" ? "請聯絡主辦人，或改用 egroup. 開頭的 Google 帳號。" : "主辦人確認後，這裡會自動開放接受任務。"}</p>
-    <button type="button" className="accept-link" onClick={login}>改用公司 Google 帳號 →</button>
+    <button type="button" className="accept-link" onClick={login}>改出示總部核發的 egroup. 證件 →</button>
   </div>;
   else if (mine && !editing) panel = <AgentFile vote={mine} name={mine.displayName || user.displayName || "特務"} team={team} leading={leading} familyCount={myDetails?.familyCount || 0} note={myDetails?.note?.trim() || ""} fresh={justAccepted}
     actions={<><button type="button" className="accept-link" onClick={() => { setEditing(true); setJustAccepted(false); }}>修改任務資料</button><Decline busy={declining} failed={declineFailed} onDecline={() => void decline()} /></>} />;

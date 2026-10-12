@@ -698,8 +698,6 @@ body:has(.mission-page), body:has(.mission-page)::before { background: #050506; 
 .dossier-grid li.is-me { border-color: rgb(93 242 166 / .55); animation: roster-in .5s var(--ms-out) both, roster-me 1.8s .3s ease-out; }
 @keyframes roster-me { 0% { box-shadow: 0 0 0 0 rgb(93 242 166 / .7); background: rgb(93 242 166 / .2); } 100% { box-shadow: 0 0 0 14px rgb(93 242 166 / 0); } }
 /* a captain's tile in the roster, once the teams are published */
-.dossier-captain { position: absolute; left: 6px; top: 6px; padding: 2px 5px; font: 800 10px/1 var(--ms-sans); font-style: normal; color: #fff; }
-.dossier-captain[data-team="red"] { background: var(--ms-laser); } .dossier-captain[data-team="blue"] { background: var(--ms-blue); }
 /* ── 02 The team draft, under the accept console — staged like the captains' face-off ── */
 .ms-section .wrap > .ms-accept-term + .ms-teams-term { margin-top: 20px; }
 .ms-teams-term .term-body { padding: 0; }
@@ -716,6 +714,12 @@ body:has(.mission-page), body:has(.mission-page)::before { background: #050506; 
 .draft-kicker i { width: 8px; height: 8px; border-radius: 50%; background: var(--ms-green); box-shadow: 0 0 10px var(--ms-green); }
 .draft-kicker i[data-state="live"] { background: var(--ms-laser); box-shadow: 0 0 10px var(--ms-laser); animation: ms-blink 1s step-end infinite; }
 .draft-kicker span { padding-left: 12px; border-left: 1px solid rgb(242 237 228 / .25); font: 800 14px/1 var(--ms-sans); letter-spacing: .16em; color: var(--ms-paper); }
+/* the draft's sound switch: a quiet chip; it pulses while the browser still waits for a first press to allow sound */
+.draft-sound { padding: 6px 10px; border: 1px solid rgb(242 237 228 / .3); background: transparent; color: var(--ms-dim); font: 700 11px/1 var(--ms-mono); letter-spacing: .14em; cursor: pointer; }
+.draft-sound[data-state="on"] { border-color: var(--ms-green); color: var(--ms-paper); }
+.draft-sound[data-state="locked"] { border-color: var(--ms-laser); color: var(--ms-paper); animation: draft-sound-wait 1.6s ease-in-out infinite; }
+@keyframes draft-sound-wait { 50% { opacity: .55; } }
+.draft-sound:focus-visible { outline: 2px solid var(--ms-paper); outline-offset: 2px; }
 .draft-score { display: flex; align-items: center; gap: clamp(18px, 3.4vw, 46px); }
 .draft-score > span[data-team] { display: grid; justify-items: center; gap: 6px; }
 .draft-score b { display: block; font: 700 clamp(46px, 6.2vw, 84px)/.9 var(--ms-mono); animation: draft-tick .5s var(--ms-out) both; }
