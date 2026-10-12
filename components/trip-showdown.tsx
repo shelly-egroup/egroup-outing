@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSectionReveal } from "./use-section-reveal";
 import { useTallSticky } from "./use-tall-sticky";
 import { OPENING_IMAGES } from "@/lib/opening-assets";
-import ShowLogo from "./show-logo";
+import TitleMark from "./title-mark";
 import CautionTape from "./caution-tape";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import OutingHeader from "./outing-header";
@@ -76,9 +76,9 @@ export default function TripShowdown() {
   const catalog = remoteCatalog || defaultCatalog;
   const eventAnnouncement = catalog.settings.title + " · 兩個方案皆自行前往";
   const plans = sortedPlans(catalog).filter(([, plan]) => plan.active);
-  const [intro, setIntro] = useState(false), [introReady, setIntroReady] = useState(false);
+  const [intro, setIntro] = useState(false), [introReady, setIntroReady] = useState(false), [replaying, setReplaying] = useState(false);
   useLayoutEffect(() => { setIntro(!openingHistory.hasSeen()); setIntroReady(true); }, []);
-  // After the opening, cue the next step so the "your vote decides" ending leads straight into choosing.
+  // After the trailer, cue the key visual's first action so the film hands straight over to the mission.
   const [cueNext, setCueNext] = useState(false);
   const nextStepRef = useRef<HTMLAnchorElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
@@ -214,27 +214,18 @@ export default function TripShowdown() {
       setCopyStatus("無法自動複製，請選取摘要文字複製。");
     }
   }
-  // The trailer announces the decided trip (plan B) with the final tally, looked up by plan code rather than position.
+  // The key visual presents the chosen trip (plan B), looked up by plan code rather than position.
   const planByCode = (code: string) => Object.entries(catalog.plans).find(([, plan]) => plan.code === code);
-  const tally = (code: string) => { const id = planByCode(code)?.[0]; return id ? Object.values(votes).filter(item => item.planId === id).length : 0; };
   if (!introReady) return <OutingLoading />;
   return (
     <>
-      {intro && (
-        <OpeningAnimation
-          onFinish={finishIntro}
-          date={catalog.settings.eventDate.slice(5).replace("-", ".")}
-          plans={[planByCode("A")?.[1].shortName || "極限體能派", planByCode("B")?.[1].shortName || "熱血對戰派"]}
-          standings={votesReady ? [tally("A"), tally("B")] : null}
-        />
-      )}
+      {intro && <OpeningAnimation onFinish={finishIntro} autoStart={replaying} />}
       <div ref={pageRef} hidden={intro} className="outing-page">
         <OutingHeader active={!intro} heroActions={heroActionsRef} vote={authReady && votesReady && actualVote ? headerVote : undefined}
           title={catalog.settings.title} eventDate={catalog.settings.eventDate} closesAt={catalog.settings.closesAt} votingEnabled={catalog.settings.votingOpen} now={now}
-          teams={votesReady ? plans.map(([id, plan]) => ({ name: plan.shortName, color: plan.color, count: Object.values(votes).filter(item => item.planId === id).length })) : undefined}
-          total={votesReady ? Object.keys(votes).length : undefined} expected={catalog.settings.expectedVoters} hasVoted={!!actualVote} />
+          hasVoted={!!actualVote} />
         <MissionHero eventDate={catalog.settings.eventDate} plan={planByCode("B")?.[1]} ready={introReady && !intro} cued={cueNext}
-          actionsRef={heroActionsRef} primaryRef={nextStepRef} onReplay={() => setIntro(true)} />
+          actionsRef={heroActionsRef} primaryRef={nextStepRef} onReplay={() => { setReplaying(true); setIntro(true); }} />
         <main className="wrap">
           <ol className="journey" aria-label="投票步驟">
             <li className="current">
@@ -472,7 +463,7 @@ export default function TripShowdown() {
                 <CautionTape tone="ink" className="tape-upper" words={[plans[0]?.[1].shortName || "極限體能派", planLine(plans[0]?.[1]) || "忍者闖關＋好食在食堂", "TEAM A"]} />
                 <CautionTape reverse className="tape-lower" words={[plans[1]?.[1].shortName || "熱血對戰派", planLine(plans[1]?.[1]) || "雷射槍戰＋飯店下午茶", "TEAM B"]} />
               </div>
-              <ShowLogo className="footer-lockup" />
+              <TitleMark className="footer-lockup" sub="AUTUMN AGENTS" />
             </div>
             <h2 className="footer-title">秋遊去哪，<em>你說了算。</em></h2>
             <a href={actualVote ? "#selection" : "#plans"} className="button button-yellow footer-cta">{actualVote ? "查看我的一票" : "現在就去選陣營"}</a>

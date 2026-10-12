@@ -26,19 +26,11 @@
 .sd-vertical { writing-mode: vertical-rl; }
 .sd-cutout { filter: var(--sd-fringe); }
 
-/* ─── Lockup ─── */
-.show-logo { display: inline-block; margin: 0; font-size: var(--logo-size, 96px); font-weight: 900; line-height: .92; letter-spacing: -.02em; color: #fff; }
-.show-logo .logo-art { position: relative; display: inline-grid; justify-items: start; transform: rotate(-6deg) skewX(-10deg); transform-origin: 50% 60%; }
-.logo-word { display: inline-grid; }
-.logo-word > span { grid-area: 1 / 1; }
-.logo-halo { color: transparent; -webkit-text-stroke: .22em var(--sd-cyan); }
-.logo-edge { color: #07090c; -webkit-text-stroke: .12em #07090c; text-shadow: .08em .09em 0 #07090c; }
-.logo-face { color: transparent; -webkit-background-clip: text; background-clip: text; }
-.logo-jiu { margin-left: .5em; font-size: 1em; }
-.logo-jiu .logo-face { background-image: linear-gradient(176deg, #ffffff 0 38%, #c9ced6 46%, #f6f7f9 58%, #9ca3ad 100%); }
-.logo-line { display: flex; align-items: center; margin: -.16em 0 0 -.06em; font-size: .6em; }
-.logo-blue .logo-face { background-image: linear-gradient(180deg, #8ddcff 0%, #44bcf3 42%, #1d6fe6 100%); }
-.logo-pink .logo-face { background-image: linear-gradient(180deg, #ff9cc6 0%, #f23b8b 44%, #cf0758 100%); }
-.logo-bolt { width: .5em; height: .9em; margin: 0 -.04em 0 -.02em; overflow: visible; position: relative; z-index: 1; }
-.logo-bolt path { fill: #fff; stroke: #07090c; stroke-width: 5; stroke-linejoin: round; paint-order: stroke; }
-.logo-tag { justify-self: end; margin: -.02em -.1em 0 0; padding: .3em .7em .26em; background: #07090c; color: #fff; font: italic 600 .17em/1 var(--sd-cond); letter-spacing: .14em; white-space: nowrap; clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%); }
+/* ─── Title mark: 秋遊特務 in brushed chrome, the trailer's title card ─── */
+.title-mark { display: inline-flex; flex-direction: column; align-items: center; gap: .2em; margin: 0; font-size: var(--mark-size, 64px); line-height: 1; }
+.tm-word { position: relative; display: block; font: 900 1em/1.05 "Noto Serif TC", "Songti TC", serif; letter-spacing: .12em; margin-right: -.12em; white-space: nowrap; }
+.tm-face { display: block; color: transparent; background: linear-gradient(178deg, #ffffff 0%, #e9ecef 30%, #9aa1aa 47%, #f6f7f8 53%, #c4c9cf 70%, #6e757e 100%); -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 .03em 0 rgb(0 0 0 / .55)) drop-shadow(0 .1em .25em rgb(0 0 0 / .45)); }
+.tm-sheen { position: absolute; inset: 0; color: transparent; background: linear-gradient(105deg, transparent 0 40%, rgb(255 255 255 / .9) 48%, rgb(255 210 215 / .85) 50%, transparent 58% 100%); background-size: 260% 100%; background-position: 140% 0; -webkit-background-clip: text; background-clip: text; animation: tm-sheen 7s 1.4s ease-in-out infinite; }
+@keyframes tm-sheen { 0%, 72% { background-position: 140% 0; } 100% { background-position: -40% 0; } }
+.tm-sub { font: 700 .17em/1 "Cinzel", "Marcellus", serif; letter-spacing: .9em; margin-right: -.9em; color: rgb(243 238 230 / .82); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .tm-sheen { animation: none; } }

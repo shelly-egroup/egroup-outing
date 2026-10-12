@@ -1,0 +1,719 @@
+// 秋遊特務 — trailer composition. Pure function of time: FILM.seek(t) poses every layer for t (seconds), so the renderer can
+// sample sub-frames for motion blur. Layout follows ?ar=16x9 (2.39:1 picture between bars) or ?ar=9x16 (full frame).
+const q = new URLSearchParams(location.search);
+const AR = q.get("ar") === "9x16" ? "9x16" : "16x9";
+const TALL = AR === "9x16";
+document.documentElement.dataset.ar = AR;
+const T = await (await fetch("../timeline.json")).json();
+const A = (n) => "assets/" + n;
+
+const stage = document.getElementById("stage"), pic = document.querySelector(".pic"), cam = document.querySelector(".cam"), flashEl = document.querySelector(".flash");
+const canvas = document.querySelector(".fx"), g = canvas.getContext("2d");
+const SW = stage.clientWidth, SH = stage.clientHeight, PW = pic.clientWidth, PH = pic.clientHeight, PY = (SH - PH) / 2;
+canvas.width = SW; canvas.height = SH;
+const cqh = PH / 100, cqw = PW / 100;
+
+// ── maths ──
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+const E = {
+  lin: (x) => x, inQ: (x) => x * x, outQ: (x) => 1 - (1 - x) ** 2, ioQ: (x) => (x < .5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2),
+  inC: (x) => x ** 3, outC: (x) => 1 - (1 - x) ** 3, ioC: (x) => (x < .5 ? 4 * x ** 3 : 1 - (-2 * x + 2) ** 3 / 2),
+  outE: (x) => (x >= 1 ? 1 : 1 - 2 ** (-10 * x)), inE: (x) => (x <= 0 ? 0 : 2 ** (10 * x - 10)),
+  ioE: (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x < .5 ? 2 ** (20 * x - 10) / 2 : (2 - 2 ** (-20 * x + 10)) / 2),
+  outBack: (x) => 1 + 2.4 * (x - 1) ** 3 + 1.4 * (x - 1) ** 2,
+};
+const p = (t, a, b, e = E.lin) => e(clamp01((t - a) / (b - a)));
+const mix = (a, b, x) => a + (b - a) * x;
+/** keyframes: [[time, value, easeToNext], ...]; values may be numbers or arrays */
+function kf(t, keys) {
+  if (t <= keys[0][0]) return keys[0][1];
+  for (let i = 0; i < keys.length - 1; i++) {
+    const [t0, v0, e = E.ioC] = keys[i], [t1, v1] = keys[i + 1];
+    if (t <= t1) { const x = e((t - t0) / (t1 - t0)); return Array.isArray(v0) ? v0.map((v, j) => mix(v, v1[j], x)) : mix(v0, v1, x); }
+  }
+  return keys[keys.length - 1][1];
+}
+const hash = (k, s) => { const v = Math.sin(k * 127.1 + s * 311.7) * 43758.5453; return v - Math.floor(v); };
+const noise1 = (x, s = 0) => { const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f); return mix(hash(i, s), hash(i + 1, s), u) * 2 - 1; };
+
+// ── DOM helpers ──
+const $ = (tag, cls, parent, props) => { const e = document.createElement(tag); if (cls) e.className = cls; if (props) Object.assign(e, props); if (parent) parent.appendChild(e); return e; };
+const img = (src, cls, parent) => $("img", cls, parent, { src, draggable: false, decoding: "sync" });
+const css = (e, o) => { for (const k in o) e.style[k] = o[k]; };
+const tf = (e, s) => { e.style.transform = s; };
+const op = (e, v) => { e.style.opacity = Math.max(0, Math.min(1, v)).toFixed(4); };
+const picBox = () => pic.getBoundingClientRect();
+
+const shots = [];
+function shot(a, b, build) { const el = $("div", "shot", cam); const s = { a, b, el }; s.update = build(el, s); shots.push(s); return s; }
+
+// ── global camera shake and flashes ──
+const shakes = [], flashes = [];
+let shakeXY = [0, 0];
+const hit = (t, amp = 1, decay = .22, flash = 0, color = "#fff") => { shakes.push([t, amp, decay]); if (flash) flashes.push([t, flash, color]); };
+function camera(t) {
+  let x = 0, y = 0, r = 0;
+  for (const [t0, amp, dec] of shakes) {
+    const l = t - t0; if (l < 0 || l > dec * 5) continue;
+    const k = amp * Math.exp(-l / dec);
+    x += k * 1.3 * cqh * noise1(l * 15, t0 * 3); y += k * 1.0 * cqh * noise1(l * 17, t0 * 7 + 1); r += k * .3 * noise1(l * 13, t0 * 5 + 2);
+  }
+  tf(cam, `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${r.toFixed(3)}deg)`); shakeXY = [x, y];
+  let f = 0, col = "#fff";
+  for (const [t0, peak, c] of flashes) { const l = t - t0; if (l < 0 || l > .35) continue; const v = peak * Math.exp(-l / .055); if (v > f) { f = v; col = c; } }
+  flashEl.style.background = col; op(flashEl, f);
+}
+
+// ── canvas fx (stage coordinates; picture y is offset by PY) ──
+const sparkBursts = [];
+function streak(x1, y1, x2, y2, heat, w, hue) {
+  g.strokeStyle = hue === "blue" ? `rgba(${Math.round(150 + 105 * heat)},${Math.round(190 + 65 * heat)},255,${heat.toFixed(3)})` : `rgba(255,${Math.round(120 + 135 * heat)},${Math.round(60 + 160 * heat * heat)},${(.3 + .7 * heat).toFixed(3)})`;
+  g.lineWidth = w; g.beginPath(); g.moveTo(x2, y2); g.lineTo(x1, y1); g.stroke();
+}
+function drawSparks(t) {
+  g.globalCompositeOperation = "lighter";
+  for (const [t0, x0, y0, n, power, hue] of sparkBursts) {
+    const l = t - t0; if (l < 0 || l > 1.2) continue;
+    for (let k = 0; k < n; k++) {
+      const life = .35 + .8 * hash(k, t0); if (l > life) continue;
+      const ang = hash(k, t0 + 1) * Math.PI * 2, sp = (.2 + hash(k, t0 + 2)) * power * cqh;
+      const vx = Math.cos(ang) * sp, vy = Math.sin(ang) * sp - power * .3 * cqh;
+      const P = (u) => [x0 + vx * u, PY + y0 + vy * u + 60 * cqh * u * u], [x1, y1] = P(l), [x2, y2] = P(Math.max(0, l - .03));
+      streak(x1, y1, x2, y2, 1 - l / life, .18 * cqh * (.5 + (1 - l / life)), hue);
+    }
+  }
+  g.globalCompositeOperation = "source-over";
+}
+function embers(t, a, b, count, alpha = .8) {
+  if (t < a || t > b) return;
+  g.globalCompositeOperation = "lighter";
+  for (let k = 0; k < count; k++) {
+    const sx = hash(k, 3) * PW, life = 3 + 3 * hash(k, 5);
+    const l = ((t - a) + hash(k, 6) * life) % life, x = sx + noise1(l * .6 + k, 9) * 4 * cqh, y = PY + PH * (1.05 - l / life * 1.1);
+    const fade = Math.sin(Math.PI * l / life) * alpha * (.4 + .6 * hash(k, 7)), r = (.12 + .25 * hash(k, 8)) * cqh * 4;
+    const grad = g.createRadialGradient(x, y, 0, x, y, r); grad.addColorStop(0, `rgba(255,200,150,${fade.toFixed(3)})`); grad.addColorStop(1, "rgba(255,80,40,0)");
+    g.fillStyle = grad; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+  }
+  g.globalCompositeOperation = "source-over";
+}
+/** a burning fuse head at (x, y) in stage coordinates, emitting sparks from where it has been (pos(te)) */
+function fuseHead(t, t0, pos, size = 1, rate = 170) {
+  const [x, y] = pos(t);
+  g.globalCompositeOperation = "lighter";
+  const life = .42;
+  for (let k = Math.floor((t - life) * rate); k <= Math.floor(t * rate); k++) {
+    const te = k / rate, age = t - te; if (age < 0 || te < t0 || age > life * (.45 + .55 * hash(k, 1))) continue;
+    const [fx, fy] = pos(te), ang = -Math.PI / 2 + (hash(k, 2) - .62) * 2.6, sp = (12 + 55 * hash(k, 3)) * cqh * size;
+    const vx = Math.cos(ang) * sp - 5 * cqh, vy = Math.sin(ang) * sp;
+    const P = (u) => [fx + vx * u, fy + vy * u + 70 * cqh * u * u], [x1, y1] = P(age), [x2, y2] = P(Math.max(0, age - .016));
+    streak(x1, y1, x2, y2, 1 - age / life, (.1 + .14 * (1 - age / life)) * cqh * size);
+  }
+  const flick = .82 + .18 * Math.sin(t * 91) * Math.sin(t * 37 + 1.3), R = 5 * cqh * size * flick;
+  const glow = g.createRadialGradient(x, y, 0, x, y, R); glow.addColorStop(0, "rgba(255,240,210,.95)"); glow.addColorStop(.07, "rgba(255,200,120,.7)"); glow.addColorStop(.22, "rgba(255,150,60,.28)"); glow.addColorStop(.5, "rgba(255,110,30,.08)"); glow.addColorStop(1, "rgba(255,90,20,0)");
+  g.fillStyle = glow; g.beginPath(); g.arc(x, y, R, 0, Math.PI * 2); g.fill();
+  g.fillStyle = "#fff"; g.beginPath(); g.arc(x, y, .38 * cqh * size, 0, Math.PI * 2); g.fill();
+  const st = g.createLinearGradient(x - 30 * cqh, 0, x + 30 * cqh, 0); st.addColorStop(0, "rgba(255,150,60,0)"); st.addColorStop(.5, `rgba(255,220,170,${(.35 * flick).toFixed(3)})`); st.addColorStop(1, "rgba(255,150,60,0)");
+  g.fillStyle = st; g.fillRect(x - 30 * cqh, y - .15 * cqh, 60 * cqh, .3 * cqh);
+  g.globalCompositeOperation = "source-over";
+}
+function cord(x0, x1, y, burnt) {
+  g.lineCap = "round";
+  g.strokeStyle = "rgba(196,186,170,.5)"; g.lineWidth = .22 * cqh; g.beginPath(); g.moveTo(x1, y); g.lineTo(burnt[1], y); g.stroke();
+  const trail = Math.min(burnt[1] - x0, 22 * cqh), grad = g.createLinearGradient(burnt[1] - trail, 0, burnt[1], 0);
+  grad.addColorStop(0, "rgba(40,34,30,0)"); grad.addColorStop(.7, "rgba(140,60,30,.6)"); grad.addColorStop(1, "rgba(255,160,70,1)");
+  g.strokeStyle = grad; g.lineWidth = .2 * cqh; g.beginPath(); g.moveTo(burnt[1] - trail, y); g.lineTo(burnt[1], y); g.stroke();
+}
+const WIRE_Y = .3;   // the face-off wire of the last Bond card
+// Fuse 2: from the first montage cut to the white-out, a fuse burns along the bottom bar (in frame on 9:16)
+const BAR_Y = TALL ? SH * .955 : SH - PY / 2, M0 = T.montage[0].t;
+const fuse2 = (t) => { const u = clamp01((t - M0) / (T.blackout - .05 - M0)); return [SW * (.03 + .94 * (u < .8 ? u * .82 / .8 : .82 + .18 * ((u - .8) / .2) ** 1.5)), BAR_Y]; };
+function drawFuses(t) {
+  drawFuseRun(t);
+  if (t >= M0 && t < T.blackout) { const [x, y] = fuse2(t); cord(SW * .03, SW * .97, y, [SW * .03, x]); fuseHead(t, M0, fuse2, TALL ? .7 : .55, 120); }
+}
+
+// ── reusable bits ──
+function plate(parent, src, pos) { const i = img(src, "plate", parent); if (pos) i.style.objectPosition = pos; return i; }
+/** a mission super: label, then the line typed character by character, MI style */
+function caption(parent, en, cn) {
+  const c = $("div", "caption", parent); $("i", "", c); const b = $("b", "", c, { textContent: en }), line = $("span", "txt", c);
+  const chars = [...cn].map((ch) => $("span", "", line, { textContent: ch })); const cur = $("span", "cur", line);
+  return (t, t0) => {
+    op(c, p(t, t0, t0 + .05)); b.style.opacity = p(t, t0, t0 + .08).toFixed(3);
+    const n = Math.floor(clamp01((t - t0 - .05) / .3) * chars.length + .0001);
+    chars.forEach((ch, i) => { ch.style.display = i < n ? "inline" : "none"; });
+    cur.style.opacity = (t - t0 < .4 || Math.floor((t - t0) / .12) % 2) ? "1" : "0";
+  };
+}
+function reveal(e, t, a, dur = .45, dy = 2) { const x = p(t, a, a + dur, E.outE); op(e, x); e.style.translate = `0 ${((1 - x) * dy * cqh).toFixed(2)}px`; e.style.filter = x < 1 ? `blur(${((1 - x) * .8 * cqh).toFixed(2)}px)` : "none"; }
+function beam(parent, cls = "") { return $("i", "beam " + cls, parent); }
+function fire(e, t, t0, x, y, ang, len, dur = .26) {
+  const l = t - t0; if (l < 0 || l > dur) { op(e, 0); return; }
+  const grow = E.outE(clamp01(l / .05)), fade = 1 - p(l, .06, dur, E.inQ);
+  css(e, { left: x + "px", top: y + "px", width: len + "px" });
+  tf(e, `rotate(${ang}deg) scaleX(${grow.toFixed(3)}) scaleY(${(1 + 1.2 * (1 - fade)).toFixed(2)})`); op(e, fade);
+}
+function bloomAt(e, t, t0, x, y, size = 1, dur = .2) { const l = t - t0; if (l < 0 || l > dur) { op(e, 0); return; } const s = size * (.6 + .9 * E.outE(l / dur)); css(e, { left: x + "px", top: y + "px" }); tf(e, `scale(${s.toFixed(3)})`); op(e, 1 - E.inQ(l / dur)); }
+/** the burn wipe: a ragged burning edge crosses the frame left to right and leaves the new shot behind it */
+const burns = [];
+function burnWipe(el, t, t0, dur) {
+  const x = p(t, t0, t0 + dur, E.ioC) * 112 - 6;
+  if (t >= t0 + dur) { el.style.clipPath = "none"; return; }
+  const pts = []; for (let i = 0; i <= 24; i++) { const y = i / 24 * 100; pts.push(`${(x + 3.2 * noise1(i * .9 + t0, 4) + 1.4 * noise1(i * 3.1, 5)).toFixed(2)}% ${y.toFixed(1)}%`); }
+  el.style.clipPath = `polygon(0 0, ${pts.join(", ")}, 0 100%)`;
+}
+function drawBurns(t) {
+  for (const [t0, dur] of burns) {
+    if (t < t0 || t > t0 + dur + .2) continue;
+    const x = p(t, t0, t0 + dur, E.ioC) * 112 - 6, fade = 1 - p(t, t0 + dur, t0 + dur + .2);
+    g.globalCompositeOperation = "lighter";
+    for (let i = 0; i <= 48; i++) {
+      const v = i / 48, ex = (x + 3.2 * noise1(v * 24 * .9 / 1 + t0, 4) + 1.4 * noise1(v * 24 * 3.1, 5)) / 100 * PW, ey = PY + v * PH;
+      const r = (1.2 + 2.2 * hash(i, t0)) * cqh, gl = g.createRadialGradient(ex, ey, 0, ex, ey, r);
+      gl.addColorStop(0, `rgba(255,220,160,${(.85 * fade).toFixed(3)})`); gl.addColorStop(.4, `rgba(255,120,40,${(.45 * fade).toFixed(3)})`); gl.addColorStop(1, "rgba(255,60,10,0)");
+      g.fillStyle = gl; g.beginPath(); g.arc(ex, ey, r, 0, Math.PI * 2); g.fill();
+    }
+    g.globalCompositeOperation = "source-over";
+  }
+}
+
+// ════ ACT I — 007 ════
+const DOTX = TALL ? [.12, .31, .5, .69, .88] : [.14, .32, .5, .68, .86];
+shot(0, T.irisOpen + .25, (el) => {
+  const dots = DOTX.map(() => $("i", "dot", el)), glints = DOTX.map(() => $("i", "flare white", el));
+  return (t) => dots.forEach((d, k) => {
+    const t0 = T.dots[k], x = p(t, t0, t0 + .16, E.outE), from = k ? DOTX[k - 1] : -.1;
+    css(d, { left: (mix(from, DOTX[k], x) * 100) + "%", display: t >= t0 ? "block" : "none" });
+    tf(d, `scaleX(${(1 + 1.6 * (1 - x)).toFixed(3)})`);
+    const gl = glints[k], gx = p(t, t0 + .12, t0 + .45); css(gl, { left: DOTX[k] * 100 + "%", top: "50%", display: t >= t0 + .12 && t < t0 + .45 ? "block" : "none" }); op(gl, .5 * Math.sin(Math.PI * gx)); tf(gl, "scaleX(.35)");
+    if (k < 4) op(d, 1 - p(t, T.irisOpen + .02, T.irisOpen + .22, E.inQ));
+  });
+});
+
+const BARREL = { cx: .496, cy: .469, open: .145 };          // opening centre and radius in the barrel photo
+const AIM_MUZZLE = [.128, .145];                             // red lens of the aiming cut-out
+shot(T.irisOpen, T.titles[0], (el) => {
+  const R = TALL ? 46 * cqw : 46 * cqh, dotR = TALL ? 5 * cqw : 3.7 * cqh, D = 2.7 * R;
+  const barrel = $("div", "barrel", el); css(barrel, { width: D + "px" });
+  const bore = img(A("barrel.webp"), "bore", barrel); bore.style.transformOrigin = `${BARREL.cx * 100}% ${BARREL.cy * 100}%`;
+  const world = $("div", "world", barrel); const RW = BARREL.open * D * 1.02;
+  css(world, { width: 2 * RW + "px", left: BARREL.cx * 100 + "%", top: BARREL.cy * 100 + "%" });
+  const walk = $("div", "agent", world); img(A("agent-a-walk.webp"), "", walk);
+  const aim = $("div", "agent", world); img(A("agent-a-aim.webp"), "", aim);
+  const muzzle = $("i", "bloom", world); const wflash = $("i", "layer", world); css(wflash, { background: "radial-gradient(circle, #fff 0 45%, rgb(255 240 230 / .8) 75%, transparent 100%)", opacity: 0 });
+  const dripWrap = $("div", "layer", barrel);
+  dripWrap.innerHTML = `<svg class="drip" viewBox="0 0 200 260" preserveAspectRatio="none"><defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a0010"/><stop offset=".7" stop-color="#b3001c"/><stop offset="1" stop-color="#d0102c"/></linearGradient></defs><path fill="url(#dg)" d="M0 0H200V196C193 196 191 214 186 230 183 240 175 240 173 229 170 214 170 199 163 199 156 199 156 210 152 216 148 222 142 220 141 211 140 200 136 196 128 196 120 196 121 228 116 246 113 256 104 256 102 244 99 222 100 199 91 198 83 198 83 207 79 212 75 217 69 214 68 206 67 199 63 197 55 197 47 197 47 222 42 236 39 245 31 245 29 234 27 220 28 199 20 198 12 198 9 206 6 210 3 214 0 211 0 206Z"/></svg>`;
+  const drip = dripWrap.firstChild, bleed = $("i", "bleed", barrel), iris = $("i", "iris", el);
+  hit(T.fire, 2.2, .2); hit(T.fire + .02, 1, .12);
+  return (t) => {
+    const l = t - T.irisOpen;
+    const ir = l < 3.6 ? mix(dotR, R, p(l, 0, .55, E.outE)) : mix(R, dotR, p(l, 4.6, 4.92, E.inC));
+    const ix = kf(l, [[0, DOTX[4] * PW, E.ioC], [1.3, PW / 2]]);
+    const iy = kf(l, [[0, PH / 2], [3.0, PH / 2, E.inQ], [3.62, PH * .63]]);
+    iris.style.webkitMaskImage = iris.style.maskImage = `radial-gradient(circle ${ir.toFixed(1)}px at ${ix.toFixed(1)}px ${iy.toFixed(1)}px, transparent ${(ir - 1.5).toFixed(1)}px, #000 ${ir.toFixed(1)}px)`;
+    const drop = p(l, 3.0, 3.6, E.inQ), push = kf(l, [[0, 1], [1.0, 1.04, E.ioQ], [2.0, 1.06, E.inQ], [3.0, 1.2, E.outE], [3.1, 1.17]]);
+    css(barrel, { left: ix - (BARREL.cx - .5) * D + "px", top: iy - (BARREL.cy - .5) * D + "px" });
+    tf(barrel, `rotate(${(-10 * drop).toFixed(2)}deg) scale(${push.toFixed(4)})`);
+    tf(bore, `rotate(${kf(l, [[0, -28, E.lin], [3.0, 18, E.outC], [4.6, 70]]).toFixed(2)}deg)`);
+    bore.style.filter = l > 3 && l < 3.25 ? `brightness(${(1 + 1.8 * (1 - p(l, 3, 3.25))).toFixed(2)})` : "none";
+    const walking = l < 2.0;
+    css(walk, { display: walking ? "block" : "none", left: (kf(l, [[0, -70, E.lin], [2.0, -12]]) + 50) + "%" });
+    walk.firstChild.style.translate = "-55% 0";
+    tf(walk, `translateY(${(-1.4 * Math.abs(Math.sin(l * Math.PI * 2.2))).toFixed(2)}%) rotate(${(.6 * Math.sin(l * Math.PI * 2.2)).toFixed(2)}deg)`);
+    css(aim, { display: walking ? "none" : "block", left: "50%", transformOrigin: "50% 22%" });
+    aim.firstChild.style.translate = "-52% 0";
+    tf(aim, `scale(${kf(l, [[2.0, 1.1, E.outE], [2.15, 1, E.ioQ], [3.0, 1.32, E.outE], [3.12, 1.4, E.ioQ], [3.4, 1.36]]).toFixed(4)})`);
+    const ab = aim.getBoundingClientRect(), wb = world.getBoundingClientRect(), sc = wb.width / world.offsetWidth || 1;
+    const mx = (ab.left - wb.left) / sc + (AIM_MUZZLE[0] - .52) * ab.width / sc, my = (ab.top - wb.top) / sc + AIM_MUZZLE[1] * ab.height / sc;
+    bloomAt(muzzle, l, 3.0, mx, my, 1.6, .22);
+    op(wflash, l >= 3 ? .95 * Math.exp(-(l - 3) / .06) : 0);
+    drip.style.transform = `translateY(${kf(l, [[3.08, -101, (x) => x * x * (3 - 2 * x) * .4 + x * x * .6], [4.25, -12]]).toFixed(2)}%)`;
+    op(bleed, p(l, 4.25, 4.85));
+  };
+});
+
+// ── Bond titles ──
+function silhouette(parent, src, ratio, color, glow) {
+  const wrap = $("div", "silwrap", parent); if (glow) wrap.style.filter = glow;
+  const s = $("i", "sil", wrap); css(s, { background: color, aspectRatio: String(ratio), webkitMaskImage: `url(${src})`, maskImage: `url(${src})` });
+  return { wrap, s };
+}
+function titleCard(parent, en, cn, align) {
+  const c = $("div", "card", parent); c.style.alignItems = align;
+  const e = $("div", "en", c, { textContent: en }), n = $("div", "cn", c, { textContent: cn });
+  return (t, a) => {
+    reveal(e, t, a + .08, .6, 1.5);
+    const x = p(t, a, a + .9, E.outE); op(n, p(t, a, a + .3)); n.style.letterSpacing = mix(.42, .12, x).toFixed(3) + "em";
+    n.style.filter = x < .5 ? `blur(${((.5 - x) * 2.4 * cqh).toFixed(2)}px)` : "none";
+  };
+}
+shot(T.titles[0], T.ignite, (el) => {
+  const c1 = $("div", "layer", el), red = $("div", "redfield", c1);
+  const smoke1 = img(A("smoke.webp"), "smoke", c1); css(smoke1, { mixBlendMode: "multiply", opacity: .85 });
+  const silA = silhouette(c1, A("agent-a-walk.webp"), 592 / 1200, "#050001");
+  const t1 = titleCard(c1, "THIS AUTUMN", "今年秋天", TALL ? "flex-start" : "flex-end");
+  const c2 = $("div", "layer", el); css(c2, { background: "#030304" });
+  const smoke2 = img(A("smoke.webp"), "smoke", c2); css(smoke2, { opacity: .32 });
+  const silB = silhouette(c2, A("agent-b-pose.webp"), 320 / 1200, "#c4001f", "drop-shadow(0 0 2.5cqh rgb(255 30 60 / .55))");
+  const t2 = titleCard(c2, "TWO BOSSES", "兩位老闆", "flex-start");
+  const c3 = $("div", "layer", el), duo = $("div", "duo-tone", c3); const arena = plate(duo, A("arena.webp")); $("i", "", duo);
+  const smoke3 = img(A("smoke.webp"), "smoke", c3); css(smoke3, { opacity: .3 });
+  const t3 = titleCard(c3, "ONE BATTLEFIELD", "一個戰場", "flex-start");
+  const c4 = $("div", "layer", el); css(c4, { background: "#030304" });
+  const wire = $("i", "wire", c4); wire.style.top = WIRE_Y * 100 + "%";
+  const fA = silhouette(c4, A("agent-a-walk.webp"), 592 / 1200, "#efe9df"), fB = silhouette(c4, A("agent-b-pose.webp"), 320 / 1200, "#efe9df");
+  const t4 = titleCard(c4, "ONLY ONE TEAM WINS", "只有一隊能贏", "center");
+  if (TALL) c4.querySelector(".cn").style.fontSize = "11cqw";
+  const place = (c, x, y, ax = 0) => { css(c, { left: x, top: y }); c.style.translate = `${-ax * 100}% -50%`; };
+  const cards = [...el.querySelectorAll(".card")];
+  if (TALL) {
+    css(silA.s, { position: "absolute", left: "-12%", bottom: "-4%", height: "72%" }); place(cards[0], "8%", "16%");
+    css(silB.s, { position: "absolute", right: "-6%", bottom: "-4%", height: "74%" }); place(cards[1], "8%", "16%");
+    place(cards[2], "8%", "16%");
+    css(fA.s, { position: "absolute", left: "-26%", bottom: "-8%", height: "62%" }); css(fB.s, { position: "absolute", right: "-10%", bottom: "-8%", height: "62%" }); place(cards[3], "50%", "14%", .5);
+  } else {
+    css(silA.s, { position: "absolute", left: "3%", bottom: "-50%", height: "160%" }); place(cards[0], "92%", "50%", 1);
+    css(silB.s, { position: "absolute", right: "6%", bottom: "-50%", height: "160%" }); place(cards[1], "8%", "50%");
+    place(cards[2], "8%", "50%");
+    css(fA.s, { position: "absolute", left: "4%", bottom: "-44%", height: "152%" }); css(fB.s, { position: "absolute", right: "8%", bottom: "-44%", height: "152%" }); place(cards[3], "50%", "64%", .5);
+  }
+  const [a1, a2, a3, a4] = T.titles;
+  hit(a4, .6, .14);
+  return (t) => {
+    const o1 = 1 - p(t, a2 - .12, a2 + .1), o2 = p(t, a2 - .12, a2 + .1) * (1 - p(t, a3 - .12, a3 + .1)), o3 = p(t, a3 - .12, a3 + .1) * (t < a4 ? 1 : 0);
+    css(c1, { display: o1 > 0 ? "block" : "none" }); op(c1, o1); css(c2, { display: o2 > 0 ? "block" : "none" }); op(c2, o2); css(c3, { display: o3 > 0 ? "block" : "none" }); op(c3, o3);
+    css(c4, { display: t >= a4 ? "block" : "none" });
+    red.style.clipPath = `circle(${mix(TALL ? 5 : 3.7, 170, p(t, a1, a1 + .4, E.ioC))}% at 50% 63%)`;
+    tf(smoke1, `scale(${(1.1 + .12 * p(t, a1, a2 + .2)).toFixed(3)}) rotate(${(-4 + 6 * p(t, a1, a2 + .2)).toFixed(2)}deg)`); op(smoke1, .85 * p(t, a1 + .1, a1 + .5));
+    tf(silA.wrap, `translateX(${(-3 + 4 * p(t, a1, a2 + .2)).toFixed(2)}%) scale(${(1.04 - .03 * p(t, a1, a2)).toFixed(3)})`); op(silA.wrap, p(t, a1 + .1, a1 + .45));
+    t1(t, a1 + .12);
+    tf(smoke2, `scale(${(1.15 + .1 * p(t, a2 - .2, a3 + .2)).toFixed(3)}) rotate(${(3 - 5 * p(t, a2 - .2, a3 + .2)).toFixed(2)}deg)`);
+    tf(silB.wrap, `translateX(${(3 - 4 * p(t, a2 - .2, a3 + .2)).toFixed(2)}%)`);
+    t2(t, a2);
+    tf(arena, `scale(${(1.12 + .22 * p(t, a3 - .2, a4, E.inQ)).toFixed(4)}) rotate(${(-1.5 + 2 * p(t, a3 - .2, a4)).toFixed(2)}deg)`);
+    tf(smoke3, `scale(${(1.3 + .4 * p(t, a3 - .2, a4)).toFixed(3)}) translateX(${(-4 * p(t, a3 - .2, a4)).toFixed(2)}%)`);
+    t3(t, a3);
+    tf(wire, `scaleX(${p(t, a4, a4 + .22, E.outE).toFixed(3)})`); op(wire, t > a4 + .85 ? .6 + .4 * Math.abs(Math.sin(t * 60)) : 1);
+    tf(fA.wrap, `translateX(${(-6 * (1 - p(t, a4, a4 + 1, E.outE))).toFixed(2)}%)`); tf(fB.wrap, `translateX(${(6 * (1 - p(t, a4, a4 + 1, E.outE))).toFixed(2)}%)`);
+    t4(t, a4 + .05);
+  };
+});
+
+// ════ ACT II — the mission ════
+// A match strikes in the dark, the fuse catches, and the camera chases the spark along the floor (10.0–12.0).
+const FLAME = T.ignite + .12, CATCH = T.typing[0][0];
+/** a photo on an explicit box, so image coordinates map to the picture; frame() is a virtual camera: zoom k, image point (u, v) placed at picture fraction (x, y) */
+function rig(parent, src, ar) {
+  const box = $("div", "", parent), im = img(src, "", box);
+  const DW = Math.max(PW, PH * ar), DH = DW / ar;
+  css(box, { position: "absolute", left: (PW - DW) / 2 + "px", top: (PH - DH) / 2 + "px", width: DW + "px", height: DH + "px", transformOrigin: "50% 50%" });
+  css(im, { width: "100%", height: "100%" });
+  const R = { box, im, DW, DH, k: 1, tx: 0, ty: 0 };
+  R.frame = (k, u, v, x, y) => {
+    const mx = Math.max(0, (k * DW - PW) / 2), my = Math.max(0, (k * DH - PH) / 2);
+    R.k = k; R.tx = Math.max(-mx, Math.min(mx, x * PW - PW / 2 - k * (u - .5) * DW)); R.ty = Math.max(-my, Math.min(my, y * PH - PH / 2 - k * (v - .5) * DH));
+    tf(box, `translate(${R.tx.toFixed(2)}px, ${R.ty.toFixed(2)}px) scale(${k.toFixed(4)})`);
+  };
+  R.at = (u, v) => [PW / 2 + R.tx + R.k * (u - .5) * DW, PH / 2 + R.ty + R.k * (v - .5) * DH];
+  return R;
+}
+/** a path through image points [u, v, cord width], Catmull-Rom smoothed; s runs by depth-weighted length (thin = far = slower on screen) */
+function pathOf(pts, ar, wExp = .6) {
+  const P = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[Math.max(0, i - 1)], b = pts[i], c = pts[i + 1], d = pts[Math.min(pts.length - 1, i + 2)];
+    for (let j = 0; j < 8; j++) { const s = j / 8, s2 = s * s, s3 = s2 * s; P.push(b.map((_, m) => .5 * (2 * b[m] + (c[m] - a[m]) * s + (2 * a[m] - 5 * b[m] + 4 * c[m] - d[m]) * s2 + (3 * b[m] - a[m] - 3 * c[m] + d[m]) * s3))); }
+  }
+  P.push(pts[pts.length - 1]);
+  const L = [0];
+  for (let i = 1; i < P.length; i++) L.push(L[i - 1] + Math.hypot((P[i][0] - P[i - 1][0]) * ar, P[i][1] - P[i - 1][1]) / ((P[i][2] + P[i - 1][2]) / 2) ** wExp);
+  const total = L[L.length - 1];
+  const at = (s) => { const x = clamp01(s) * total; let i = 1; while (i < L.length - 1 && L[i] < x) i++; const f = clamp01((x - L[i - 1]) / (L[i] - L[i - 1] || 1)); return P[i - 1].map((v, m) => mix(v, P[i][m], f)); };
+  return { P, L, total, at };
+}
+// the cord as photographed: centre line and width (fraction of image width), from the near end to the far end
+const FUSE = TALL
+  ? { src: "fuse-tall.webp", ar: 941 / 1672, pts: [[.42, 1, .29], [.45, .9, .25], [.475, .8, .21], [.5, .7, .17], [.524, .64, .14], [.522, .58, .13], [.507, .52, .115], [.47, .468, .095], [.43, .43, .08], [.405, .4, .065], [.407, .37, .05], [.433, .345, .036], [.469, .325, .028], [.509, .31, .024], [.549, .3, .021], [.584, .2875, .019], [.598, .2725, .017], [.589, .2575, .016], [.558, .245, .015], [.513, .235, .014], [.469, .2275, .013], [.433, .2175, .012], [.415, .203, .011], [.426, .189, .01], [.452, .175, .009], [.49, .165, .008], [.515, .16, .007]] }
+  : { src: "fuse-wide.webp", ar: 1672 / 941, pts: [[-.02, .752, .062], [.1, .712, .056], [.2, .676, .051], [.3, .636, .046], [.4, .588, .041], [.445, .552, .036], [.484, .5, .029], [.496, .448, .023], [.499, .405, .019], [.504, .376, .016], [.52, .357, .014], [.546, .344, .012], [.58, .335, .011], [.62, .328, .0095], [.68, .326, .0082], [.74, .322, .0072], [.8, .315, .0064], [.845, .307, .0057], [.864, .298, .0053], [.87, .285, .005], [.865, .272, .0048], [.853, .26, .0046], [.849, .249, .0045], [.856, .24, .0044], [.876, .231, .0042], [.9, .223, .004], [.93, .213, .0036], [.966, .205, .0032], [1.02, .197, .003]] };
+const fusePath = pathOf(FUSE.pts, FUSE.ar);
+const headS = (t) => { const x = clamp01((t - CATCH) / (T.mission - .08 - CATCH)); return mix(x, x * x, .25); };
+let fuseRig = null;
+shot(T.ignite, T.mission, (el) => {
+  // the match: dark until the head flares
+  const mL = $("div", "layer", el), match = rig(mL, A("match.webp"), 1672 / 941), flame = $("i", "bloom warm", mL);
+  // the fuse: a dim plate, a bright copy revealed only where the spark lights the floor, and the spark's warm cast
+  const fL = $("div", "layer", el), fuse = rig(fL, A(FUSE.src), FUSE.ar); fuseRig = fuse;
+  fuse.im.style.filter = "brightness(.42) saturate(.8)";
+  const lit = img(A(FUSE.src), "", fuse.box), tint = $("i", "", fuse.box);
+  css(lit, { position: "absolute", inset: "0", width: "100%", height: "100%", filter: "brightness(1.4) contrast(1.1) sepia(.12) saturate(1.2)" });
+  css(tint, { position: "absolute", inset: "0", mixBlendMode: "screen" });
+  // the super
+  const typed = $("div", "typed", el), meta = $("div", "meta", el, { textContent: "MISSION BRIEFING  ·  10.29" });
+  const chars = [..."任務簡報"].map((c) => $("span", "", typed, { textContent: c })); const caret = $("i", "caret", typed);
+  css(typed, TALL ? { left: "8%", top: "8.5%", fontSize: "11cqw" } : { left: "6%", top: "12%", fontSize: "8.4cqh" });
+  css(meta, TALL ? { left: "8%", top: "15.5%", fontSize: "2.8cqw" } : { left: "6%", top: "25%" });
+  typed.style.textShadow = `0 .4cqh 3cqh rgba(0,0,0,.9), 0 0 3cqh rgba(255,170,80,.35)`;
+  const MATCH_AT = [.545, .44, TALL ? .58 : .56, .5];
+  hit(FLAME, .45, .14, .18, "#ffb04a"); hit(CATCH, 1.1, .16, .24, "#ffe2bd");
+  // the strike throws sparks before the flame takes; the catch bursts at the near end of the cord
+  match.frame(1, ...MATCH_AT); const [sx0, sy0] = match.at(.545, .475);
+  sparkBursts.push([T.ignite + .02, sx0, sy0, 14, 16, ""], [T.ignite + .08, sx0, sy0, 22, 22, ""]);
+  fuse.frame(1.08, ...fusePath.at(0).slice(0, 2), TALL ? .5 : .42, TALL ? .66 : .62); const [cx0, cy0] = fuse.at(...fusePath.at(.012).slice(0, 2));
+  sparkBursts.push([CATCH, Math.max(4 * cqh, cx0), Math.min(PH - 4 * cqh, cy0), 46, TALL ? 70 : 56, ""]);
+  return (t) => {
+    const inMatch = t < CATCH;
+    mL.style.display = inMatch ? "block" : "none"; fL.style.display = inMatch ? "none" : "block";
+    if (inMatch) {
+      match.frame(1 + .08 * p(t, T.ignite, CATCH, E.outQ), ...MATCH_AT);
+      const l = t - T.ignite, strike = .01 + .06 * Math.max(0, Math.sin(l * 150)) * hash(Math.floor(l * 60), 3);
+      match.im.style.filter = `brightness(${(t < FLAME ? strike : 1 + 1.2 * Math.exp(-(t - FLAME) / .07)).toFixed(3)})`;
+      const [fx, fy] = match.at(.56, .32); css(flame, { left: fx + "px", top: fy + "px" });
+      op(flame, t < FLAME ? 0 : .3 + .7 * Math.exp(-(t - FLAME) / .2)); tf(flame, `scale(${(1.5 + 1.2 * Math.exp(-(t - FLAME) / .08)).toFixed(3)})`);
+    } else {
+      const x = p(t, CATCH, T.mission, E.ioQ), [lu, lv] = fusePath.at(headS(t - .14));
+      fuse.frame(mix(1.08, 1.36, p(t, CATCH, T.mission, E.inQ)), lu, lv, TALL ? .5 : mix(.42, .6, x), TALL ? mix(.66, .44, x) : mix(.62, .45, x));
+      const [hu, hv, hw] = fusePath.at(headS(t)), fl = .85 + .15 * Math.sin(t * 83) * Math.sin(t * 31 + 2), cx = hu * fuse.DW, cy = hv * fuse.DH;
+      const R = Math.max(100, Math.min(.3 * Math.max(PW, PH), hw * fuse.DW * 3.6)) * fl * (1 + .4 * Math.exp(-(t - CATCH) / .08));
+      lit.style.webkitMaskImage = lit.style.maskImage = `radial-gradient(circle ${R.toFixed(1)}px at ${cx.toFixed(1)}px ${cy.toFixed(1)}px, #000 0%, rgba(0,0,0,.5) 35%, transparent 100%)`;
+      tint.style.background = `radial-gradient(circle ${(R * 1.25).toFixed(1)}px at ${cx.toFixed(1)}px ${cy.toFixed(1)}px, rgba(255,150,60,${(.32 * fl).toFixed(3)}), rgba(255,90,20,.07) 45%, transparent 75%)`;
+    }
+    const [ta, tb] = T.typing[0];
+    chars.forEach((c, i) => { c.style.display = t >= ta + (tb - ta) * i / chars.length ? "inline" : "none"; });
+    op(typed, t >= ta ? 1 : 0); op(caret, t < tb ? 1 : (Math.floor((t - tb) / .25) % 2 ? 0 : 1));
+    reveal(meta, t, ta + .7, .6, 1);
+  };
+});
+/** the burning run: the cord behind the spark is the same photo burnt black (mask drawn off screen, so overlaps never band), embers glow
+ *  a few cord-widths back (perspective-true), smoke shows only in the spark's light, and the spark is sized by its distance to the lens */
+const charC = document.createElement("canvas"), cg = charC.getContext("2d"), emC = document.createElement("canvas"), eg = emC.getContext("2d");
+charC.width = emC.width = SW; charC.height = emC.height = SH;
+function drawFuseRun(t) {
+  if (!fuseRig || t < CATCH || t >= T.mission) return;
+  const R = fuseRig, [sx, sy] = shakeXY, toStage = (u, v) => { const [x, y] = R.at(u, v); return [x + sx, PY + y + sy]; };
+  const sNow = headS(t), cut = sNow * fusePath.total, { P, L } = fusePath, head = fusePath.at(sNow), [hx, hy] = toStage(head[0], head[1]);
+  const segs = [];
+  for (let i = 1; i < P.length && L[i - 1] < cut; i++) { const end = L[i] <= cut ? P[i] : head; segs.push([toStage(P[i - 1][0], P[i - 1][1]), toStage(end[0], end[1]), end[2] * R.DW * R.k]); }
+  // charred cord: stroke a soft-edged mask, then pour the darkened photo into it
+  cg.clearRect(0, 0, SW, SH); cg.lineCap = "round"; cg.strokeStyle = "#fff";
+  for (const [wMul, alpha, soft] of [[.9, .55, .07], [.66, 1, .025]]) {
+    cg.globalAlpha = alpha;
+    for (const [[ax, ay], [bx, by], w] of segs) { cg.filter = `blur(${Math.max(.5, w * soft).toFixed(1)}px)`; cg.lineWidth = w * wMul; cg.beginPath(); cg.moveTo(ax, ay); cg.lineTo(bx, by); cg.stroke(); }
+  }
+  cg.globalAlpha = 1; cg.filter = "none";
+  if (segs.length) {   // cut the round cap off flush with the spark
+    const [[ax, ay], [bx, by], w] = segs[segs.length - 1];
+    cg.save(); cg.translate(bx, by); cg.rotate(Math.atan2(by - ay, bx - ax)); cg.globalCompositeOperation = "destination-out"; cg.fillRect(0, -w, w, 2 * w); cg.restore();
+  }
+  cg.globalCompositeOperation = "source-in"; cg.filter = "brightness(.3) contrast(1.25) saturate(.45)";
+  cg.drawImage(R.im, PW / 2 + R.tx - R.k * R.DW / 2 + sx, PY + PH / 2 + R.ty - R.k * R.DH / 2 + sy, R.k * R.DW, R.k * R.DH);
+  cg.filter = "none"; cg.globalCompositeOperation = "source-over";
+  g.drawImage(charC, 0, 0);
+  // embers: walk back from the spark in units of cord width
+  // embers: the last few cord-widths behind the spark, as continuous strokes (deep red, orange, white-hot), softened like the lens
+  eg.clearRect(0, 0, SW, SH); eg.lineCap = "round"; eg.lineJoin = "round"; eg.globalCompositeOperation = "lighter";
+  const hw = segs.length ? segs[segs.length - 1][2] : 0, fl = .78 + .22 * noise1(t * 26, 13);
+  for (const [reach, wMul, col] of [[3.2, .26, "255,60,20,.55"], [1.4, .3, "255,140,50,.6"], [.45, .34, "255,225,170,.8"]]) {
+    let D = 0; eg.beginPath(); let started = false;
+    for (let i = segs.length - 1; i >= 0 && D < reach; i--) {
+      const [[ax, ay], [bx, by], w] = segs[i];
+      if (!started) { eg.moveTo(bx, by); started = true; }
+      eg.lineTo(ax, ay); D += Math.hypot(bx - ax, by - ay) / Math.max(1, w);
+    }
+    eg.filter = `blur(${Math.max(.6, hw * .05).toFixed(1)}px)`; eg.strokeStyle = `rgba(${col.split(",").slice(0, 3).join(",")},${(Number(col.split(",")[3]) * fl).toFixed(3)})`; eg.lineWidth = hw * wMul; eg.stroke();
+  }
+  eg.filter = "none"; eg.globalCompositeOperation = "source-over";
+  g.globalCompositeOperation = "lighter"; g.drawImage(emC, 0, 0); g.globalCompositeOperation = "source-over";
+  // smoke off the burnt cord
+  for (let k = 0; k < 60; k++) {
+    const te = CATCH + k * .03; if (te > t) break;
+    const age = t - te, life = 1.1; if (age > life) continue;
+    const [u, v, w] = fusePath.at(headS(te)), [x0, y0] = toStage(u, v), cw = w * R.DW * R.k;
+    const r = cw * (.9 + 1.8 * age) + 1.2 * cqh * age, X = x0 + noise1(age * 2 + k, 11) * cw, Y = y0 - cw * 2.6 * age - 8 * cqh * age * age;
+    const a = .13 * (1 - age / life) * Math.exp(-Math.hypot(X - hx, Y - hy) / (head[2] * R.DW * R.k * 5 + 4 * Math.min(cqh, cqw * .75))); if (a < .005) continue;
+    const gr = g.createRadialGradient(X, Y, 0, X, Y, r); gr.addColorStop(0, `rgba(215,195,175,${a.toFixed(3)})`); gr.addColorStop(1, "rgba(215,195,175,0)");
+    g.fillStyle = gr; g.beginPath(); g.arc(X, Y, r, 0, Math.PI * 2); g.fill();
+  }
+  const U = Math.min(cqh, cqw * .75), size = Math.max(.35, Math.min(3, head[2] * R.DW * R.k / (1.7 * U))) * U / cqh;
+  fuseHead(t, CATCH, (te) => { const q = fusePath.at(headS(Math.max(te, CATCH))); return toStage(q[0], q[1]); }, size, 220);
+}
+
+const PAGES = { a: [.355, .45], b: [.597, .45] };            // centres of the two blank pages in desk.webp
+function bracket(e, c) {
+  const l = `linear-gradient(${c}, ${c})`;
+  e.style.background = [`${l} 0 0 / 22% 3px`, `${l} 0 0 / 3px 22%`, `${l} 100% 0 / 22% 3px`, `${l} 100% 0 / 3px 22%`, `${l} 0 100% / 22% 3px`, `${l} 0 100% / 3px 22%`, `${l} 100% 100% / 22% 3px`, `${l} 100% 100% / 3px 22%`].join(",");
+  e.style.backgroundRepeat = "no-repeat";
+}
+shot(T.mission, T.montage[0].t + .4, (el) => {
+  const desk = $("div", "layer", el); const deskImg = plate(desk, A("desk.webp")); css(deskImg, { objectFit: "fill" });
+  const ratio = 1672 / 941, DW = TALL ? PH * ratio : Math.max(PW, PH * ratio), DH = DW / ratio;
+  css(desk, { width: DW + "px", height: DH + "px", left: (PW - DW) / 2 + "px", top: (PH - DH) / 2 + "px", inset: "auto" });
+  const photos = [["a", A("host-a.webp"), "代號　紅隊隊長", -4], ["b", A("host-b.webp"), "代號　藍隊隊長", 3]].map(([k, src, label, rot]) => {
+    const ph = $("div", "desk-photo", desk); const inner = $("div", "", ph); img(src, "", inner);
+    const lock = $("i", "lock", inner); bracket(lock, k === "a" ? "#ff2a44" : "#4d8dff");
+    const tag = $("div", "", desk, { textContent: label }); css(tag, { position: "absolute", font: `500 ${(.011 * DW).toFixed(1)}px/1 "JetBrains Mono", monospace`, color: "#2a2622", letterSpacing: ".2em", whiteSpace: "nowrap", translate: "-50% 0", mixBlendMode: "multiply" });
+    css(ph, { width: .118 * DW + "px", left: PAGES[k][0] * 100 + "%", top: PAGES[k][1] * 100 + "%", translate: "-50% -50%" });
+    css(tag, { left: PAGES[k][0] * 100 + "%", top: (PAGES[k][1] + .2) * 100 + "%" });
+    return { ph, tag, rot, k, lock };
+  });
+  const scrim = $("i", "layer", el); css(scrim, { background: "linear-gradient(90deg, rgb(3 3 4 / .9) 0 38%, rgb(3 3 4 / .25) 70%, rgb(3 3 4 / 0))", opacity: 0 });
+  const line = $("div", "orders", el), l1 = $("div", "line", line);
+  const typeChars = [..."你的任務，如果你選擇接受——"].map((c) => $("span", "", l1, { textContent: c }));
+  const big = $("div", "orders", el), b1 = $("div", "big", big); b1.innerHTML = "10.29 攻佔<em>六度空間</em>";
+  const sweep = $("i", "flare warm", el);
+  if (TALL) { css(line, { left: "7%", top: "8%" }); l1.style.fontSize = "4.6cqw"; css(big, { left: "7%", top: "62%" }); b1.style.fontSize = "15cqw"; }
+  else { css(line, { left: "6%", top: "10%" }); css(big, { left: "6%", top: "54%", translate: "0 -50%" }); }
+  hit(T.cardA, .4, .1); hit(T.cardB, .4, .1); hit(T.missionLine, 1.4, .18, .3);
+  return (t) => {
+    const l = t - T.mission;
+    // close on page A, across to page B, then back so the file sits right of frame and the orders own the left
+    const end = TALL ? [.48, .62] : [.36, .5];
+    const focus = kf(l, [[0, PAGES.a, E.ioC], [.75, PAGES.a, E.ioC], [1.05, PAGES.b, E.ioC], [1.3, end]]);
+    const zoom = kf(l, [[0, 2.35, E.outC], [.4, 2.1, E.ioC], [1.05, 2.0, E.ioE], [1.3, TALL ? 1.0 : 1.18, E.lin], [2.4, TALL ? .97 : 1.12]]);
+    tf(desk, `scale(${zoom.toFixed(4)}) translate(${((.5 - focus[0]) * DW).toFixed(1)}px, ${((.5 - focus[1]) * DH).toFixed(1)}px) rotate(${kf(l, [[0, -2], [2, 1]]).toFixed(2)}deg)`);
+    photos.forEach(({ ph, tag, rot, k, lock }) => {
+      const t0 = k === "a" ? T.cardA : T.cardB, x = p(t, t0, t0 + .22, E.outBack);
+      op(ph, p(t, t0, t0 + .05)); tf(ph, `scale(${mix(1.5, 1, x).toFixed(3)}) rotate(${mix(rot * 3, rot, x).toFixed(2)}deg)`);
+      ph.style.boxShadow = `0 ${mix(6, 2, x) * cqh}px ${mix(10, 4, x) * cqh}px rgb(0 0 0 / ${mix(.3, .65, x).toFixed(2)})`;
+      op(lock, p(t, t0 + .12, t0 + .2)); tf(lock, `scale(${mix(1.6, 1, p(t, t0 + .12, t0 + .24, E.outBack)).toFixed(3)})`);
+      op(tag, p(t, t0 + .15, t0 + .3));
+    });
+    const [ta, tb] = T.typing[1];
+    typeChars.forEach((c, i) => { c.style.display = t >= ta + (tb - ta) * i / typeChars.length ? "inline" : "none"; });
+    op(line, 1 - p(t, T.missionLine - .05, T.missionLine + .1));
+    op(scrim, p(t, T.missionLine - .04, T.missionLine + .12));
+    const s = p(t, T.missionLine, T.missionLine + .35, E.outE); op(big, p(t, T.missionLine, T.missionLine + .08));
+    tf(b1, `scale(${mix(1.25, 1, s).toFixed(4)})`); b1.style.filter = s < .6 ? `blur(${((.6 - s) * 2 * cqh).toFixed(2)}px)` : "none";
+    const sw = p(t, T.missionLine + .05, T.missionLine + .55, E.ioC); css(sweep, { left: mix(-20, 70, sw) + "%", top: TALL ? "64%" : "54%" }); op(sweep, Math.sin(Math.PI * sw) * .9);
+  };
+});
+
+// ── whip pans between adjacent cuts ──
+const whips = [];
+function whip(outName, inName, dir = -1, len = .09) { whips.push({ out: outName, in: inName, dir, len }); }
+function applyWhips(t) {
+  for (const w of whips) {
+    const so = byName[w.out], si = byName[w.in]; if (!so || !si) continue;
+    const tc = si.a, xo = p(t, tc - w.len, tc, E.inQ), xi = 1 - p(t, tc, tc + w.len, E.outQ);
+    if (t >= tc - w.len && t < tc) tf(so.el, `translateX(${(w.dir * 70 * xo).toFixed(2)}%)`); else if (t < tc) so.el.style.transform = "";
+    if (t >= tc && t < tc + w.len) tf(si.el, `translateX(${(-w.dir * 70 * xi).toFixed(2)}%)`); else if (t >= tc + w.len) si.el.style.transform = "";
+  }
+}
+const byName = {};
+
+// ── the montage ──
+const M = Object.fromEntries(T.montage.map((m, i) => [m.shot, { t: m.t, end: (T.montage[i + 1]?.t ?? T.strobe[0]) }]));
+function cut(name, end, build) { const m = M[name]; const s = shot(m.t, end ?? m.end, build); byName[name] = s; return s; }
+
+// into the arena behind a burning edge (the fuse's own wipe)
+burns.push([M.arena.t, .38]);
+cut("arena", null, (el) => {
+  const bg = plate(el, A("arena.webp")); const fog = img(A("smoke.webp"), "smoke", el); css(fog, { opacity: .38 });
+  const beams = [beam(el), beam(el, "blue"), beam(el)];
+  const cap = caption(el, "LOCATION", "六度空間　LAZERTREKS");
+  hit(M.arena.t, .9, .16, .3);
+  return (t) => {
+    const l = t - M.arena.t, d = p(l, 0, .8, E.outC);
+    burnWipe(el, t, M.arena.t, .38);
+    tf(bg, `scale(${mix(1.06, 1.26, d).toFixed(4)}) translateY(${mix(1.5, -1, d).toFixed(2)}%)`);
+    tf(fog, `scale(${mix(1.3, 1.9, d).toFixed(4)}) translateX(${mix(0, -6, d).toFixed(2)}%)`);
+    beams.forEach((b, i) => { const ang = [-8, 6, -3][i] + 10 * (l - .4) * [1, -1, .6][i]; css(b, { left: "-10%", top: [38, 58, 72][i] + "%", width: "120%" }); tf(b, `rotate(${ang.toFixed(2)}deg)`); op(b, .85 * p(l, .15 + .05 * i, .25 + .05 * i)); });
+    cap(t, M.arena.t + .3);
+  };
+});
+cut("gear", null, (el) => {
+  const bg = plate(el, A("gear.webp"), TALL ? "42% 50%" : null); const cap = caption(el, "GEAR", "感應背心・雷射槍");
+  return (t) => { const l = t - M.gear.t; tf(bg, `scale(${mix(1.22, 1.05, p(l, 0, .4, E.outE)).toFixed(4)}) rotate(${mix(-1.2, 0, p(l, 0, .4, E.outE)).toFixed(2)}deg)`); cap(t, M.gear.t + .02); };
+});
+cut("teams", null, (el) => {
+  const bg = plate(el, A("teams.webp"), TALL ? "20% 50%" : null); const fl = $("i", "flare", el); const cap = caption(el, "10.29 THU 12:00", "週四中午・六度空間集合");
+  return (t) => { const l = t - M.teams.t; tf(bg, `scale(${mix(1.04, 1.16, p(l, 0, .8, E.outQ)).toFixed(4)})`); css(fl, { left: "50%", top: "44%" }); op(fl, .55 + .25 * Math.sin(l * 9)); tf(fl, `scaleX(${(.8 + .3 * p(l, 0, .8)).toFixed(3)})`); cap(t, M.teams.t + .04); };
+});
+function duel(el, cutSrc, muzzle, color, tShots, capEn, capCn) {
+  const bg = plate(el, A("arena.webp")); bg.style.filter = "blur(.5cqh) brightness(.75)";
+  const fog = img(A("smoke.webp"), "smoke", el); css(fog, { opacity: .22 });
+  const subj = img(A(cutSrc), "plate", el); subj.style.objectFit = "contain";
+  if (TALL) css(subj, { objectPosition: "50% 100%", transformOrigin: "50% 100%" });
+  const beams = tShots.map(() => beam(el, color)), blooms = tShots.map(() => $("i", "bloom " + color, el));
+  const cap = capEn ? caption(el, capEn, capCn) : null;
+  return (t, t0, dur) => {
+    const l = t - t0, d = p(l, 0, dur);
+    tf(bg, `scale(${mix(1.12, 1.18, d).toFixed(4)}) translateX(${mix(1.5, -1.5, d).toFixed(2)}%)`);
+    tf(fog, `scale(1.4) translateX(${mix(4, -8, d).toFixed(2)}%)`);
+    const s = TALL ? 2.1 : 1.08, tx = TALL ? 16 : 6;
+    tf(subj, `translateX(${mix(tx + 3, tx - 2, d).toFixed(2)}%) scale(${mix(s, s * 1.04, d).toFixed(4)})`);
+    const r = subj.getBoundingClientRect(), pr = picBox();
+    const iw = Math.min(r.width, r.height * 1672 / 941), ih = iw * 941 / 1672;
+    const mx = r.left - pr.left + (r.width - iw) / 2 + muzzle[0] * iw, my = r.top - pr.top + (TALL ? r.height - ih : (r.height - ih) / 2) + muzzle[1] * ih;
+    tShots.forEach((ts, i) => { fire(beams[i], t, ts, mx, my, 180 + (i ? -3 : 2), mx + 10 * cqw, .3); bloomAt(blooms[i], t, ts, mx, my, 1.1, .22); });
+    if (cap) cap(t, t0 + .04);
+  };
+}
+shot(M.fireA.t, M.target.t, (el) => {
+  const u = duel(el, "cut-fire-a.webp", [.194, .439], "", [M.fireA.t + .01, M.fireA2.t], "VIP", "保護老闆");
+  hit(M.fireA.t, 1.1, .12, .16, "#ff3a4f"); hit(M.fireA2.t, 1.1, .12, .16, "#ff3a4f");
+  return (t) => u(t, M.fireA.t, .8);
+});
+cut("target", null, (el) => {
+  const bg = plate(el, A("target-hit.webp"));
+  sparkBursts.push([M.target.t, PW * .6, PH * .5, 90, 60, "red"]); hit(M.target.t, 1.6, .16, .4, "#ffd0d0");
+  return (t) => { const l = t - M.target.t; tf(bg, `scale(${mix(1.25, 1.08, p(l, 0, .4, E.outE)).toFixed(4)})`); };
+});
+shot(M.aimB.t, M.tea.t, (el) => {
+  const u = duel(el, "cut-aim-b.webp", [.144, .475], "blue", [M.aimB2.t], null);
+  hit(M.aimB2.t, 1, .12, .16, "#9fc2ff");
+  return (t) => u(t, M.aimB.t, .4);
+});
+cut("tea", null, (el) => {
+  const bg = plate(el, A("tea.webp")); const fl = $("i", "flare warm", el); const cap = caption(el, "AFTER", "戰後・飯店下午茶");
+  return (t) => { const l = t - M.tea.t; tf(bg, `scale(${mix(1.14, 1.06, p(l, 0, .4, E.outE)).toFixed(4)})`); css(fl, { left: "50%", top: "30%" }); op(fl, .5); cap(t, M.tea.t + .02); };
+});
+cut("vault", null, (el) => {
+  const bg = plate(el, A("vault-bg.webp")); const grid = $("div", "layer", el);
+  const lasers = Array.from({ length: 9 }, () => { const b = beam(grid); b.style.height = ".25cqh"; return b; });
+  const subj = img(A("cut-wire.webp"), "plate", el); subj.style.objectFit = "contain";
+  const cables = [0, 1].map(() => { const c = $("i", "layer", el); css(c, { inset: "auto", width: "2px", background: "linear-gradient(#1a1a1c, #2b2b2e)" }); return c; });
+  const dust = img(A("smoke.webp"), "smoke", el); css(dust, { opacity: .18 });
+  hit(M.vault.t, 1.3, .2, .35);
+  return (t) => {
+    const l = t - M.vault.t, d = p(l, 0, .8);
+    tf(bg, `scale(${mix(1.08, 1.14, d).toFixed(4)}) translateY(${mix(-1, 1, d).toFixed(2)}%)`);
+    lasers.forEach((b, i) => { const ang = (i % 2 ? 1 : -1) * (6 + i * 1.2) + 2 * Math.sin(l * 2 + i); css(b, { left: "-10%", top: 46 + i * 5.5 + "%", width: "120%" }); tf(b, `rotate(${ang.toFixed(2)}deg)`); op(b, .55 + .3 * Math.sin(l * 14 + i * 2)); });
+    const s = TALL ? 1.75 : 1.02, x = TALL ? 8 : -2;
+    tf(subj, `translate(${x}%, ${mix(-14, -2, p(l, 0, .8, E.outC)).toFixed(2)}%) scale(${s}) rotate(${(.6 * Math.sin(l * 2.2)).toFixed(2)}deg)`);
+    const r = subj.getBoundingClientRect(), pr = picBox(), iw = Math.min(r.width, r.height * 1672 / 941), ih = iw * 941 / 1672, top = r.top - pr.top + (r.height - ih) / 2;
+    cables.forEach((c, i) => { const cx = r.left - pr.left + (r.width - iw) / 2 + [.401, .508][i] * iw; css(c, { left: cx - 1 + "px", top: "-2%", height: Math.max(0, top + 6 + PH * .02) + "px" }); });
+    tf(dust, `scale(1.5) translateY(${mix(0, -5, d).toFixed(2)}%)`);
+  };
+});
+function lock(name, src, color, en, cn) {
+  return cut(name, null, (el) => {
+    const bg = plate(el, A(src), TALL ? "46% 50%" : null); const ret = $("i", "reticle " + color, el); const tag = $("div", "tag " + color, el); tag.innerHTML = `${en}<b>${cn}</b>`;
+    const fx = TALL ? 46 : 48, fy = TALL ? 40 : 38;
+    css(ret, { left: fx + "%", top: fy + "%" }); css(tag, TALL ? { left: "10%", bottom: "12%" } : { left: `calc(${fx}% + 24cqh)`, top: `calc(${fy}% - 14cqh)` });
+    hit(M[name].t, .8, .1, .2, color ? "#9fc2ff" : "#ff8a96");
+    return (t) => { const l = t - M[name].t; tf(bg, `scale(${mix(1.3, 1.12, p(l, 0, .4, E.outE)).toFixed(4)})`); const r = p(l, 0, .3, E.outBack); tf(ret, `scale(${mix(2.4, 1, r).toFixed(3)}) rotate(${mix(70, 0, r).toFixed(2)}deg)`); op(ret, p(l, 0, .06)); reveal(tag, t, M[name].t + .08, .25, 1); };
+  });
+}
+lock("lockA", "close-a.webp", "", "TARGET · RED LEADER", "紅隊隊長");
+lock("lockB", "close-b.webp", "blue", "TARGET · BLUE LEADER", "藍隊隊長");
+cut("squad", null, (el) => { const bg = plate(el, A("squad.webp")); return (t) => { const l = t - M.squad.t; tf(bg, `scale(${mix(1.1, 1.32, p(l, 0, .4, E.inQ)).toFixed(4)})`); }; });
+
+const STROBE = ["arena.webp", "fire-a.webp", "aim-b.webp", "teams.webp", "vault-bg.webp", "target-hit.webp", "gear.webp", "key-art.webp"];
+T.strobe.forEach((t0, i) => {
+  byName["strobe" + i] = shot(t0, i < T.strobe.length - 1 ? T.strobe[i + 1] : T.blackout, (el) => {
+    const bg = plate(el, A(STROBE[i])); hit(t0, .7 + i * .12, .08, .25 + i * .04);
+    const white = $("i", "layer", el); white.style.background = "#fff";
+    return (t) => { const l = t - t0; tf(bg, `scale(${mix(1.35, 1.1, p(l, 0, .2, E.outE)).toFixed(4)})`); op(white, i === 7 ? p(l, 0, .2, E.inQ) : 0); };
+  });
+});
+shot(T.blackout, T.title, () => () => {});
+whip("gear", "teams", -1); whip("lockA", "lockB", -1, .07); whip("squad", "strobe0", 1);
+
+// ════ ACT III — the title lit by the fuse, the date, the stinger ════
+let titleFuse = null;
+shot(T.title, T.date + .3, (el) => {
+  const smoke = img(A("smoke.webp"), "smoke", el); css(smoke, { opacity: .45 });
+  const rakeR = $("i", "flare", el), rakeB = $("i", "flare blue", el);
+  const title = $("div", "title", el);
+  const word = $("div", "word", title); $("span", "chrome", word, { textContent: "秋遊特務" });
+  const edge = $("span", "edge", word, { textContent: "秋遊特務" }), sheen = $("span", "sheen", word, { textContent: "秋遊特務" }), hot = $("span", "hot", word, { textContent: "秋遊特務" });
+  for (const e of [edge, sheen, hot]) css(e, { position: "absolute", inset: "0" });
+  const rule = $("div", "rule", title), sub = $("div", "sub", title, { textContent: "AUTUMN AGENTS" }), third = $("div", "third", title, { textContent: "MISSION  10.29" });
+  hit(T.title, 2.2, .3, .35);
+  const RUN = .85;
+  titleFuse = (t) => {
+    // the spark runs along the baseline of the title; letters exist only behind it
+    if (t < T.title || t > T.title + RUN + .05) return null;
+    const r = word.getBoundingClientRect(), sb = stage.getBoundingClientRect();
+    const u = p(t, T.title, T.title + RUN, E.ioQ), x = r.left - sb.left - r.width * .04 + u * r.width * 1.08, y = r.top - sb.top + r.height * .78;
+    return [x, y];
+  };
+  return (t) => {
+    const l = t - T.title;
+    tf(smoke, `scale(${(1.25 + .12 * l / 3).toFixed(4)}) rotate(${(-3 + 2 * l).toFixed(2)}deg)`); op(smoke, .45 * p(l, 0, .6));
+    css(rakeR, { left: "30%", top: "22%" }); tf(rakeR, `rotate(-8deg) scaleX(${(.6 + .4 * p(l, 0, 1.2, E.outC)).toFixed(3)})`); op(rakeR, .35 * p(l, .5, 1));
+    css(rakeB, { left: "70%", top: "78%" }); tf(rakeB, `rotate(6deg) scaleX(${(.6 + .4 * p(l, 0, 1.2, E.outC)).toFixed(3)})`); op(rakeB, .35 * p(l, .5, 1));
+    const u = p(l, 0, RUN, E.ioQ), X = (-4 + u * 108).toFixed(2);
+    word.style.webkitMaskImage = word.style.maskImage = `linear-gradient(90deg, #000 calc(${X}% - 1%), transparent ${X}%)`;
+    hot.style.webkitMaskImage = hot.style.maskImage = `linear-gradient(90deg, transparent calc(${X}% - 14%), #000 calc(${X}% - 1%), transparent ${X}%)`;
+    op(hot, 1 - p(l, RUN, RUN + .5));
+    tf(title, `scale(${(1 + .03 * l).toFixed(4)})`);
+    sheen.style.backgroundPosition = `${mix(140, -40, p(l, 1.0, 1.9, E.ioC)).toFixed(1)}% 0`;
+    tf(rule, `scaleX(${p(l, .7, 1.2, E.outE).toFixed(3)})`); reveal(sub, t, T.title + .9, .8, 1.4);
+    sub.style.letterSpacing = mix(1.3, .9, p(l, .9, 1.9, E.outC)).toFixed(3) + "em";
+    reveal(third, t, T.title + 1.25, .6, 1);
+    op(el, 1 - p(t, T.date - .1, T.date + .3));
+  };
+});
+shot(T.date - .1, T.stinger, (el) => {
+  const card = $("div", "datecard", el);
+  const d = $("div", "d", card); d.innerHTML = "10.29<small>（四）</small>";
+  const pl = $("div", "p", card); pl.innerHTML = "中午十二點　<b>六度空間</b>　LAZERTREKS";
+  const e = $("div", "e", card, { textContent: "Laser Tag · Afternoon Tea" });
+  const fl = $("i", "flare warm", el);
+  return (t) => {
+    const l = t - T.date; op(el, p(l, -.1, .3)); tf(card, `scale(${(1.02 + .03 * p(l, 0, 1.8)).toFixed(4)})`);
+    reveal(d, t, T.date, .6, 2); reveal(pl, t, T.date + .25, .6, 1.5); reveal(e, t, T.date + .5, .6, 1.2);
+    css(fl, { left: "50%", top: TALL ? "44%" : "38%" }); op(fl, .4 * p(l, 0, .6)); tf(fl, `scaleX(${(.5 + .5 * p(l, 0, 1.8)).toFixed(3)})`);
+  };
+});
+shot(T.stinger, T.cut, (el) => {
+  const bg = plate(el, A("arena.webp")); bg.style.filter = "blur(.6cqh) brightness(.6)";
+  const fog = img(A("smoke.webp"), "smoke", el); css(fog, { opacity: .3 });
+  const duo = img(A("cut-duo.webp"), "plate", el); duo.style.objectFit = "contain";
+  if (TALL) css(duo, { objectPosition: "50% 100%", transformOrigin: "50% 100%" });
+  const bR = beam(el), bB = beam(el, "blue"), gR = $("i", "bloom", el), gB = $("i", "bloom blue", el);
+  hit(T.stingerFire, 2, .22, .35);
+  return (t) => {
+    const l = t - T.stinger, d = p(l, 0, 1.2, E.outC);
+    tf(bg, `scale(${mix(1.14, 1.2, d).toFixed(4)})`); tf(fog, `scale(1.5) translateX(${mix(3, -6, d).toFixed(2)}%)`);
+    const s = TALL ? 2.05 : 1.12, y = TALL ? 0 : 6;
+    tf(duo, `translateY(${y}%) scale(${mix(s, s * 1.07, d).toFixed(4)})`);
+    const r = duo.getBoundingClientRect(), pr = picBox(), iw = Math.min(r.width, r.height * 1672 / 941), ih = iw * 941 / 1672;
+    const at = (u, v) => [r.left - pr.left + (r.width - iw) / 2 + u * iw, r.top - pr.top + (TALL ? r.height - ih : (r.height - ih) / 2) + v * ih];
+    const [rx, ry] = at(.357, .155), [bx, by] = at(.765, .275);
+    fire(bR, t, T.stingerFire, rx, ry, -98, PH, .4); fire(bB, t, T.stingerFire + .03, bx, by, -82, PH, .4);
+    bloomAt(gR, t, T.stingerFire, rx, ry, .55, .3); bloomAt(gB, t, T.stingerFire + .03, bx, by, .55, .3);
+  };
+});
+shot(T.cut, T.duration + 1, (el) => {
+  const smoke = img(A("smoke.webp"), "smoke", el); css(smoke, { opacity: 0 });
+  const card = $("div", "title endcard", el), word = $("div", "word", card);
+  $("span", "chrome", word, { textContent: "全員出動" }); const sheen = $("span", "sheen", word, { textContent: "全員出動" }); css(sheen, { position: "absolute", inset: "0" });
+  const rule = $("div", "rule", card), third = $("div", "third", card, { textContent: "MISSION  10.29" });
+  return (t) => {
+    const l = t - T.end, x = p(l, 0, 1.6, E.outC), out = 1 - p(t, T.duration - .8, T.duration - .25, E.inQ);
+    op(card, p(l, 0, .45, E.outC) * out); op(smoke, .3 * p(l, 0, 1) * out); tf(smoke, `scale(${(1.3 + .08 * l).toFixed(4)}) rotate(${(2 - 2 * l).toFixed(2)}deg)`);
+    const ls = mix(.42, .2, x).toFixed(3); word.style.letterSpacing = ls + "em"; word.style.marginRight = "-" + ls + "em";
+    word.style.filter = l < .35 ? `blur(${((.35 - l) / .35 * 1.2 * cqh).toFixed(2)}px)` : "none";
+    sheen.style.backgroundPosition = `${mix(140, -40, p(l, .35, 1.3, E.ioC)).toFixed(1)}% 0`;
+    tf(rule, `scaleX(${p(l, .25, .8, E.outE).toFixed(3)})`); reveal(third, t, T.end + .45, .6, 1);
+    tf(card, `scale(${(1 + .015 * Math.max(0, l)).toFixed(4)})`);
+  };
+});
+
+// ── the clock ──
+function seek(t) {
+  for (const s of shots) s.el.style.display = t >= s.a && t < s.b ? "block" : "none";
+  for (const s of shots) if (t >= s.a && t < s.b) s.update(t);
+  applyWhips(t);
+  camera(t);
+  g.clearRect(0, 0, SW, SH);
+  drawFuses(t); drawBurns(t); drawSparks(t);
+  if (titleFuse) { const tp = titleFuse(t); if (tp) fuseHead(t, T.title, (te) => titleFuse(Math.max(te, T.title)) || tp, 1.1); }
+  embers(t, T.title, T.date + .3, 46, .7); embers(t, T.stinger, T.cut, 30, .5);
+}
+const fast = [[0, 1.3], [T.turn - .1, T.titles[0] + .5], [T.titles[3], T.titles[3] + .3], [T.ignite, T.mission], [T.cardA, T.cardB + .3], [T.missionLine, T.missionLine + .4], [T.montage[0].t, T.title + 1.2], [T.stingerFire - .1, T.cut + .05]];
+const samplesAt = (t) => (fast.some(([a, b]) => t >= a && t <= b) ? 8 : 4);
+
+await document.fonts.load('900 100px "Noto Serif TC"', "今年秋天兩位老闆一個戰場只有一隊能贏秋遊特務全員出動四");
+await document.fonts.load('900 100px "Noto Sans TC"', "任務簡報攻佔六度空間紅隊藍隊長");
+await document.fonts.load('700 100px "Noto Sans TC"', "你的任務如果你選擇接受中午十二點集合感應背心雷射槍週四戰後飯店下午茶保護老闆");
+await document.fonts.load('500 40px "Cinzel"', "THIS AUTUMN TWO BOSSES ONE BATTLEFIELD AUTUMN AGENTS");
+await document.fonts.load('700 40px "Cinzel"', "AUTUMN AGENTS");
+await document.fonts.load('500 40px "JetBrains Mono"', "MISSION BRIEFING 10.29 代號");
+await document.fonts.load('700 40px "JetBrains Mono"', "MISSION 10.29");
+await document.fonts.load('700 40px "JetBrains Mono"', "LOCATION GEAR VIP AFTER TARGET RED BLUE LEADER THU 12:00");
+await Promise.all([...document.images].map((i) => i.decode().catch(() => {})));
+seek(0);
+window.FILM = { duration: T.duration, fps: T.fps, isReady: true, seek, samplesAt };

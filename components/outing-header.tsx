@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import ShowLogo from "./show-logo";
+import TitleMark from "./title-mark";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import AccountMenu from "./account-menu";
 import { useScrollReveal } from "./use-scroll-reveal";
@@ -12,7 +12,6 @@ const MOBILE_NAV_IDLE_MS = 2000;
 // Wide screens keep the quick nav inside the bar; narrower ones drop it to a second row once the hero buttons scroll away.
 const INLINE_NAV_QUERY = "(min-width: 1101px)";
 
-export type HeaderTeam = { name: string; color: string; count: number };
 type TickerItem = { key: string; text: string; content?: ReactNode };
 
 const pad = (value: number) => String(value).padStart(2, "0");
@@ -64,9 +63,9 @@ function useMedia(query: string) {
   return matches;
 }
 
-export default function OutingHeader({ active, heroActions, vote, title, eventDate, closesAt, votingEnabled, now, teams, total, expected, hasVoted }: {
+export default function OutingHeader({ active, heroActions, vote, title, eventDate, closesAt, votingEnabled, now, hasVoted }: {
   active: boolean; heroActions: RefObject<HTMLDivElement | null>; vote?: VoteReminder; title: string; eventDate: string;
-  closesAt: number; votingEnabled: boolean; now: number; teams?: HeaderTeam[]; total?: number; expected: number; hasVoted: boolean;
+  closesAt: number; votingEnabled: boolean; now: number; hasVoted: boolean;
 }) {
   const [compact, setCompact] = useState(false);
   const [section, setSection] = useState("");
@@ -129,35 +128,34 @@ export default function OutingHeader({ active, heroActions, vote, title, eventDa
     return () => { observer.disconnect();window.removeEventListener("resize",sync);document.documentElement.style.removeProperty("--outing-header-offset"); };
   }, [active, compact]);
 
-  const countdown = getVoteCountdown(closesAt, now, votingEnabled);
-  const votingLive = !!countdown && countdown.state !== "closed";
+  // The countdown only shows while a vote is actually open; a closed vote is not news on the mission page.
+  const open = getVoteCountdown(closesAt, now, votingEnabled);
+  const countdown = open && open.state !== "closed" ? open : null;
+  const votingLive = !!countdown;
   const [month, day] = eventDate.slice(5).split("-");
   const weekday = eventDate ? new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "Asia/Taipei" }).format(new Date(eventDate + "T12:00:00+08:00")).toUpperCase() : "";
-  const tone = (color: string) => color === "coral" ? "pink" : "blue";
-  const ticker: TickerItem[] = [{ key: "定案", text: "行程定案・熱血對戰派：雷射槍戰＋飯店下午茶" }];
-  if (countdown) ticker.push({ key: "倒數", text: countdown.state === "closed" ? "投票已截止"
-    : countdown.days > 0 ? "投票截止還有 " + countdown.days + " 天 " + countdown.hours + " 小時" : "最後 " + countdown.hours + " 小時 " + countdown.minutes + " 分" });
-  if (teams?.length === 2) ticker.push({ key: "比數", text: teams[0].name + " " + teams[0].count + " 比 " + teams[1].count + " " + teams[1].name,
-    content: <><em data-team={tone(teams[0].color)}>{teams[0].name}</em><b className="ticker-score">{teams[0].count} : {teams[1].count}</b><em data-team={tone(teams[1].color)}>{teams[1].name}</em></> });
-  if (total !== undefined) ticker.push({ key: "投票", text: expected > 0 ? "已投 " + total + " / " + expected + " 人" : "已投 " + total + " 人" });
-  ticker.push({ key: "行程", text: title + "・中午 12:00 六度空間集合，自行前往" });
+  const ticker: TickerItem[] = [
+    { key: "任務", text: (month && day ? Number(month) + "/" + Number(day) + " " : "") + "中午 12:00・六度空間 LazerTreks 雷射對戰" },
+    { key: "戰後", text: "飯店下午茶 Buffet" },
+  ];
+  if (countdown) ticker.push({ key: "倒數", text: countdown.days > 0 ? "截止還有 " + countdown.days + " 天 " + countdown.hours + " 小時" : "最後 " + countdown.hours + " 小時 " + countdown.minutes + " 分" });
+  ticker.push({ key: "集合", text: title + "・台北市中山區中山北路二段 185 號 B1，自行前往" });
 
   const links = [
     { href: "#plans", label: "看任務行程", current: section === "plans" || section === "selection", todo: votingLive && !hasVoted },
-    { href: "#results", label: "看投票結果", current: section === "results", todo: false },
   ];
   const quickNavRetracted = compact && mobile && !quickNavRevealed;
   const hideQuickNav = !inlineNav && (!compact || quickNavRetracted);
   return <div className={"outing-header" + (compact ? " is-compact" : "") + (quickNavRetracted ? " is-nav-retracted" : "")} ref={bar}>
     <OutingTicker items={ticker} />
     <div className="topbar wrap">
-      <Link href="/" className="brand" aria-label="揪是要對決 首頁"><ShowLogo className="brand-lockup" tag="" /></Link>
+      <Link href="/" className="brand" aria-label="秋遊特務 首頁"><TitleMark className="brand-mark" /></Link>
       {/* Event facts sit together beside the logo: the date, then the vote countdown attached to it. */}
       <div className="header-event">
         {month && day && <span className="header-date" aria-label={"活動日期 " + Number(month) + " 月 " + Number(day) + " 日"}>{month}/{day} {weekday}</span>}
         {countdown && <span className="header-countdown" data-state={countdown.state} role="timer"
-          aria-label={countdown.state === "closed" ? "投票已截止" : "投票倒數 " + countdown.days + " 天 " + countdown.hours + " 小時 " + countdown.minutes + " 分"}>
-          {countdown.state === "closed" ? "投票已截止" : <><i aria-hidden="true" /><span className="header-countdown-label" aria-hidden="true">投票倒數</span>
+          aria-label={"投票倒數 " + countdown.days + " 天 " + countdown.hours + " 小時 " + countdown.minutes + " 分"}>
+          {<><i aria-hidden="true" /><span className="header-countdown-label" aria-hidden="true">投票倒數</span>
             {/* Units, not colons: "12:52" alone reads as a clock time once phones drop the seconds. */}
             <b aria-hidden="true">{countdown.days > 0 && <>{countdown.days}<small>天</small></>}{pad(countdown.hours)}<small>時</small>{pad(countdown.minutes)}<small>分</small><span className="header-countdown-sec">{pad(countdown.seconds)}<small>秒</small></span></b></>}
         </span>}

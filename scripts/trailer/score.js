@@ -1,6 +1,7 @@
-/* Original trailer score for the opening film, synthesised offline in the browser (Web Audio).
-   Act I: spy-jazz cold open (E minor, 120 bpm, swung). Act II: 5/4 mission ostinato (150 bpm, climbing D→E→F→G),
-   riser, silence, braam, self-destruct countdown. Every hit lands on a cue from lib/opening-timeline.json.
+/* Original trailer score for 秋遊特務, synthesised offline in the browser (Web Audio). No film theme is quoted.
+   Act I: spy-jazz cold open (E minor, 120 bpm, swung). Act II: a 5/4 mission ostinato (150 bpm, climbing D→E→F→G) with
+   bongos and flute flicks, montage hits, a strobe riser, silence. Act III: the title burns in on a braam and choir, the
+   date, the stinger's double shot and the last hit. Every cue comes from scripts/trailer/timeline.json.
    window.composeScore({ sr, cues }) resolves to a stereo AudioBuffer. Deterministic: seeded noise, no Math.random. */
 window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
   const DUR = C.duration + 0.15;
@@ -20,7 +21,7 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
   // The choke empties everything (tails included) for the blackout before the braam, and fades the very end.
   const choke = ctx.createGain();
   choke.gain.setValueAtTime(1, C.blackout - 0.012); choke.gain.linearRampToValueAtTime(0, C.blackout + 0.004);
-  choke.gain.setValueAtTime(0, C.logo - 0.2); choke.gain.linearRampToValueAtTime(1, C.logo - 0.19);
+  choke.gain.setValueAtTime(0, C.title - 0.2); choke.gain.linearRampToValueAtTime(1, C.title - 0.19);
   choke.gain.setValueAtTime(1, C.duration - 0.35); choke.gain.linearRampToValueAtTime(0, C.duration + 0.12);
   eq.reduce((a, b) => a.connect(b), master).connect(glue).connect(limiter).connect(choke).connect(ctx.destination);
   const duck = ctx.createGain(); duck.connect(master);
@@ -277,6 +278,27 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
     fuse(t, t + 0.9, [[t + 0.02, 0.4], [t + 0.8, 0.0001]]);
   }
 
+  // hand drums: a pitched skin that drops into place, with a slap on top
+  function bongo(t, vel = 0.6, which = "hi") {
+    const f = which === "hi" ? 420 : 300, o = out(which === "hi" ? 0.35 : -0.25, 0.18, 0.32 * vel);
+    const osc = ctx.createOscillator(); osc.frequency.setValueAtTime(f * 1.45, t); osc.frequency.exponentialRampToValueAtTime(f, t + 0.016);
+    const g = env(t, 0.001, 1, 0.12); osc.connect(g).connect(o); osc.start(t); osc.stop(t + 0.2);
+    const h = noiseSrc(t, 0.04), bp = filt("bandpass", 2200, 1.2), hg = env(t, 0.0006, 0.5, 0.016); h.connect(bp).connect(hg).connect(o);
+  }
+  // a breathy staccato flute note
+  function flute(t, n, vel = 0.5, len = 0.09) {
+    const f = hz(n), o = out(0.2, 0.35, 0.05 * vel, 0.3);
+    for (const [r, a] of [[1, 1], [2, 0.18], [3, 0.05]]) { const osc = ctx.createOscillator(); osc.frequency.value = f * r; const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(a, t + 0.014); g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.06); osc.connect(g).connect(o); osc.start(t); osc.stop(t + len + 0.1); }
+    const b = noiseSrc(t, len + 0.05), bp = filt("bandpass", f * 1.02, 6), bg = env(t, 0.006, 0.6, len); b.connect(bp).connect(bg).connect(o);
+  }
+  // an "ah" choir: saw stacks through two vowel formants, slow swell
+  function choir(t, notes, dur, { vel = 0.5, attack = 0.5, gain = 0.035 } = {}) {
+    const o = out(0, 0.6, gain), f1 = filt("bandpass", 760, 4), f2 = filt("bandpass", 1180, 5), g = ctx.createGain();
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vel, t + attack); g.gain.setTargetAtTime(0, t + dur, 0.35);
+    const mixer = ctx.createGain(); mixer.connect(f1); mixer.connect(f2); f1.connect(g); f2.connect(g); g.connect(o);
+    for (const n of notes) for (const det of [-14, -5, 4, 13]) { const osc = ctx.createOscillator(); osc.type = "sawtooth"; osc.frequency.value = hz(n); osc.detune.value = det; const vib = ctx.createOscillator(); vib.frequency.value = 4.6 + rand(); const vd = ctx.createGain(); vd.gain.value = 9; vib.connect(vd).connect(osc.detune); vib.start(t); vib.stop(t + dur + 1.5); osc.connect(mixer); osc.start(t); osc.stop(t + dur + 1.5); }
+  }
+
   // ═══ ACT I — cold open ═══
   ["E4", "G4", "B4", "D5", "F#5"].forEach((n, i) => guitar(C.dots[i], n, 1.9 - i * 0.18, { vel: 0.78 + i * 0.05, pan: -0.55 + i * 0.27 }));
   strings(C.irisOpen, ["E3", "B3", "D#4", "G4"], C.barrel - C.irisOpen, { attack: 0.9, tremolo: 11, vel: 0.5, release: 0.25, gain: 0.05 });
@@ -323,61 +345,76 @@ window.composeScore = async function composeScore({ sr = 48000, cues: C }) {
   // ═══ ACT II — the mission (5/4, eighths of 0.2s, bars of 2s) ═══
   const E8 = 0.2, BAR = 2, roots = ["D2", "D2", "D2", "E2", "F2", "G2"];
   const pat = [0, 0, 3, 0, 0, 5, 0, 6, 5, 3], accents = new Set([0, 2, 5, 7]);
+  const M0 = C.montage[0].t, S0 = C.strobe[0];
   matchStrike(C.ignite);
-  fuse(C.ignite, C.blackout, [[C.ignite + 0.15, 0.22], [C.mission, 0.12], [C.briefA, 0.05], [C.riser, 0.06], [C.blackout - 0.05, 0.4]]);
+  whoosh(C.typing[0][0] - 0.06, 0.16, { f0: 1800, f1: 7500, vel: 0.5, p0: -0.5, p1: 0.2 }); impact(C.typing[0][0], 0.45);
+  fuse(C.ignite, C.blackout, [[C.ignite + 0.15, 0.22], [C.mission, 0.12], [M0, 0.06], [S0, 0.06], [C.blackout - 0.05, 0.4]]);
   roots.forEach((root, b) => {
     const t0 = C.ignite + b * BAR;
     pat.forEach((s, i) => {
       const t = t0 + i * E8, acc = accents.has(i), n = semi(root, s);
+      if (t >= C.blackout - 0.02) return;
       stacc(t, n, { vel: acc ? 0.95 : 0.55, gain: 0.045 + b * 0.004, pan: -0.25, cutoff: 2600 });
       stacc(t, n * 2, { vel: acc ? 0.85 : 0.5, gain: b ? 0.08 + b * 0.01 : 0.05, pan: 0.25, cutoff: 3800 });
-      // a ticking mid synth doubles the line two octaves up from the second bar: it is what a phone speaker carries
       if (b >= 1) pluck(t, n * 4, acc ? 0.9 : 0.55, b >= 3 ? 0.05 : 0.035);
       if (b >= 1) synthBass(t, n / 2, acc ? 0.18 : 0.12, acc ? 0.95 : 0.6);
       if (b === 0) tick(t, acc ? 0.6 : 0.35, acc ? 1500 : 1900);
       if (b >= 1 && acc) taiko(t, 0.55 + b * 0.08 + (i === 0 ? 0.2 : 0), i === 0 ? 1 : 1.12, (i % 3 - 1) * 0.3);
       if (b === 0 && i === 0) taiko(t, 0.5);
+      // the mission's own colour: bongos chatter in sixteenths, flutes flick the off-beats
+      if (b >= 1) { bongo(t, acc ? 0.85 : 0.5, i % 2 ? "hi" : "lo"); bongo(t + 0.1, 0.32 + 0.06 * b, (i + 1) % 3 ? "hi" : "lo"); }
+      if (b >= 2 && !acc && i % 2) flute(t + 0.1, semi(root, s + 36), 0.5);
       if (b >= 2) { hat(t, acc ? 0.5 : 0.3); hat(t + 0.1, 0.22); if (i === 5) snare(t, 0.55 + b * 0.04); }
       if (b >= 2) stacc(t + 0.1, semi(root, s + 24 + (i % 2 ? 7 : 0)), { vel: 0.45, gain: b >= 4 ? 0.055 : 0.04, len: 0.08, pan: 0.45, cutoff: 5200, send: 0.3 });
       if (b >= 2 && acc) clap(t, 0.5 + b * 0.08);
     });
-    if (b >= 2) { tom(t0 + 8 * E8, 160, 0.6, 0.3); tom(t0 + 8.5 * E8, 130, 0.65, 0); tom(t0 + 9 * E8, 105, 0.7, -0.3); tom(t0 + 9.5 * E8, 90, 0.75, -0.4); }
-    strings(t0, [semi(root, 12), semi(root, 19), semi(root, 24)], BAR - 0.05, { attack: 0.4, vel: 0.35 + b * 0.05, gain: b ? 0.05 : 0.035, release: 0.1, cutoff: 2800 + b * 300 });
+    if (b >= 2 && b < 5) { tom(t0 + 8 * E8, 160, 0.6, 0.3); tom(t0 + 8.5 * E8, 130, 0.65, 0); tom(t0 + 9 * E8, 105, 0.7, -0.3); tom(t0 + 9.5 * E8, 90, 0.75, -0.4); }
+    strings(t0, [semi(root, 12), semi(root, 19), semi(root, 24)], Math.min(BAR, C.blackout - t0) - 0.05, { attack: 0.4, vel: 0.35 + b * 0.05, gain: b ? 0.05 : 0.035, release: 0.1, cutoff: 2800 + b * 300 });
     if (b >= 2) brass(t0, [semi(root, 12), semi(root, 19), semi(root, 24)], 0.75, { vel: 0.9, attack: 0.02, release: 0.25, gain: 0.085 });
     if (b >= 1) whoosh(t0 - 0.3, 0.32, { f0: 500, f1: 6500, vel: 0.4, p0: b % 2 ? 0.7 : -0.7, p1: b % 2 ? -0.7 : 0.7 });
   });
   typing(...C.typing[0]); typing(...C.typing[1]);
   shutter(C.cardA); shutter(C.cardB); lock(C.cardA + 0.12); lock(C.cardB + 0.12);
+  impact(C.mission, 0.8);
   brass(C.missionLine, ["D3", "A3", "D4", "F4"], 0.3, { vel: 0.95, attack: 0.012, release: 0.2, gain: 0.08 }); pianoHit(C.missionLine, "D1", 0.7, 1.6); impact(C.missionLine, 1);
-  impact(C.mission, 0.8); impact(C.stamp, 0.7);
-  stamp(C.stamp);
   const rootAt = (t) => roots[Math.min(roots.length - 1, Math.max(0, Math.floor((t - C.ignite) / BAR)))];
-  for (const { t, fx } of C.hits) {
+  // a burst of crackle for the fuse's burn wipe and the target hit
+  function crackle(t, len, vel = 0.5) { fuse(t, t + len, [[t + 0.01, vel], [t + len - 0.02, 0.0001]]); }
+  crackle(M0, 0.42, 0.5);
+  for (const { t, fx } of C.montage) {
     const r = rootAt(t);
+    if (fx === "hit") { crash(t, 0.4, 1.6); pianoHit(t, r.replace(/\d/, "1"), 0.6, 1.6); impact(t, 1); brass(t, [semi(r, 12), semi(r, 19), semi(r, 24), semi(r, 27)], 0.4, { vel: 1, attack: 0.012, release: 0.3, gain: 0.075 }); }
     if (fx === "stab") { brass(t, [semi(r, 12), semi(r, 15), semi(r, 19), semi(r, 24)], 0.18, { vel: 0.95, attack: 0.012, release: 0.15, gain: 0.095 }); taiko(t, 0.6, 1.05); clap(t, 0.8); impact(t, 0.7); }
-    if (fx === "zap") { zap(t, 0.9, (t * 7 % 2) - 1); snare(t, 0.4); impact(t, 0.45); }
+    if (fx === "zap") { zap(t, 1, (t * 7 % 2) - 1); snare(t, 0.45); impact(t, 0.55); }
+    if (fx === "impact") { impact(t, 1.3); taiko(t, 0.9, 0.9); crackle(t, 0.5, 0.55); zap(t, 0.6, 0.3); }
     if (fx === "lock") { lock(t); taiko(t, 0.45, 1.2); impact(t, 0.55); }
   }
-  [C.briefA, C.briefB, C.montage, C.result].forEach((t) => { crash(t, 0.35, 1.6); pianoHit(t, rootAt(t).replace(/\d/, "1"), 0.55, 1.6); impact(t, 1); });
   C.titles.forEach((t) => impact(t, 0.6));
   impact(C.fire, 1.2); impact(C.turn, 0.5);
-  zap(C.briefB + 0.05, 0.7, 0.4);
-  brass(C.montage, ["D3", "A3", "D4", "F4", "A4"], 0.6, { vel: 1, attack: 0.012, release: 0.35, gain: 0.07 });
-  snareRoll(C.result + 1, C.riser, 0.15, 0.7, 0.05);
-  riser(C.riser, C.blackout, "A2");
+  // strobe: each flash cut is a drum, the riser climbs to the cut-off
+  C.strobe.forEach((t, i) => { taiko(t, 0.55 + i * 0.06, 1 + i * 0.03, (i % 2 ? 0.3 : -0.3)); impact(t, 0.35 + i * 0.05); });
+  snareRoll(S0, C.blackout - 0.02, 0.2, 0.95, 0.05);
+  riser(S0, C.blackout, "A2");
   revCymbal(C.blackout, 0.6, 0.25);
 
-  // ═══ Finale ═══
-  revCymbal(C.logo, 0.19, 0.45); whoosh(C.logo - 0.17, 0.17, { f0: 200, f1: 3000, vel: 0.55, p0: 0, p1: 0 });
-  braam(C.logo, "D1", 3.4);
-  brass(C.logo, ["D2", "A2", "D3", "F3", "A3", "D4"], 1.6, { vel: 1, attack: 0.015, release: 1.2, bright: 1.1, gain: 0.06 });
-  strings(C.logo, ["D2", "A2", "F3"], 3.2, { attack: 0.05, vel: 0.5, release: 1.2, gain: 0.05, cutoff: 2200 });
-  pianoHit(C.tagline, "D5", 0.45, 2.2); pianoHit(C.tagline, "A4", 0.3, 2.2); vibes(C.tagline, "F5", 2.2, 0.4, -0.2);
-  strings(C.tagline, ["D5", "A5"], 1.6, { attack: 0.4, vel: 0.25, release: 0.6, gain: 0.03, cutoff: 6000 });
-  strings(C.destruct, ["D2", "A2"], C.burn - C.destruct + 0.2, { attack: 0.3, vel: 0.3, release: 0.4, gain: 0.04, cutoff: 700, tremolo: 6 });
-  C.countdown.forEach((t, i) => { beep(t, 987.8 * Math.pow(2, i / 12), 0.15, 0.8); tick(t + 0.3, 0.35, 1400); });
-  beep(C.burn - 0.2, 1975.5, 0.12, 0.7);
-  pshh(C.burn);
+  // ═══ ACT III — the title burns in, the date, the stinger ═══
+  revCymbal(C.title, 0.19, 0.45); whoosh(C.title - 0.17, 0.17, { f0: 200, f1: 3000, vel: 0.55, p0: 0, p1: 0 });
+  braam(C.title, "D1", 3.6);
+  brass(C.title, ["D2", "A2", "D3", "F3", "A3", "D4"], 1.6, { vel: 1, attack: 0.015, release: 1.2, bright: 1.1, gain: 0.06 });
+  strings(C.title, ["D2", "A2", "F3"], 3.2, { attack: 0.05, vel: 0.5, release: 1.2, gain: 0.05, cutoff: 2200 });
+  choir(C.title + 0.05, ["D3", "A3", "F4", "A4"], C.date - C.title + 0.8, { vel: 0.6, attack: 0.6 });
+  fuse(C.title, C.title + 0.9, [[C.title + 0.02, 0.5], [C.title + 0.8, 0.35], [C.title + 0.88, 0.0001]]);
+  vibes(C.title + 0.9, "D6", 2.4, 0.35, 0.3); vibes(C.title + 0.95, "A6", 2.2, 0.25, -0.3);
+  pianoHit(C.date, "D4", 0.5, 2.4); pianoHit(C.date, "A3", 0.35, 2.4); pianoHit(C.date, "D1", 0.6, 2.4); vibes(C.date + 0.05, "F5", 2.2, 0.35, -0.2);
+  strings(C.date, ["D3", "A3", "D4", "E4"], C.stinger - C.date + 0.2, { attack: 0.6, vel: 0.35, release: 0.3, gain: 0.04, cutoff: 3200 });
+  // the stinger: drums gather, both captains fire, the last hit, then the room rings out
+  for (let t = C.stinger, k = 0; t < C.stingerFire - 0.02; k++) { const x = (t - C.stinger) / (C.stingerFire - C.stinger); taiko(t, 0.45 + 0.5 * x, 1.05, k % 2 ? 0.25 : -0.25); bongo(t + 0.05, 0.4 + 0.4 * x, k % 2 ? "hi" : "lo"); t += 0.2 - 0.1 * x; }
+  strings(C.stinger, ["D3", "A3", "D4"], C.stingerFire - C.stinger, { attack: 0.3, vel: 0.3, tremolo: 14, cresc: 2.2, release: 0.02, gain: 0.05 });
+  revCymbal(C.stingerFire, 0.5, 0.3);
+  zap(C.stingerFire, 1.3, -0.4); zap(C.stingerFire + 0.03, 1.3, 0.4); impact(C.stingerFire, 1.3); brass(C.stingerFire, ["D3", "A3", "D4", "F4"], 0.25, { vel: 1, attack: 0.01, release: 0.2, gain: 0.08 });
+  revCymbal(C.cut, 0.3, 0.35);
+  braam(C.cut, "D1", 2.4); crash(C.cut, 0.9, 3); timp(C.cut, "D2", 1.2, 2.6); impact(C.cut, 1.6);
+  pianoHit(C.end, "D1", 0.55, 2.2); choir(C.end, ["D3", "A3", "D4"], C.duration - C.end - 0.6, { vel: 0.4, attack: 0.4, gain: 0.03 });
 
   return ctx.startRendering();
 };

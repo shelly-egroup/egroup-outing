@@ -14,7 +14,6 @@
     "rootDir": "../lib"
   },
   "include": [
-    "../lib/opening-audio.ts",
     "../lib/opening-history.ts"
   ]
 }

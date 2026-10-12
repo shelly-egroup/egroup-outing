@@ -1,409 +1,71 @@
-/* ─── Opening trailer: a 007-style cold open into a fuse-lit mission, cut shot by shot to the score ─── */
-@property --ix { syntax: "<percentage>"; inherits: true; initial-value: 88%; }
-@property --iy { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
-@property --ir { syntax: "<length>"; inherits: true; initial-value: 0px; }
-@property --v { syntax: "<integer>"; inherits: false; initial-value: 0; }
-
+/* ─── Opening: a teaser-poster cover, then the pre-rendered trailer (scripts/trailer renders it) ─── */
 .film-opening {
-  --ink: #050506; --paper: #f2ede4; --blood: #b3001b; --laser: #ff2a4a; --laser-b: #2f74ff; --amber: #ffb04a;
-  --serif: "Noto Serif TC", "Songti TC", serif; --sans: "Noto Sans TC", system-ui, sans-serif; --mono: "JetBrains Mono", "Noto Sans TC", monospace;
-  --latin: "Marcellus", "Optima", serif; --cond: "Oswald", "Arial Narrow", sans-serif;
-  --out: cubic-bezier(.16, 1, .3, 1); --in: cubic-bezier(.7, 0, .84, 0); --io: cubic-bezier(.87, 0, .13, 1); --back: cubic-bezier(.34, 1.5, .64, 1);
-  position: fixed; inset: 0; z-index: 1000; overflow: hidden; background: var(--ink); color: var(--paper); isolation: isolate; font-family: var(--sans);
+  --ink: #030304; --paper: #f2ede4; --amber: #ffb04a;
+  --out: cubic-bezier(.16, 1, .3, 1);
+  position: fixed; inset: 0; z-index: 1000; overflow: hidden; background: var(--ink); color: var(--paper); isolation: isolate; font-family: "Noto Sans TC", system-ui, sans-serif;
 }
-.film-stage { position: absolute; inset: 0; overflow: hidden; background: var(--ink); --bar: max(0px, calc((100dvh - 100vw / 2.39) / 2)); }
-.film-stage[data-playing="false"] *, .film-stage[data-playing="false"] *::before, .film-stage[data-playing="false"] *::after,
-.film-stage[data-buffering="true"] *, .film-stage[data-buffering="true"] *::before, .film-stage[data-buffering="true"] *::after { animation-play-state: paused !important; }
-.film-opening .cut { display: block; max-width: none; user-select: none; pointer-events: none; }
-.prepaint { position: absolute; inset: 0; opacity: .001; pointer-events: none; }
-.prepaint .cut { position: absolute; width: 30vw; }
-/* The picture sits between letterbox bars (2.39:1 on landscape screens); everything inside sizes in frame units. */
-.tr-frame { position: absolute; left: 0; right: 0; top: var(--bar); bottom: var(--bar); overflow: hidden; container-type: size; background: var(--ink); }
-.shot { position: absolute; inset: 0; overflow: hidden; }
-.tr-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; }
-.tr-grain { position: absolute; inset: -50%; z-index: 3; pointer-events: none; opacity: .09; mix-blend-mode: overlay; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); animation: grain .4s steps(4) infinite; }
+.trailer-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: var(--ink); }
+/* live film grain over poster and picture: the video stays clean and small, the texture is drawn here */
+.trailer-grain { position: absolute; inset: -50%; z-index: 6; pointer-events: none; opacity: .08; mix-blend-mode: overlay; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); animation: grain .4s steps(4) infinite; }
 @keyframes grain { 0% { transform: translate(0, 0); } 25% { transform: translate(-7%, 4%); } 50% { transform: translate(5%, -6%); } 75% { transform: translate(-3%, -2%); } 100% { transform: translate(6%, 5%); } }
-
-/* Surveillance timecode in the top letterbox bar while the mission runs (text written by the film's clock) */
-.tr-hud { position: absolute; left: 22px; top: max(16px, calc(var(--bar) / 2)); z-index: 5; display: flex; align-items: center; gap: .9em; translate: 0 -50%; font: 600 12px/1 var(--mono); letter-spacing: .22em; color: rgb(242 237 228 / .7); white-space: pre; }
-.tr-hud:empty { display: none; }
-.tr-hud::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--laser); box-shadow: 0 0 6px var(--laser); }
 
 /* Controls */
 .film-controls { position: absolute; top: 18px; right: 20px; z-index: 10; }
-.film-controls button { padding: 9px 13px; border: 1px solid rgb(255 255 255 / .38); background: rgb(0 0 0 / .4); color: #fff; font: 600 12px/1 var(--cond), var(--sans); letter-spacing: .24em; cursor: pointer; backdrop-filter: blur(6px); transition: background .2s, color .2s, border-color .2s; }
+.film-controls button { padding: 9px 13px; border: 1px solid rgb(255 255 255 / .38); background: rgb(0 0 0 / .4); color: #fff; font: 600 12px/1 "Oswald", "Noto Sans TC", sans-serif; letter-spacing: .24em; cursor: pointer; backdrop-filter: blur(6px); transition: background .2s, color .2s, border-color .2s; }
 .film-controls button:hover { background: #fff; color: var(--ink); border-color: #fff; }
 .film-controls button:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
-.film-audio-note { position: absolute; z-index: 10; bottom: 22px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 32px); margin: 0; padding: 8px 14px; border: 0; background: rgb(0 0 0 / .72); color: #fff; font: 600 13px/1.6 var(--sans); text-align: center; }
-.film-sound-prompt { text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
-.film-sound-prompt:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
-.film-progress { position: absolute; bottom: 0; left: 0; z-index: 10; width: 100%; height: 2px; background: rgb(255 255 255 / .55); transform-origin: left; transform: scaleX(0); }
+.film-progress { position: absolute; bottom: 0; left: 0; z-index: 10; width: 100%; height: 2px; background: rgb(255 255 255 / .5); transform-origin: left; transform: scaleX(0); }
+.trailer-note { position: absolute; z-index: 10; bottom: 22px; left: 50%; transform: translateX(-50%); padding: 8px 14px; background: rgb(0 0 0 / .72); color: #fff; font: 600 13px/1.6 "Noto Sans TC", sans-serif; }
 
-/* ── Cover: a teaser poster that waits for a real tap ── */
-.tr-cover { position: absolute; inset: 0; z-index: 7; display: grid; place-items: center; overflow: hidden auto; background: var(--ink); }
-.tr-cover::before, .tr-cover::after { content: ""; position: absolute; left: 0; right: 0; z-index: 1; height: max(0px, calc((100dvh - 100vw / 2.39) / 2)); background: var(--ink); }
-.tr-cover::before { top: 0; } .tr-cover::after { bottom: 0; }
-.tr-cover-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; opacity: .42; filter: saturate(.9) contrast(1.05); animation: cover-art 14s var(--out) both; }
-@keyframes cover-art { from { opacity: 0; transform: scale(1.14); } 12% { opacity: .42; } to { opacity: .42; transform: scale(1.02); } }
-.tr-cover-body { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; padding: 64px 20px 40px; text-align: center; background: radial-gradient(closest-side, rgb(5 5 6 / .78), rgb(5 5 6 / 0)); }
-.tr-cover-eyebrow { display: flex; align-items: center; gap: 14px; font: 500 12px/1 var(--cond); letter-spacing: .52em; color: rgb(255 255 255 / .82); animation: cover-rise .8s .2s var(--out) both; }
-.tr-cover-eyebrow b { padding-left: 14px; border-left: 1px solid rgb(255 255 255 / .4); font: 700 12px/1 var(--sans); letter-spacing: .4em; }
-.tr-cover-logo { --logo-size: clamp(60px, min(13vw, 15svh), 132px); margin: 4.2svh 0 3svh; filter: drop-shadow(0 14px 26px rgb(0 0 0 / .55)); animation: cover-logo 1s .3s var(--out) both; }
-.tr-cover-match { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 14px; max-width: 520px; font: 700 15px/1.4 var(--sans); letter-spacing: .14em; text-wrap: balance; animation: cover-rise .8s .5s var(--out) both; }
-.tr-cover-match b { flex: none; padding: 6px 10px 5px; background: var(--laser); color: #fff; font-weight: 900; letter-spacing: .24em; white-space: nowrap; }
-.tr-play { position: relative; margin-top: 4.4svh; display: inline-flex; align-items: center; gap: 16px; min-height: 64px; padding: 8px 28px 8px 8px; border: 1px solid rgb(255 255 255 / .55); border-radius: 999px; background: rgb(5 5 6 / .55); color: #fff; font: 700 17px/1 var(--sans); letter-spacing: .28em; cursor: pointer; backdrop-filter: blur(8px); transition: background .2s, color .2s, border-color .2s, transform .2s; animation: cover-rise .8s .65s var(--out) both; }
-.tr-play:disabled { cursor: wait; padding: 8px 24px; }
-.tr-play:hover:not(:disabled) { background: #fff; color: var(--ink); border-color: #fff; }
-.tr-play:active:not(:disabled) { transform: scale(.97); }
-.tr-play:focus-visible { outline: 2px solid var(--amber); outline-offset: 4px; }
-.tr-play-ring { position: relative; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: #fff; color: var(--ink); transition: background .2s, color .2s; }
-.tr-play:hover:not(:disabled) .tr-play-ring { background: var(--ink); color: #fff; }
-.tr-play-ring svg { width: 20px; height: 20px; margin-left: 2px; fill: currentColor; }
-.tr-play-ring::after { content: ""; position: absolute; inset: -1px; border-radius: 50%; border: 1px solid #fff; animation: play-ping 2s 1.4s var(--out) infinite; }
+/* ── Cover: a teaser poster that waits for a real tap, then dissolves into the film's own black ── */
+.trailer-cover { position: absolute; inset: 0; z-index: 5; display: grid; align-items: end; justify-items: center; overflow: hidden; background: var(--ink); }
+.film-opening[data-phase="playing"] .trailer-cover { opacity: 0; visibility: hidden; transition: opacity .5s ease, visibility 0s .5s; }
+.trailer-cover-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 26%; animation: cover-art 18s var(--out) both; }
+@keyframes cover-art { from { opacity: 0; transform: scale(1.12); } 10% { opacity: 1; } to { transform: scale(1.01); } }
+/* poster grade: the faces stay lit, the billing sinks into black */
+.trailer-cover::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(to top, var(--ink) 6%, rgb(3 3 4 / .86) 30%, rgb(3 3 4 / .2) 58%, rgb(3 3 4 / 0) 70%, rgb(3 3 4 / .55)),
+    radial-gradient(130% 100% at 50% 30%, transparent 45%, rgb(3 3 4 / .75)); }
+.trailer-credit { position: absolute; top: 22px; left: 24px; z-index: 2; margin: 0; font: 500 11px/1 "Oswald", "Noto Sans TC", sans-serif; letter-spacing: .5em; color: rgb(255 255 255 / .72); animation: cover-rise .8s .9s var(--out) both; }
+.trailer-credit b { margin: 0 .3em; font-weight: 300; }
+.trailer-cover-body { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: min(100%, 760px); padding: 24px 20px max(28px, 5.5svh); text-align: center; }
+.trailer-eyebrow { display: flex; align-items: center; gap: 14px; margin: 0; font: 500 12px/1 "Oswald", sans-serif; letter-spacing: .52em; color: rgb(255 255 255 / .85); animation: cover-rise .8s .2s var(--out) both; }
+.trailer-eyebrow b { padding-left: 14px; border-left: 1px solid rgb(255 255 255 / .4); font: 700 12px/1 "Noto Sans TC", sans-serif; letter-spacing: .4em; }
+.trailer-mark { --mark-size: clamp(56px, min(9.5vw, 12.5svh), 128px); margin: 2.6svh 0 0; animation: cover-mark 1.2s .3s var(--out) both; }
+.trailer-mission { margin: 2svh 0 0; font: 600 13px/1 "JetBrains Mono", monospace; letter-spacing: .6em; margin-right: -.6em; color: var(--amber); animation: cover-rise .8s .55s var(--out) both; }
+.trailer-play { position: relative; margin-top: 3.6svh; display: inline-flex; align-items: center; justify-content: center; gap: 16px; min-width: 216px; min-height: 64px; padding: 8px 28px 8px 8px; border: 1px solid rgb(255 255 255 / .55); border-radius: 999px; background: rgb(3 3 4 / .5); color: #fff; font: 700 17px/1 "Noto Sans TC", sans-serif; letter-spacing: .28em; cursor: pointer; backdrop-filter: blur(8px); transition: background .2s, color .2s, border-color .2s, transform .2s; animation: cover-rise .8s .65s var(--out) both; }
+.trailer-play:disabled { cursor: wait; }
+.trailer-play[aria-busy="true"] { padding: 8px 24px; }
+.trailer-play:hover:not(:disabled), .film-opening[data-phase="starting"] .trailer-play { background: #fff; color: var(--ink); border-color: #fff; }
+.trailer-play:active:not(:disabled) { transform: scale(.97); }
+.trailer-play:focus-visible { outline: 2px solid var(--amber); outline-offset: 4px; }
+.trailer-play-ring { position: relative; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: #fff; color: var(--ink); transition: background .2s, color .2s; }
+.trailer-play:hover:not(:disabled) .trailer-play-ring, .film-opening[data-phase="starting"] .trailer-play-ring { background: var(--ink); color: #fff; }
+.trailer-play-ring svg { width: 20px; height: 20px; margin-left: 2px; fill: currentColor; }
+.trailer-play-ring::after { content: ""; position: absolute; inset: -1px; border-radius: 50%; border: 1px solid #fff; animation: play-ping 2s 1.4s var(--out) infinite; }
 @keyframes play-ping { 0% { transform: scale(1); opacity: .9; } 70%, 100% { transform: scale(1.9); opacity: 0; } }
-.tr-cover-hint { min-height: 21px; max-width: 320px; margin: 2.6svh 0 0; color: rgb(255 255 255 / .82); font-size: 13px; font-weight: 500; line-height: 1.6; letter-spacing: .14em; animation: cover-rise .8s .8s var(--out) both; }
-.tr-cover-partners { margin-top: 3svh; font: 500 11px/1 var(--cond), var(--sans); letter-spacing: .5em; color: rgb(255 255 255 / .6); animation: cover-rise .8s .9s var(--out) both; }
-.tr-cover-partners b { margin: 0 .5em; font-weight: 300; }
+.trailer-hint { min-height: 21px; max-width: 320px; margin: 2svh 0 0; color: rgb(255 255 255 / .78); font-size: 13px; font-weight: 500; line-height: 1.6; letter-spacing: .14em; animation: cover-rise .8s .8s var(--out) both; }
 @keyframes cover-rise { from { opacity: 0; transform: translateY(16px); } }
-@keyframes cover-logo { from { opacity: 0; transform: scale(1.25); filter: blur(10px) drop-shadow(0 14px 26px rgb(0 0 0 / .55)); } }
-.tr-cover.is-launching .tr-play { background: #fff; color: var(--ink); }
+@keyframes cover-mark { from { opacity: 0; transform: scale(1.12); filter: blur(10px); } }
 
-/* ═══ ACT I — gun barrel ═══ */
-/* 0.00–1.00 five dots cross the dark, one per note */
-.tr-dot { position: absolute; top: 50%; left: var(--x); width: var(--d); height: var(--d); margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2); border-radius: 50%; background: var(--paper); --d: min(7cqh, 10cqw); }
-.tr-dot.d0 { --x: 12%; --from: -20cqw; } .tr-dot.d1 { --x: 31%; --from: -19cqw; } .tr-dot.d2 { --x: 50%; --from: -19cqw; } .tr-dot.d3 { --x: 69%; --from: -19cqw; } .tr-dot.d4 { --x: 88%; --from: -19cqw; }
-.sh-dots .tr-dot { animation: dot-in .16s var(--out) both; }
-.sh-dots .d1 { animation-delay: .25s; } .sh-dots .d2 { animation-delay: .5s; } .sh-dots .d3 { animation-delay: .75s; } .sh-dots .d4 { animation-delay: 1s; }
-@keyframes dot-in { from { transform: translateX(var(--from)) scaleX(2.4); opacity: 0; } 30% { opacity: 1; } to { transform: none; } }
-.tr-dot-out { z-index: 6; animation: dot-out .22s var(--in) both; }
-@keyframes dot-out { to { transform: scale(0); opacity: 0; } }
-
-/* 1.00–6.00 the barrel. --ix/--iy/--ir place the opening; the iris is black everywhere outside it. */
-.sh-barrel { --R: min(46cqh, 44cqw); --d: min(7cqh, 10cqw); animation: iris 5s linear both; }
-@keyframes iris {
-  0% { --ix: 88%; --iy: 50%; --ir: calc(var(--d) / 2); animation-timing-function: cubic-bezier(.3, 0, .2, 1); }
-  14% { --ir: var(--R); }
-  24% { --ix: 56%; animation-timing-function: cubic-bezier(.4, 0, .4, 1); }
-  40% { --ix: 50%; --iy: 50%; --ir: var(--R); animation-timing-function: linear; }
-  60% { --ix: 50%; --iy: 50%; }
-  60.6% { --ix: 50.8%; --iy: 49.2%; } 61.2% { --ix: 49.4%; --iy: 50.6%; } 62% { --ix: 50%; --iy: 50%; animation-timing-function: var(--in); }
-  80% { --iy: 50%; --ir: var(--R); animation-timing-function: cubic-bezier(.55, 0, .9, .45); }
-  92% { --iy: 63%; --ir: var(--R); animation-timing-function: cubic-bezier(.7, 0, .9, .4); }
-  98%, 100% { --ix: 50%; --iy: 63%; --ir: calc(var(--d) / 2); }
-}
-.tr-iris { position: absolute; inset: 0; z-index: 5; background: var(--ink); -webkit-mask-image: radial-gradient(circle var(--ir) at var(--ix) var(--iy), transparent calc(100% - 1.5px), #000 100%); mask-image: radial-gradient(circle var(--ir) at var(--ix) var(--iy), transparent calc(100% - 1.5px), #000 100%); }
-.tr-barrel { position: absolute; left: var(--ix); top: var(--iy); width: calc(var(--R) * 2); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; overflow: hidden; animation: barrel-sway 5s linear both; }
-@keyframes barrel-sway { 0%, 80% { rotate: 0deg; } 92%, 100% { rotate: -9deg; } }
-.tr-bore { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; animation: bore-lit 5s linear both; }
-@keyframes bore-lit { 0%, 59.9% { filter: none; } 60% { filter: brightness(2.6) sepia(.5); } 61.6% { filter: brightness(1.5) sepia(.3); } 65%, 100% { filter: none; } }
-.tr-rifling { animation: rifling 5s linear both; transform-origin: 0 0; }
-@keyframes rifling { 0% { transform: rotate(-30deg); } 80% { transform: rotate(26deg); } 100% { transform: rotate(64deg); } }
-/* the far end of the bore: a lit studio, where the agent walks in, turns and fires */
-.tr-world { position: absolute; left: 50%; top: 50%; width: 58%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; overflow: hidden; background: radial-gradient(circle at 50% 46%, #faf7f1 0 34%, #e1dacd 62%, #b9b1a3 100%); }
-.tr-agent { position: absolute; left: 50%; bottom: 17%; height: 66%; transform-origin: 50% 22%; }
-.tr-agent .cut { height: 100%; width: auto; }
-.tr-walk { animation: walk 5s linear both; }
-.tr-walk .cut { translate: -55% 0; animation: walk-bob .5s ease-in-out infinite; }
-@keyframes walk { 0% { left: -6%; opacity: 1; } 39.9% { left: 47%; opacity: 1; } 40%, 100% { left: 47%; opacity: 0; } }
-@keyframes walk-bob { 0%, 100% { transform: translateY(0) rotate(0deg); } 25% { transform: translateY(-1.2%) rotate(.6deg); } 50% { transform: translateY(0) rotate(0deg); } 75% { transform: translateY(-1.2%) rotate(-.6deg); } }
-.tr-aim { opacity: 0; animation: aim 5s linear both; }
-.tr-aim .cut { translate: -52% 0; }
-@keyframes aim {
-  0%, 39.9% { opacity: 0; transform: scale(1.06) translateX(2%); }
-  40% { opacity: 1; transform: scale(1.06) translateX(2%); animation-timing-function: var(--out); }
-  43% { transform: scale(1); animation-timing-function: cubic-bezier(.4, 0, .6, 1); }
-  60% { transform: scale(1.34); animation-timing-function: var(--out); }
-  60.8% { transform: scale(1.42) translate(.8%, -.6%); }
-  61.6% { transform: scale(1.38) translate(-.6%, .4%); }
-  63%, 100% { opacity: 1; transform: scale(1.36); }
-}
-/* muzzle: the red lens sits at 12.8% / 14.5% of the aiming cut-out */
-.tr-muzzle { position: absolute; left: calc(12.8% - 52%); top: 14.5%; width: 0; height: 0; }
-.tr-muzzle::before, .tr-muzzle::after { content: ""; position: absolute; left: 0; top: 0; translate: -50% -50%; border-radius: 50%; opacity: 0; animation: muzzle 5s linear both; }
-.tr-muzzle::before { width: 70cqh; height: 70cqh; background: radial-gradient(circle, #fff 0 5%, rgb(255 244 228 / .95) 9%, rgb(255 92 112 / .7) 18%, rgb(255 42 74 / .25) 32%, transparent 56%); }
-.tr-muzzle::after { width: 120cqh; height: 120cqh; border-radius: 0; background: linear-gradient(transparent calc(50% - .35cqh), #fff calc(50% - .1cqh) calc(50% + .1cqh), transparent calc(50% + .35cqh)), linear-gradient(90deg, transparent calc(50% - .35cqh), #fff calc(50% - .1cqh) calc(50% + .1cqh), transparent calc(50% + .35cqh)); -webkit-mask: radial-gradient(circle, #000, transparent 50%); mask: radial-gradient(circle, #000, transparent 50%); rotate: 18deg; }
-@keyframes muzzle { 0%, 59.9% { opacity: 0; transform: scale(.3); } 60% { opacity: 1; transform: scale(1); } 61.4% { opacity: .9; transform: scale(1.25); } 64% { opacity: 0; transform: scale(1.5); } 100% { opacity: 0; } }
-.tr-fireflash { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, #fff 0 40%, rgb(255 246 236 / .85) 70%, rgb(255 246 236 / 0) 100%); opacity: 0; animation: fireflash 5s linear both; }
-@keyframes fireflash { 0%, 59.9% { opacity: 0; } 60% { opacity: .95; } 61% { opacity: .35; } 61.8% { opacity: .6; } 64%, 100% { opacity: 0; } }
-/* the laser-red curtain runs down the barrel; the scene stays visible through it */
-.tr-drip { position: absolute; left: -2%; top: 0; width: 104%; height: 130%; fill: var(--blood); mix-blend-mode: multiply; transform: translateY(-101%); animation: drip 5s linear both; }
-@keyframes drip { 0%, 61% { transform: translateY(-101%); animation-timing-function: cubic-bezier(.45, 0, .7, .5); } 86%, 100% { transform: translateY(-14%); } }
-.tr-bleed { position: absolute; inset: 0; background: var(--blood); opacity: 0; animation: bleed 5s linear both; }
-@keyframes bleed { 0%, 86% { opacity: 0; } 96%, 100% { opacity: 1; } }
-
-/* ── 6.00–10.00 title sequence ── */
-.tr-title { position: absolute; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 2.2cqh; }
-.tr-title small { font: 400 3cqh/1 var(--latin); letter-spacing: .6em; color: rgb(242 237 228 / .86); animation: title-small .9s .1s var(--out) both; }
-.tr-title strong { font: 900 min(15cqh, 12.5cqw)/1.05 var(--serif); letter-spacing: .1em; white-space: nowrap; animation: title-big 1s var(--out) both; }
-@keyframes title-small { from { opacity: 0; letter-spacing: 1.1em; } }
-@keyframes title-big { 0% { opacity: 0; letter-spacing: .4em; filter: blur(14px); } 45% { opacity: 1; filter: blur(0); } 100% { letter-spacing: .1em; } }
-.tr-sil, .tr-face { position: absolute; aspect-ratio: var(--ar); -webkit-mask: var(--src) center / contain no-repeat; mask: var(--src) center / contain no-repeat; }
-/* 6.00 the red dot floods the frame */
-.sh-title-1 { background: var(--ink); }
-.tr-redwipe { position: absolute; inset: 0; background: var(--blood); clip-path: circle(min(3.5cqh, 5cqw) at 50% 63%); animation: redwipe .42s cubic-bezier(.6, 0, .2, 1) both; }
-@keyframes redwipe { to { clip-path: circle(150% at 50% 63%); } }
-.sh-title-1 .tr-sil-a { left: 3cqw; bottom: -46cqh; height: 158cqh; background: var(--ink); animation: sil-drift-r 1s linear both; }
-@keyframes sil-drift-r { from { transform: translateX(-4cqw) scale(1.04); } to { transform: translateX(1cqw); } }
-.sh-title-1 .tr-title { right: 8cqw; top: 50%; translate: 0 -50%; align-items: flex-end; }
-.sh-title-1 .tr-title > * { animation-delay: .16s; }
-/* 7.00 black, a scan line, the second boss in red */
-.sh-title-2 .tr-sil-b { right: 6cqw; bottom: -46cqh; height: 158cqh; background: var(--blood); animation: sil-drift-l 1s linear both; }
-@keyframes sil-drift-l { from { transform: translateX(4cqw) scale(1.04); } to { transform: translateX(-1cqw); } }
-.tr-scan { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--laser); box-shadow: 0 0 12px 2px rgb(255 42 74 / .8); transform-origin: 0 50%; animation: scan .5s var(--out) both; }
-@keyframes scan { 0% { transform: scaleX(0); opacity: 1; } 50% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1) scaleY(30); opacity: 0; } }
-.sh-title-2 .tr-title { left: 8cqw; top: 50%; translate: 0 -50%; }
-/* 8.00 two routes, split on a diagonal, in duotone */
-/* a true duotone: the arena's blacks go oxblood, its lights go laser red */
-.tr-duo { position: absolute; inset: 0; overflow: hidden; }
-.tr-duo .cut { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.3) brightness(1.75); animation: duo 1s linear both; }
-.tr-duo > i, .tr-duo > i::after { position: absolute; inset: 0; background: #ff4a4a; mix-blend-mode: multiply; }
-.tr-duo > i::after { content: ""; background: #3c0008; mix-blend-mode: screen; }
-@keyframes duo { from { transform: scale(1.22); } to { transform: scale(1.06); } }
-.tr-scan-low { top: 74%; }
-.sh-title-3 .tr-title { left: 8cqw; top: 50%; translate: 0 -50%; text-shadow: 0 0 3cqh rgb(0 0 0 / .9), 0 0 8cqh rgb(0 0 0 / .7); }
-/* 9.00 face-off: white silhouettes, a red wire between them that becomes the fuse */
-.tr-wire { position: absolute; left: 0; right: 0; top: 30%; height: 2px; margin-top: -1px; background: var(--laser); box-shadow: 0 0 10px 1px rgb(255 42 74 / .85); transform-origin: 50% 50%; animation: wire 1s linear both; }
-@keyframes wire { 0% { transform: scaleX(0); } 22% { transform: scaleX(1); } 70% { opacity: 1; } 84% { opacity: .55; } 88% { opacity: 1; } 92% { opacity: .6; } 100% { transform: scaleX(1); opacity: 1; box-shadow: 0 0 22px 4px rgb(255 42 74 / .95); } }
-.tr-face { bottom: -42cqh; height: 150cqh; background: var(--paper); }
-.tr-face-a { left: 4cqw; animation: face-a 1s var(--out) both; }
-.tr-face-b { right: 7cqw; animation: face-b 1s var(--out) both; }
-@keyframes face-a { from { transform: translateX(-8cqw); } }
-@keyframes face-b { from { transform: translateX(8cqw); } }
-.sh-title-4 .tr-title { left: 50%; top: 56%; translate: -50% 0; align-items: center; }
-.sh-title-4 .tr-title strong { font-size: min(11cqh, 9cqw); }
-
-/* ═══ ACT II — the mission ═══ */
-/* 10.00 the fuse is lit (drawn on the canvas along the wire's line) */
-.tr-brief { position: absolute; left: 8cqw; top: 46%; display: grid; gap: 3cqh; }
-.tr-brief p { margin: 0; }
-.tr-brief-title { display: flex; align-items: center; font: 700 min(11cqh, 11cqw)/1 var(--sans); letter-spacing: .32em; }
-.tr-brief-meta { font: 600 3cqh/1 var(--mono); letter-spacing: .3em; color: rgb(242 237 228 / .66); animation: rise-in .6s .9s var(--out) both; }
-.tr-brief-meta b { margin: 0 1em; color: var(--amber); font-weight: 400; }
-.tr-ch { opacity: 0; animation: ch .01s step-start both; }
-@keyframes ch { to { opacity: 1; } }
-.tr-caret { display: inline-block; width: .5em; height: .9em; margin-left: .1em; background: var(--amber); opacity: 0; animation: caret-blink .5s step-end .9s infinite; }
-@keyframes caret-blink { 0% { opacity: 1; } 50%, 100% { opacity: 0; } }
-@keyframes caret { 50% { opacity: 0; } }
-@keyframes rise-in { from { opacity: 0; transform: translateY(2cqh); } }
-/* 12.00 dossier: orders on the left, two files on the right */
-.sh-dossier { background: #08090b; }
-.tr-grid { position: absolute; inset: 0; background-image: linear-gradient(rgb(255 255 255 / .045) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / .045) 1px, transparent 1px); background-size: 6cqh 6cqh; animation: grid-in 2s linear both; }
-@keyframes grid-in { from { background-position: 0 -3cqh; opacity: 0; } 15% { opacity: 1; } to { background-position: 0 0; } }
-.tr-orders { position: absolute; left: 7cqw; top: 50%; translate: 0 -50%; width: 46cqw; animation: drift-in 2s linear both; }
-@keyframes drift-in { from { transform: scale(.97); } to { transform: scale(1.02); } }
-.tr-orders p { margin: 0; }
-.tr-orders-typed { font: 500 min(5.8cqh, 4.6cqw)/1.4 var(--sans); letter-spacing: .12em; color: rgb(242 237 228 / .86); }
-.tr-orders-big { display: grid; margin-top: 3cqh !important; font: 900 min(14cqh, 9.6cqw)/1.06 var(--sans); letter-spacing: .04em; }
-.tr-orders-big span { display: block; animation: slam .5s 1.2s var(--out) both; }
-.tr-orders-big span + span { color: var(--amber); animation-delay: 1.26s; }
-@keyframes slam { 0% { opacity: 0; transform: scale(1.5); filter: blur(10px); } 40% { opacity: 1; filter: blur(0); text-shadow: .06em 0 0 rgb(255 42 74 / .8), -.06em 0 0 rgb(47 116 255 / .8); } 100% { transform: none; text-shadow: none; } }
-.tr-files { position: absolute; right: 6cqw; top: 50%; translate: 0 -50%; display: flex; gap: 2.4cqw; animation: drift-in 2s linear both; }
-.tr-file { position: relative; margin: 0; width: min(21cqw, 38cqh); animation: file-in .5s var(--out) both; }
-.tr-file-a { animation-delay: .4s; rotate: -2deg; }
-.tr-file-b { animation-delay: .8s; rotate: 1.6deg; }
-@keyframes file-in { from { opacity: 0; transform: translateX(14cqw) rotate(8deg); } }
-.tr-file > div { position: relative; aspect-ratio: 4 / 5; overflow: hidden; background: #d9d5cc; box-shadow: 0 2cqh 5cqh rgb(0 0 0 / .6); }
-.tr-file > div .cut { position: absolute; left: 50%; bottom: 0; height: 104%; width: auto; translate: -50% 0; filter: grayscale(1) contrast(1.1); }
-.tr-file figcaption { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: .2em .8em; margin-top: 1.8cqh; font: 700 3cqh/1.2 var(--sans); letter-spacing: .12em; }
-.tr-file figcaption b { grid-row: span 2; font: 900 6cqh/1 var(--sans); color: var(--laser); }
-.tr-file-b figcaption b { color: #6f9cff; }
-.tr-file-b { --lock: #6f9cff; }
-.tr-file figcaption small { font: 500 1.9cqh/1 var(--mono); letter-spacing: .26em; color: rgb(242 237 228 / .55); }
-/* the lock: four corner brackets snap onto the face */
-.tr-lock { position: absolute; inset: 8% 18% 46% 18%; --l: var(--lock, var(--laser)); background: linear-gradient(var(--l), var(--l)) 0 0 / 22% 2px, linear-gradient(var(--l), var(--l)) 0 0 / 2px 22%, linear-gradient(var(--l), var(--l)) 100% 0 / 22% 2px, linear-gradient(var(--l), var(--l)) 100% 0 / 2px 22%, linear-gradient(var(--l), var(--l)) 0 100% / 22% 2px, linear-gradient(var(--l), var(--l)) 0 100% / 2px 22%, linear-gradient(var(--l), var(--l)) 100% 100% / 22% 2px, linear-gradient(var(--l), var(--l)) 100% 100% / 2px 22%; background-repeat: no-repeat; animation: lock .3s var(--back) both; }
-.tr-file-a .tr-lock { animation-delay: .52s; } .tr-file-b .tr-lock { animation-delay: .92s; }
-@keyframes lock { from { opacity: 0; transform: scale(1.8); } }
-.tr-stamp { position: absolute; left: 50%; top: 42%; display: grid; justify-items: center; padding: 1.6cqh 2.8cqw 1.2cqh 3.4cqw; border: .8cqh solid var(--laser); color: var(--laser); font: 900 11cqh/1 var(--sans); letter-spacing: .3em; rotate: -12deg; translate: -50% -50%; background: rgb(8 9 11 / .35); text-shadow: 0 0 2cqh rgb(255 42 74 / .35); animation: stamp .3s 1.6s cubic-bezier(.5, 0, .3, 1.4) both; }
-.tr-stamp small { font: 600 2.4cqh/1.6 var(--mono); letter-spacing: .5em; }
-@keyframes stamp { from { opacity: 0; transform: scale(2.4); } }
-
-/* ── plan shots: full-bleed cuts on the beat, captions bottom-left ── */
-.tr-cut { position: absolute; inset: 0; overflow: hidden; opacity: 0; animation: cut-in 1ms step-start var(--cin) both, cut-out 1ms step-start var(--cout) forwards; }
-@keyframes cut-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes cut-out { from { opacity: 1; } to { opacity: 0; } }
-.tr-plate { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.kb-push .tr-plate { animation: kb-push 1s var(--cin) linear both; }
-.kb-snap .tr-plate { animation: kb-snap .5s var(--cin) var(--out) both; }
-@keyframes kb-push { from { transform: scale(1.03); } to { transform: scale(1.12); } }
-@keyframes kb-snap { from { transform: scale(1.22); } to { transform: scale(1.04); } }
-.tr-cap { position: absolute; left: 6cqw; bottom: 10cqh; z-index: 2; display: grid; justify-items: start; gap: 1.6cqh; text-shadow: 0 .4cqh 3cqh rgb(0 0 0 / .55); }
-.tr-line { display: block; overflow: hidden; padding: .06em .1em; margin: -.06em -.1em; }
-.tr-line > * { display: inline-block; animation: line-up .45s var(--out) both; animation-delay: var(--at); }
-.tr-line:nth-child(2) > * { animation-delay: calc(var(--at) + .05s); }
-.tr-line:nth-child(3) > * { animation-delay: calc(var(--at) + .1s); }
-@keyframes line-up { from { transform: translateY(105%); } }
-.tr-chip { padding: .55em .9em .5em; font: 700 2.7cqh/1 var(--sans); letter-spacing: .26em; text-shadow: none; background: var(--laser); color: #fff; }
-.tone-blue .tr-chip { background: var(--laser-b); }
-.tone-amber .tr-chip { background: #f5c842; color: var(--ink); }
-.tr-big { font: 900 min(15cqh, 14cqw)/1 var(--sans); letter-spacing: .03em; }
-.tr-sub { font: 500 min(3.4cqh, 3.6cqw)/1.4 var(--sans); letter-spacing: .2em; }
-.tr-flash { position: absolute; inset: 0; z-index: 3; background: #fff; pointer-events: none; opacity: 0; animation: flash .5s linear both; }
-@keyframes flash { 0% { opacity: .55; } 30%, 100% { opacity: 0; } }
-.tr-flash-at { animation-duration: .35s; animation-fill-mode: forwards; }
-.kb-punch { animation: cut-in 1ms step-start var(--cin) both, cut-out 1ms step-start var(--cout) forwards, punch .3s 1.6s var(--out); }
-@keyframes punch { from { transform: scale(1.06); } }
-/* laser beams sweeping the haze in the arena */
-.tr-beams { position: absolute; inset: 0; z-index: 1; overflow: hidden; }
-.tr-beams::before, .tr-beams::after { content: ""; position: absolute; left: -20%; width: 140%; height: 2px; background: linear-gradient(90deg, transparent, var(--laser) 30% 70%, transparent); box-shadow: 0 0 8px 1px rgb(255 42 74 / .9); }
-.tr-beams::before { top: 38%; animation: beam-a .8s linear both; }
-.tr-beams::after { top: 62%; background: linear-gradient(90deg, transparent, var(--laser-b) 30% 70%, transparent); box-shadow: 0 0 8px 1px rgb(47 116 255 / .9); animation: beam-b .8s linear both; }
-@keyframes beam-a { from { transform: rotate(-9deg) translateY(-12cqh); } to { transform: rotate(5deg) translateY(4cqh); } }
-@keyframes beam-b { from { transform: rotate(7deg) translateY(10cqh); } to { transform: rotate(-6deg) translateY(-6cqh); } }
-.tr-shot-beam { position: absolute; z-index: 1; left: -5%; top: 36.5%; width: 34%; height: 1.4cqh; border-radius: 1cqh; background: linear-gradient(90deg, transparent, rgb(255 80 100 / .9) 40%, #fff); box-shadow: 0 0 3cqh 1cqh rgb(255 42 74 / .7); transform-origin: 100% 50%; opacity: 0; animation: shot-beam .4s var(--cin) both; }
-@keyframes shot-beam { 0% { opacity: 0; transform: scaleX(0); } 10% { opacity: 1; transform: scaleX(1); } 40% { opacity: .9; } 100% { opacity: 0; transform: scaleX(1); } }
-
-/* ── 18.00 montage: the vault, two locks, one question ── */
-.kb-descend .tr-plate { animation: kb-descend 1s var(--cin) linear both; }
-@keyframes kb-descend { from { transform: scale(1.1) translateY(-4%); } to { transform: scale(1.04) translateY(0); } }
-.tr-grid-lasers { position: absolute; inset: 0; z-index: 1; background: repeating-linear-gradient(-14deg, transparent 0 9cqh, rgb(255 42 74 / .4) 9cqh calc(9cqh + 1px)); mix-blend-mode: screen; animation: grid-flicker .8s steps(8) both; }
-@keyframes grid-flicker { 0%, 100% { opacity: .5; } 25% { opacity: .9; } 50% { opacity: .35; } 75% { opacity: .8; } }
-/* the close-ups frame each face at 48% / 39% of a 2.39 picture (44% / 42% on a phone) */
-.kb-target { --fx: 48%; --fy: 39%; }
-.kb-target .tr-plate { transform-origin: var(--fx) var(--fy); animation: target .4s var(--cin) var(--out) both; }
-@keyframes target { from { transform: scale(1.32); } to { transform: scale(1.1); } }
-.tr-reticle { position: absolute; left: var(--fx); top: var(--fy); z-index: 1; width: 34cqh; height: 34cqh; translate: -50% -50%; border-radius: 50%; border: 2px solid var(--laser); box-shadow: 0 0 2cqh rgb(255 42 74 / .6), inset 0 0 2cqh rgb(255 42 74 / .4); animation: reticle .4s var(--cin) var(--back) both; }
-.kb-target-b .tr-reticle { border-color: var(--laser-b); box-shadow: 0 0 2cqh rgb(47 116 255 / .6), inset 0 0 2cqh rgb(47 116 255 / .4); }
-.tr-reticle::before, .tr-reticle::after { content: ""; position: absolute; background: currentColor; }
-.tr-reticle { color: var(--laser); } .kb-target-b .tr-reticle { color: var(--laser-b); }
-.tr-reticle::before { left: -18%; right: -18%; top: 50%; height: 1px; }
-.tr-reticle::after { top: -18%; bottom: -18%; left: 50%; width: 1px; }
-@keyframes reticle { from { transform: scale(2.2) rotate(45deg); opacity: 0; } to { transform: none; opacity: 1; } }
-.tr-tag { position: absolute; left: calc(var(--fx) + 22cqh); top: calc(var(--fy) - 10cqh); z-index: 1; display: grid; gap: 1cqh; font: 600 2cqh/1 var(--mono); letter-spacing: .3em; color: var(--laser); animation: rise-in .3s var(--cin) var(--out) both; }
-.kb-target-b .tr-tag { color: #7aa6ff; }
-.tr-tag b { font: 900 4.4cqh/1 var(--sans); letter-spacing: .1em; color: #fff; }
-.kb-keyart .tr-plate { animation: kb-push 1s var(--cin) linear both; }
-.tr-who { position: absolute; left: 50%; bottom: 9%; z-index: 1; margin: 0; translate: -50% 0; font: 900 min(10cqh, 9cqw)/1 var(--serif); letter-spacing: .14em; white-space: nowrap; text-shadow: 0 .6cqh 4cqh rgb(0 0 0 / .8); animation: title-big .8s var(--cin) var(--out) both; }
-
-/* ── 20.00 live intel ── */
-.tr-intel { position: absolute; inset: 0; display: grid; align-content: center; justify-items: stretch; gap: 3.6cqh; padding: 0 12cqw; background: #08090b; animation: cut-out 1ms step-start .8s forwards; }
-.tr-intel p { margin: 0; position: relative; }
-.tr-intel-head { display: flex; align-items: center; gap: 1.2em; font: 600 2.8cqh/1 var(--mono); letter-spacing: .4em; color: rgb(242 237 228 / .7); }
-.tr-intel-head i { width: 1.2cqh; height: 1.2cqh; border-radius: 50%; background: var(--laser); animation: caret .4s steps(1) infinite; }
-.tr-intel-head b { font: 700 3cqh/1 var(--sans); letter-spacing: .3em; color: var(--paper); }
-.tr-intel-row { position: relative; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 1.4cqh 2cqw; }
-.tr-intel-name { font: 900 7cqh/1 var(--sans); letter-spacing: .08em; }
-.tr-intel-name b { margin-right: .5em; font: 600 7cqh/1 var(--cond); color: var(--amber); }
-.row-b .tr-intel-name b { color: var(--laser); }
-.tr-intel-num { font: 600 17cqh/.8 var(--cond); --v: var(--n); counter-reset: v var(--v); animation: count .6s var(--out) both; }
-.tr-intel-num:empty::before { content: counter(v); }
-@keyframes count { from { --v: 0; } }
-.tr-intel-bar { grid-column: 1 / -1; height: 1.8cqh; background: rgb(255 255 255 / .1); }
-.tr-intel-bar::before { content: ""; display: block; width: var(--w); height: 100%; background: var(--amber); transform-origin: 0 50%; animation: bar-grow .7s .1s var(--out) both; }
-.row-b .tr-intel-bar::before { background: var(--laser); }
-@keyframes bar-grow { from { transform: scaleX(0); } }
-.tr-intel-winner { position: relative; margin: 0; font: 900 15cqh/1 var(--sans); letter-spacing: .06em; color: var(--paper); animation: verdict .5s .1s var(--out) both; }
-.tr-intel-line { font: 700 4.2cqh/1.3 var(--sans); letter-spacing: .16em; color: var(--paper); animation: rise-in .4s .3s var(--out) both; }
-.tr-verdict { position: absolute; inset: 0; display: grid; place-items: center; background: var(--ink); opacity: 0; animation: cut-in 1ms step-start .8s both, cut-out 1ms step-start 1.2s forwards; }
-.tr-verdict strong { font: 900 min(20cqh, 15cqw)/1 var(--serif); letter-spacing: .18em; color: var(--laser); text-shadow: 0 0 6cqh rgb(255 42 74 / .45); animation: verdict .4s .8s var(--out) both; }
-@keyframes verdict { from { transform: scale(1.35); filter: blur(8px); opacity: 0; } }
-.kb-strobe .tr-plate { animation: kb-snap .2s var(--cin) linear both; filter: contrast(1.15) saturate(1.1); }
-
-/* ── 22.00 riser ── */
-.sh-riser { display: grid; place-items: center; }
-.tr-last { position: absolute; margin: 0; font: 900 min(17cqh, 14cqw)/1 var(--serif); letter-spacing: .2em; white-space: nowrap; }
-.tr-last-1 { animation: last-1 .8s linear both; }
-.tr-last-2 { color: var(--amber); animation: last-2 .8s linear both; }
-@keyframes last-1 { 0% { opacity: 0; transform: scale(1.3); } 8% { opacity: 1; transform: scale(1); } 49.9% { opacity: 1; transform: scale(.96); } 50%, 100% { opacity: 0; } }
-@keyframes last-2 { 0%, 49.9% { opacity: 0; } 50% { opacity: 1; transform: scale(1.3); } 58% { transform: scale(1); } 100% { opacity: 1; transform: scale(.94); } }
-.tr-whiteout { position: absolute; inset: 0; background: #fff; opacity: 0; animation: whiteout .8s linear both; }
-@keyframes whiteout { 0%, 84% { opacity: 0; } 96% { opacity: 1; } 99.9% { opacity: 1; } 100% { opacity: 0; } }
-
-/* ── 23.20 the lockup, the call, the self-destruct ── */
-.sh-logo { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3.4cqh; }
-.tr-logo-plate { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .26; filter: saturate(.8) blur(2px); animation: logo-plate 5s linear both; }
-@keyframes logo-plate { from { transform: scale(1.12); } to { transform: scale(1); } }
-.tr-logo-ray { position: absolute; left: -10%; width: 120%; height: 2px; }
-.ray-a { top: 30%; background: linear-gradient(90deg, transparent, var(--laser) 20% 80%, transparent); box-shadow: 0 0 10px rgb(255 42 74 / .9); animation: ray-a .5s var(--out) both; }
-.ray-b { top: 72%; background: linear-gradient(90deg, transparent, var(--laser-b) 20% 80%, transparent); box-shadow: 0 0 10px rgb(47 116 255 / .9); animation: ray-b .5s .04s var(--out) both; }
-@keyframes ray-a { from { transform: translateX(-100%) rotate(-4deg); } to { transform: rotate(-4deg); } }
-@keyframes ray-b { from { transform: translateX(100%) rotate(3deg); } to { transform: rotate(3deg); } }
-.tr-logo-lockup { position: relative; animation: lockup 5s linear both; }
-@keyframes lockup { 0% { transform: scale(1.7); filter: blur(12px); opacity: 0; animation-timing-function: var(--out); } 5% { transform: scale(1); filter: blur(0); opacity: 1; animation-timing-function: linear; } 6% { transform: translate(.6cqh, -.4cqh); } 7% { transform: translate(-.5cqh, .3cqh); } 8% { transform: none; } 100% { transform: scale(1.06); } }
-.tr-logo { --logo-size: min(31cqh, 17cqw); filter: drop-shadow(0 2cqh 4cqh rgb(0 0 0 / .6)); }
-.tr-logo-code { position: relative; margin: 0; font: 600 2.9cqh/1 var(--mono); letter-spacing: .36em; color: rgb(242 237 228 / .78); animation: rise-in .6s .3s var(--out) both; }
-.tr-logo-code b { margin: 0 .8em; color: var(--amber); }
-.tr-logo-line { position: relative; margin: 0; font: 900 min(7cqh, 5.4cqw)/1.2 var(--sans); letter-spacing: .1em; animation: rise-in .6s 1s var(--out) both; }
-.tr-logo-line strong { color: var(--amber); }
-.tr-billing { position: relative; margin: 0; max-width: 72cqw; font: 500 1.9cqh/1.7 var(--sans); letter-spacing: .32em; color: rgb(242 237 228 / .5); text-align: center; animation: rise-in .6s 1.3s var(--out) both; }
-.tr-billing b { font-weight: 900; color: rgb(242 237 228 / .78); }
-.tr-destruct { position: absolute; left: 0; right: 0; bottom: 5cqh; display: flex; align-items: center; justify-content: center; gap: 3cqw; font: 600 2.8cqh/1 var(--mono); letter-spacing: .3em; color: rgb(242 237 228 / .82); }
-.tr-destruct p { display: flex; align-items: center; gap: 1em; margin: 0; }
-.tr-destruct p > i { width: 1.1cqh; height: 1.1cqh; border-radius: 50%; background: var(--laser); animation: caret .3s steps(1) infinite; }
-.tr-count { position: relative; width: 8cqh; height: 8cqh; }
-.tr-count b { position: absolute; inset: 0; display: grid; place-items: center; border: 1px solid rgb(255 42 74 / .7); font: 600 5.4cqh/1 var(--cond); color: var(--laser); opacity: 0; }
-.tr-count .n3 { animation: count-n .6s .4s step-start; } .tr-count .n2 { animation: count-n .6s 1s step-start; } .tr-count .n1 { animation: count-n .8s 1.6s step-start; }
-@keyframes count-n { from, to { opacity: 1; } }
-
-/* ── Portrait phones: same cuts, recomposed for a tall frame ── */
+/* portrait: the vertical one-sheet hangs from the top edge, its dark lower third carries the billing */
 @media (max-aspect-ratio: 4/5) {
-  .film-stage { --bar: 6dvh; }
-  .tr-cover::before, .tr-cover::after { height: 6dvh; }
+  .trailer-cover-art { bottom: auto; height: auto; aspect-ratio: 2 / 3; object-position: 50% 0; transform-origin: 50% 30%;
+    -webkit-mask-image: linear-gradient(#000 62%, transparent 99%); mask-image: linear-gradient(#000 62%, transparent 99%); }
+  .trailer-cover::before { background: linear-gradient(to top, var(--ink) 18%, rgb(3 3 4 / .72) 36%, rgb(3 3 4 / 0) 52%, rgb(3 3 4 / 0) 84%, rgb(3 3 4 / .55)); }
+  .trailer-credit { top: 20px; left: 16px; letter-spacing: .36em; }
   .film-controls { top: 12px; right: 12px; }
-  .tr-dot { --d: 9cqw; }
-  .tr-dot.d0 { --x: 12%; } .tr-dot.d1 { --x: 31%; } .tr-dot.d2 { --x: 50%; } .tr-dot.d3 { --x: 69%; } .tr-dot.d4 { --x: 88%; }
-  .sh-barrel { --R: 46cqw; --d: 9cqw; }
-  .tr-title strong { font-size: 15cqw; }
-  .tr-title small { font-size: 2.6cqw; }
-  .sh-title-1 .tr-sil-a { left: -14cqw; bottom: -6cqh; height: 74cqh; }
-  .sh-title-1 .tr-title { right: auto; left: 8cqw; top: 13cqh; translate: none; align-items: flex-start; }
-  .sh-title-2 .tr-sil-b { right: -4cqw; bottom: -6cqh; height: 74cqh; }
-  .sh-title-2 .tr-title { left: 8cqw; top: 13cqh; translate: none; }
-  .tr-scan { top: 31%; }
-  .sh-title-3 .tr-title { left: 8cqw; top: 13cqh; translate: none; }
-  .sh-title-3 .tr-title strong { font-size: 15cqw; }
-  .tr-scan-low { top: 31%; }
-  .tr-face { bottom: -10cqh; height: 64cqh; }
-  .tr-face-a { left: -22cqw; } .tr-face-b { right: -8cqw; }
-  .sh-title-4 .tr-title { top: 11cqh; }
-  .sh-title-4 .tr-title strong { font-size: 11cqw; }
-  .tr-brief { left: 8cqw; right: 8cqw; top: 40%; }
-  .tr-brief-title { font-size: 13cqw; }
-  .tr-brief-meta { font-size: 2.6cqw; line-height: 1.8; }
-  .tr-orders { left: 8cqw; top: 9cqh; width: 84cqw; translate: none; }
-  .tr-orders-typed { font-size: 4.4cqw; }
-  .tr-orders-big { font-size: 12cqw; }
-  .tr-files { right: auto; left: 8cqw; top: auto; bottom: 7cqh; translate: none; gap: 5cqw; }
-  .tr-file { width: 39cqw; }
-  .tr-file figcaption { font-size: 3.4cqw; }
-  .tr-file figcaption b { font-size: 8cqw; }
-  .tr-file figcaption small { font-size: 2.2cqw; }
-  .tr-stamp { font-size: 11cqw; border-width: 1.2cqw; top: 36%; }
-  .tr-stamp small { font-size: 2.4cqw; }
-  .tr-cap { left: 7cqw; right: 7cqw; bottom: 8cqh; }
-  .tr-chip { font-size: 3.2cqw; }
-  .tr-big { font-size: 15cqw; }
-  .tr-sub { font-size: 3.6cqw; }
-  .tr-plate[src*="agent-a-laser"] { object-position: 40% 50%; }
-  .tr-plate[src*="teams"] { object-position: 20% 50%; }
-  .tr-plate[src*="agent-b-aim"] { object-position: 44% 50%; }
-  .tr-plate[src*="gear"] { object-position: 42% 50%; }
-  .tr-shot-beam { display: none; }
-  .tr-intel-winner { font-size: 15cqw; }
-  .tr-plate[src*="vault"] { object-position: 50% 50%; }
-  .tr-reticle { width: 52cqw; height: 52cqw; }
-  .tr-tag { left: 10cqw; top: auto; bottom: 12cqh; font-size: 3cqw; }
-  .tr-tag b { font-size: 7cqw; }
-  .kb-target { --fx: 44%; --fy: 42%; }
-  .tr-who { bottom: 9%; font-size: 12cqw; }
-  .tr-intel { padding: 0 8cqw; gap: 3cqh; }
-  .tr-intel-head { font-size: 2.8cqw; }
-  .tr-intel-head b { font-size: 3.2cqw; }
-  .tr-intel-name, .tr-intel-name b { font-size: 6.4cqw; }
-  .tr-intel-num { font-size: 16cqw; }
-  .tr-intel-line { font-size: 4.6cqw; }
-  .tr-verdict strong { font-size: 17cqw; }
-  .tr-last { font-size: 16cqw; }
-  .tr-logo { --logo-size: 26cqw; }
-  .tr-logo-code { font-size: 2.8cqw; letter-spacing: .24em; }
-  .tr-logo-line { font-size: 5.6cqw; }
-  .tr-destruct { flex-direction: column; gap: 2.4cqh; bottom: 6cqh; font-size: 3cqw; }
-  .tr-billing { max-width: 84cqw; font-size: 2.6cqw; letter-spacing: .2em; }
-  .tr-hud { left: 12px; font-size: 10px; letter-spacing: .16em; }
-  .tr-count { width: 10cqw; height: 10cqw; }
-  .tr-count b { font-size: 6cqw; }
 }
-
+/* short landscape screens (phones on their side): tighter billing */
+@media (max-height: 520px) and (min-aspect-ratio: 4/5) {
+  .trailer-cover-body { padding-bottom: 14px; }
+  .trailer-eyebrow { display: none; }
+  .trailer-mark { --mark-size: clamp(44px, 14svh, 64px); margin-top: 10px; }
+  .trailer-mission { margin-top: 10px; }
+  .trailer-play { margin-top: 14px; min-height: 52px; }
+  .trailer-play-ring { width: 38px; height: 38px; }
+  .trailer-hint { margin-top: 8px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .film-opening *, .film-opening *::before, .film-opening *::after { animation: none !important; transition: none !important; }
-  .film-progress, .tr-canvas { display: none; }
 }

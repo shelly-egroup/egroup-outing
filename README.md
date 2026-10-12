@@ -1,4 +1,4 @@
-# 揪是要對決
+# 秋遊特務
 
 Next.js App Router、TypeScript、Firebase Authentication 與 Realtime Database 的秋遊方案投票網站。已移除 OpenAI hosting 設定，可部署至一般 Next.js 主機。
 
@@ -53,27 +53,29 @@ Firebase Google 登入提供者須啟用，Auth 授權網域須包含實際使�
 
 ## 開場
 
-行程已定案為熱血對戰派（六度空間雷射槍戰＋飯店下午茶），開場是一支約 28 秒的定案預告片：前段致敬 007（白點、槍管、轉身開槍、紅色流下、剪影片名卡「今年秋天／兩位老闆／一個戰場／只有一隊能贏」），後段致敬不可能的任務（導火線點燃、任務簡報「10.29 攻佔六度空間」、紅藍隊長檔案蓋上「定案」、集合地點與時間、裝備、對戰模式與 VIP「保護老闆」、MVP、戰後下午茶、鎖定兩位隊長、投票結果、本訊息自動銷毀）。全片 2.39:1 遮幅，手機直式另有重新構圖。投票結果使用 Realtime Database 的實際票數，依方案代號 A／B 計算；只有熱血對戰派領先時才顯示票數，否則只宣布定案。片尾燒穿成黑畫面，接著首頁主視覺從黑中淡入。
+行程為熱血對戰派（六度空間雷射對戰＋飯店下午茶）。開場是一支 30 秒的預告片《秋遊特務》：前段致敬 007（白點、槍管、轉身開槍、紅色流下、剪影片名卡「今年秋天／兩位老闆／一個戰場／只有一隊能贏」），後段致敬不可能的任務（黑暗中劃亮火柴、導火線一路燒過地面、任務簡報、紅藍隊長檔案、「10.29 攻佔六度空間」、場地／裝備／對戰／下午茶／金庫雷射網快剪、鎖定兩位隊長、片名、日期、兩位老闆開槍、「全員出動」）。橫式為 2.39:1 遮幅，手機直式另有重新構圖的版本。
 
-人物與場景圖以兩位老闆照片為參考生成（`public/assets/trailer/`），老闆的檔案照仍用原本的黑白去背。進站顯示預告海報封面，點「播放預告」後才播放；所有畫面、字型和音樂在封面期間預載解碼。首頁的「重播預告」可再看一次。
+預告片是預先算好的影片（`public/assets/trailer/trailer-16x9.mp4`、`trailer-9x16.mp4`），網站依螢幕方向播放其中一支，畫面上再疊即時底片顆粒。進站先顯示預告海報封面（橫式與直式海報各一張），點「播放預告」才有聲播放；瀏覽器擋下時提示再點一次，影片無法播放時可直接跳過。看完或跳過後首頁主視覺從黑中淡入；首頁的「重播預告」會直接開始播放。
 
-首頁主視覺（`components/mission-hero.tsx`、`app/mission-hero.css`）沿用預告片的風格：黑底電影海報、兩位老闆持雷射槍的主視覺照、雷射紅藍光、取景框與「定案」印章，左側是行程定案標語、集合時間、地點與戰後下午茶。集合時間與地址讀取方案 B 行程的第一站。頂端導覽列改為黑底細框。
+首頁主視覺（`components/mission-hero.tsx`、`app/mission-hero.css`）與頂端導覽列沿用預告片風格：黑底電影海報、兩位老闆持雷射槍的主視覺照、雷射紅藍光、取景框與《秋遊特務》鉻銀字樣（`components/title-mark.tsx`）。左側列出集合時間、地點與戰後下午茶，集合時間與地址讀取方案 B 行程的第一站。
 
-配樂為原創合成（沒有使用任何電影原曲），由 `scripts/trailer/score.js` 在瀏覽器以 Web Audio 離線合成：前段 E 小調間諜爵士，後段 5/4 拍任務頑固音型逐小節升調、上升音效、全黑靜音後重擊，最後倒數嗶聲與燒毀聲。所有重拍與畫面切點共用 `lib/opening-timeline.json`，改動時間軸後重新產生音檔：
+### 製作預告片
+
+每個鏡頭由 `scripts/trailer/film/` 的 HTML／CSS／JS 合成（`FILM.seek(t)` 依時間擺好每一層），素材在 `scripts/trailer/film/assets/`，人物以兩位老闆照片為參考生成。所有切點寫在 `scripts/trailer/timeline.json`，畫面與配樂共用。配樂為原創合成（沒有使用任何電影原曲），由 `scripts/trailer/score.js` 在瀏覽器以 Web Audio 離線合成。需要 Chrome（`CHROME_PATH`，預設為 Windows 安裝路徑）與 ffmpeg：
 
 ```sh
 FFMPEG_PATH=/path/to/ffmpeg node scripts/trailer/render-score.mjs
+FFMPEG_PATH=/path/to/ffmpeg node scripts/trailer/render-film.mjs --ar 16x9 --audio .trailer-build/score.wav --crf 24
+FFMPEG_PATH=/path/to/ffmpeg node scripts/trailer/render-film.mjs --ar 9x16 --audio .trailer-build/score.wav --crf 24
 ```
 
-開發伺服器下可加 `?filmSeek&standings=3,9` 逐格檢查，`scripts/trailer/capture.mjs` 會依時間點截圖（`--times 4.0,13.2`）或輸出每一格（`--fps 30`）。
-
-使用者點「播放預告」時直接呼叫有聲播放，不先等待計時器或素材載入；音樂成功播放後才啟動視覺時間軸，避免畫面先跑完卻沒有音樂。未成功時封面顯示準備狀態，五秒後可重試，也可直接跳過。失敗後保留自動恢復，音檔錯誤與播放被擋分開提示；跳過或結束時取消恢復。沒有音量切換按鈕。減少動態效果設定時只顯示片尾標誌靜態畫面。
+`render-film.mjs` 用多個無頭 Chrome 每格拍 8 個子畫面（180° 快門）合成動態模糊，加上高光暈光後與配樂合併。`node scripts/trailer/film-frames.mjs --ar 16x9 --times 10.5,22 --out frames` 可輸出單格靜照檢查。重新輸出影片後，請一併更新 `lib/opening-assets.ts` 影片網址的 `?v=`，避免瀏覽器沿用舊檔。
 
 ## 檢查與正式啟動
 
 ```sh
 npm run typecheck
-npm run test:audio
+npm run test:opening
 npm run test:votes
 npm run test:admin
 npm run test:draw
@@ -89,7 +91,8 @@ npm start -- --port 3008
 
 ## 主要檔案
 
-- `components/opening-animation.tsx`：開場與音樂時間軸。
+- `components/opening-animation.tsx`：預告片海報封面與播放。
+- `scripts/trailer/`：預告片合成、配樂與輸出。
 - `components/trip-showdown.tsx`：看方案、選偏好與投票確認。
 - `components/outing-provider.tsx`：登入、使用者資料與即時同步。
 - `components/admin-dashboard.tsx`：方案管理。

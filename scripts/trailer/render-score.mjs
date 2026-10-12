@@ -1,6 +1,6 @@
-// Renders the opening trailer score: scripts/trailer/score.js runs in headless Chrome (OfflineAudioContext) on the cues in
-// lib/opening-timeline.json, then ffmpeg normalises loudness and encodes AAC.
-//   CHROME_PATH=... FFMPEG_PATH=... node scripts/trailer/render-score.mjs [--wav out.wav]
+// Renders the trailer score: scripts/trailer/score.js runs in headless Chrome (OfflineAudioContext) on the cues in
+// scripts/trailer/timeline.json; ffmpeg masters it (gain into a look-ahead limiter) to a WAV that render-film.mjs muxes.
+//   CHROME_PATH=... FFMPEG_PATH=... node scripts/trailer/render-score.mjs [--out .trailer-build/score.wav]
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -10,12 +10,13 @@ import { chromium } from "playwright-core";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const CHROME = process.env.CHROME_PATH || "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const FFMPEG = process.env.FFMPEG_PATH || "ffmpeg";
-const OUT = path.join(ROOT, "public/assets/trailer-score.m4a");
+const outArg = process.argv.indexOf("--out");
+const OUT = path.resolve(ROOT, outArg > 0 ? process.argv[outArg + 1] : ".trailer-build/score.wav");
+fs.mkdirSync(path.dirname(OUT), { recursive: true });
 const SR = 48000;
-const wavArg = process.argv.indexOf("--wav");
-const wavOut = wavArg > 0 ? process.argv[wavArg + 1] : path.join(ROOT, ".trailer-score.wav");
+const wavOut = OUT.replace(/.wav$/, "") + ".raw.wav";
 
-const cues = JSON.parse(fs.readFileSync(path.join(ROOT, "lib/opening-timeline.json"), "utf8"));
+const cues = JSON.parse(fs.readFileSync(path.join(ROOT, "scripts/trailer/timeline.json"), "utf8"));
 const browser = await chromium.launch({ executablePath: CHROME, args: ["--autoplay-policy=no-user-gesture-required"] });
 const page = await browser.newPage();
 page.on("pageerror", (error) => console.error("[score]", error.message));
@@ -53,8 +54,7 @@ let peak = 0; for (let i = 0; i < pcm.length; i += 4) peak = Math.max(peak, Math
 console.log("raw peak dBFS", (20 * Math.log10(peak)).toFixed(2));
 
 // Master like a trailer: gain into a look-ahead limiter until the whole piece sits at the target loudness.
-// The site plays it at volume .55, so it is mastered hot (the previous opening score measured -7.8 LUFS).
-const TARGET = -10;
+const TARGET = -11;
 const run = (args) => { const r = spawnSync(FFMPEG, args, { encoding: "utf8" }); if (r.status !== 0) { console.error(r.stderr); process.exit(1); } return r.stderr; };
 const loudness = (filter) => {
   const text = run(["-hide_banner", "-i", wavOut, "-af", (filter ? filter + "," : "") + "loudnorm=print_format=json", "-f", "null", "-"]);
@@ -69,5 +69,5 @@ for (let pass = 0; pass < 3; pass++) {
   if (Math.abs(result.i - TARGET) < 0.2) break;
   gain += TARGET - result.i;
 }
-run(["-hide_banner", "-y", "-i", wavOut, "-af", master(gain), "-ar", "48000", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", OUT]);
+run(["-hide_banner", "-y", "-i", wavOut, "-af", master(gain), "-ar", "48000", "-c:a", "pcm_s16le", OUT]);
 console.log("wrote", path.relative(ROOT, OUT), (fs.statSync(OUT).size / 1024).toFixed(0) + " KB");
