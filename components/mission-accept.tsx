@@ -282,13 +282,13 @@ export default function MissionAccept() {
     finally { setDeclining(false); }
   }
 
-  const locked = <span className="accept-locked">接受任務已截止・如需更改請聯絡主辦人</span>;
+  const locked = <span className="accept-locked">接受任務已截止</span>;
   let panel: React.ReactNode;
   if (!authReady || (user && (!profileReady || !detailsReady))) panel = <LoadingIndicator label="確認特務身分" />;
   else if (closed && !(user && (mine || out))) panel = <div className="accept-denied" role="status">
     <span className="ms-label">ACCEPTANCE CLOSED</span>
     <strong>接受任務已截止</strong>
-    <p>{user ? "這次沒有收到你的回覆，名單已經確定。如需加入，請聯絡主辦人。" : "名單已經確定。如需加入或更改，請聯絡主辦人。"}</p>
+    <p>{user ? "這次沒有收到你的回覆，名單已經確定。" : "名單已經確定。"}</p>
     {!user && <button type="button" className="accept-link" onClick={login}>{signingIn ? "驗證中…" : "登入查看我的特務檔案 →"}</button>}
   </div>;
   else if (!user) panel = <div className="accept-call">
