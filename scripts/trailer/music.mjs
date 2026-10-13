@@ -202,7 +202,9 @@ const gain = {};
 for (const [k, lufs] of Object.entries(target)) { const { i } = loudness(f(k + ".wav")); gain[k] = lufs - i; console.log(k, "measured", i, "LUFS → gain", gain[k].toFixed(2), "dB"); }
 const sfx = path.join(BUILD, "sfx.wav");
 if (!fs.existsSync(sfx)) { console.error("render the sound design first: node scripts/trailer/render-score.mjs"); process.exit(1); }
-const sfxGain = -22 - loudness(sfx).i;
+// the sound design stays at the level of the approved mix (its stem was matched to −22 LUFS then: −11.03 dB); it is not
+// re-matched, since without the hits that would push everything left in it up
+const sfxGain = -11.03;
 
 // 5 · lay everything on the timeline and mix
 // [file, at, gain dB, mono, gone by (timeline s)?]: the Mission's last 燈 rings on in the room under the burn
@@ -214,7 +216,7 @@ const stems = [
   ["mission.wav", M.at, gain.mission, true],
   ["mission-hall.wav", M.at, gain.mission + SEND, false],
   ["mission-ring-hall.wav", M.at + missionEnd - 0.4, gain.mission - 5, false],
-  // once the Mission has stopped, the blast and the burn are the loudest thing in the film
+  // once the Mission has stopped, the match and the burn come up
   [sfx, 0, sfxGain, false, 0, `volume='if(gte(t,${(T.destruct - 0.05).toFixed(3)}),2,1)':eval=frame`],
 ];
 const inputs = stems.flatMap(([file]) => ["-i", path.isAbsolute(file) ? file : f(file)]);
@@ -223,15 +225,10 @@ const chains = stems.map(([, at, g, mono, end, extra], i) => `[${i}]${mono ? "pa
 const mix = `${chains.join(";")};${stems.map((_, i) => `[s${i}]`).join("")}amix=inputs=${stems.length}:normalize=0:duration=longest,atrim=end=${T.duration + 0.15},acompressor=threshold=-17dB:ratio=1.7:attack=12:release=200:makeup=1[m]`;
 run([...inputs, "-filter_complex", mix, "-map", "[m]", "-c:a", "pcm_f32le", f("mix.wav")]);
 
-// 6 · master: gain into a look-ahead limiter until it sits at −11 LUFS
-const TARGET = -11, master = (g) => `volume=${g.toFixed(2)}dB,alimiter=limit=0.8:attack=4:release=80:level=false`;   // −1.9 dBFS: the AAC encode overshoots ~1 dB
-let g = TARGET - loudness(f("mix.wav")).i;
-for (let pass = 0; pass < 3; pass++) {
-  const r = loudness(f("mix.wav"), master(g));
-  console.log(`master pass ${pass}: ${g.toFixed(2)} dB → ${r.i} LUFS, TP ${r.tp}`);
-  if (Math.abs(r.i - TARGET) < 0.2) break;
-  g += TARGET - r.i;
-}
+// 6 · master: gain into a look-ahead limiter. The gain is the one the approved score was mastered with (it sat at −11
+// LUFS with the old hits), held so the music does not move when the sound design changes.
+const g = 3.95, master = (g) => `volume=${g.toFixed(2)}dB,alimiter=limit=0.8:attack=4:release=80:level=false`;   // −1.9 dBFS: the AAC encode overshoots ~1 dB
+{ const r = loudness(f("mix.wav"), master(g)); console.log(`master: ${g.toFixed(2)} dB → ${r.i} LUFS, TP ${r.tp}`); }
 const OUT = path.join(BUILD, "score.wav");
 run(["-i", f("mix.wav"), "-af", master(g), "-ar", String(SR), "-c:a", "pcm_s16le", OUT]);
 console.log("wrote", path.relative(ROOT, OUT));
