@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { calendarDays, parseCalendarDate, shiftCalendarDate, shiftCalendarMonth, taipeiToday } from "@/lib/calendar";
-type Props = { label: string; value: string; onChange: (value: string) => void; withTime?: boolean; required?: boolean; defaultDate?: string };
+type Props = { label: string; value: string; onChange: (value: string) => void; withTime?: boolean; required?: boolean; defaultDate?: string; kicker?: string };
 const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
-export default function CalendarField({ label, value, onChange, withTime = false, required = false, defaultDate = "" }: Props) {
+export default function CalendarField({ label, value, onChange, withTime = false, required = false, defaultDate = "", kicker = "VOTING DEADLINE" }: Props) {
   const id = useId();
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState("");
@@ -48,7 +48,7 @@ export default function CalendarField({ label, value, onChange, withTime = false
     </button>
     {required && !parseCalendarDate(date) && <small className="calendar-required">請選擇活動日期</small>}
     {open && <div className="calendar-popover" ref={panel} id={id + "-popup"} role="dialog" aria-labelledby={id + "-label"} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault();event.stopPropagation();close(); } }}>
-      <div className="calendar-kicker">{withTime ? "VOTING DEADLINE" : "SAVE THE DATE"}<span>{withTime ? "台北時間" : "秋遊日"}</span></div>
+      <div className="calendar-kicker">{withTime ? kicker : "SAVE THE DATE"}<span>{withTime ? "台北時間" : "秋遊日"}</span></div>
       <div className="calendar-month"><button type="button" aria-label="上一個月" disabled={month === "1900-01"} onClick={() => { const next = shiftCalendarMonth(cursor,-1);setMonth(next.slice(0,7));setCursor(next); }}>‹</button><b aria-live="polite">{month.slice(0,4)}<small>年</small> {Number(month.slice(5))}<small>月</small></b><button type="button" aria-label="下一個月" disabled={month === "9999-12"} onClick={() => { const next = shiftCalendarMonth(cursor,1);setMonth(next.slice(0,7));setCursor(next); }}>›</button></div>
       <div className="calendar-weekdays" aria-hidden="true">{weekdays.map(day => <span key={day}>{day}</span>)}</div>
       <div className="calendar-grid" role="group" aria-label="選擇日期">{calendarDays(month).map(day => <button key={day} type="button" data-date={day} className={(day.slice(0,7) !== month ? "other-month " : "") + (day === date ? "is-selected " : "") + (day === today ? "is-today" : "")} disabled={!parseCalendarDate(day)} tabIndex={day === cursor ? 0 : -1} aria-pressed={day === date} aria-current={day === today ? "date" : undefined} aria-label={day.replaceAll("-","/") + " 星期" + weekdays[parseCalendarDate(day)?.getUTCDay() || 0]} onClick={() => select(day)} onKeyDown={event => onDayKey(event,day)}>{Number(day.slice(8))}</button>)}</div>

@@ -35,7 +35,7 @@ import LoginDialog from "./login-dialog";
 import { getVotingAccess, isVotingAllowed, normalizedEmail, votingAccessMessage, type RegisteredUser, type VotingAccess } from "@/lib/voting-access";
 import {
   prepareVoteDetails,
-  isVotingOpen,
+  isAcceptOpen, isVotingOpen,
   type Catalog,
   type PublicVote,
   type VoteDetails,
@@ -412,6 +412,7 @@ export function OutingProvider({ children }: { children: ReactNode }) {
     if (!canVote) throw new Error(votingAccess === "rejected" ? "這個帳號尚未通過審核，請聯絡主辦人，或改用 egroup. 開頭的 Google 帳號。" : "帳號正在等主辦人審核，通過後就能接受任務。");
     if (!connected) throw new Error("目前連線中斷，請恢復連線後再送出。");
     if (!catalog || catalogStatus !== "ready") throw new Error("任務資料尚未準備好，請稍後再試。");
+    if (!isAcceptOpen(catalog, Date.now() + offset)) throw new Error("接受任務已截止，如需更改請聯絡主辦人。");
     const entry = Object.entries(catalog.plans).find(([, plan]) => plan.code === "B");
     if (!entry) throw new Error("找不到這次的行程，請聯絡主辦人。");
     const [planId, plan] = entry;
@@ -438,6 +439,7 @@ export function OutingProvider({ children }: { children: ReactNode }) {
   async function declineMission() {
     if (!user) throw new Error("請先使用 Google 登入。");
     if (!connected) throw new Error("目前連線中斷，請恢復連線後再試。");
+    if (catalog && !isAcceptOpen(catalog, Date.now() + offset)) throw new Error("接受任務已截止，如需更改請聯絡主辦人。");
     const token = await user.getIdTokenResult();
     try {
       await update(ref(getFirebase().database, "outing"), {

@@ -1,5 +1,6 @@
 "use client";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { getVoteCountdown } from "@/lib/vote-countdown";
 import TitleMark from "./title-mark";
 import StoreLinks from "./store-links";
 import DuelSim from "./duel-sim";
@@ -13,7 +14,7 @@ import ReconTargets from "./recon-targets";
 import { useOuting } from "./outing-provider";
 import { useInView } from "./use-in-view";
 import { lazerTreksStore, choiceStore } from "@/lib/store-references";
-import { sortedGroups, type TripPlan } from "@/lib/trips";
+import { sortedGroups, type TripPlan, deadlineLabel, isAcceptOpen } from "@/lib/trips";
 import { ARENA_FACTS, ARENA_TRANSIT, MISSION_IMAGES, MISSION_MODES, TEA_WINNER, missionCalendarUrl, missionClock } from "@/lib/mission-brief";
 
 const pad = (value: number) => String(value).padStart(2, "0");
@@ -46,19 +47,36 @@ function MissionCountdown({ eventDate, start, now }: { eventDate: string; start:
   if (clock.state !== "counting") return <div className="ms-clock" data-state={clock.state}>
     <p className="ms-clock-head"><i aria-hidden="true" />{clock.state === "live" ? "MISSION LIVE・任務進行中" : "MISSION COMPLETE・任務完成"}</p>
   </div>;
-  const cells: [string, string, string][] = [[pad(clock.days), "天", "DAYS"], [pad(clock.hours), "時", "HRS"], [pad(clock.minutes), "分", "MIN"], [pad(clock.seconds), "秒", "SEC"]];
   return <div className="ms-clock" data-state={clock.days < 1 ? "close" : "counting"} role="timer" aria-label={"距離集合還有 " + clock.days + " 天 " + clock.hours + " 小時 " + clock.minutes + " 分"}>
     <p className="ms-clock-head" aria-hidden="true"><i />T-MINUS<span>距離集合</span></p>
-    <div className="ms-clock-cells" aria-hidden="true">
-      {cells.map(([value, unit, en], i) => <Fragment key={en}>
-        {i > 0 && <span className="ms-clock-sep">:</span>}
-        <span className="ms-clock-cell" data-unit={en}>
-          <span className="ms-clock-num">{[...value].map((digit, k) => <b key={k + digit}>{digit}</b>)}</span>
-          <small>{unit}<em>{en}</em></small>
-        </span>
-      </Fragment>)}
-    </div>
+    <ClockCells {...clock} />
     <p className="ms-clock-foot" aria-hidden="true">{when}・六度空間 LAZERTREKS</p>
+  </div>;
+}
+/** The four rolling cells of a mission clock. */
+function ClockCells({ days, hours, minutes, seconds }: { days: number; hours: number; minutes: number; seconds: number }) {
+  const cells: [string, string, string][] = [[pad(days), "天", "DAYS"], [pad(hours), "時", "HRS"], [pad(minutes), "分", "MIN"], [pad(seconds), "秒", "SEC"]];
+  return <div className="ms-clock-cells" aria-hidden="true">
+    {cells.map(([value, unit, en], i) => <Fragment key={en}>
+      {i > 0 && <span className="ms-clock-sep">:</span>}
+      <span className="ms-clock-cell" data-unit={en}>
+        <span className="ms-clock-num">{[...value].map((digit, k) => <b key={k + digit}>{digit}</b>)}</span>
+        <small>{unit}<em>{en}</em></small>
+      </span>
+    </Fragment>)}
+  </div>;
+}
+/** The organisers' deadline for accepting the mission, on the same clock: red and pulsing in the last day, closed after. */
+function AcceptCountdown({ closesAt, now }: { closesAt: number; now: number }) {
+  const clock = getVoteCountdown(closesAt, now, true);
+  if (!clock) return null;
+  if (clock.state === "closed") return <div className="ms-clock" data-state="done">
+    <p className="ms-clock-head"><i aria-hidden="true" />ACCEPTANCE CLOSED・接受任務已截止</p>
+  </div>;
+  return <div className="ms-clock" data-state={clock.state === "urgent" ? "close" : "counting"} role="timer" aria-label={"接受任務截止還有 " + clock.days + " 天 " + clock.hours + " 小時 " + clock.minutes + " 分"}>
+    <p className="ms-clock-head" aria-hidden="true"><i />DEADLINE<span>接受任務截止</span></p>
+    <ClockCells {...clock} />
+    <p className="ms-clock-foot" aria-hidden="true">{deadlineLabel(closesAt)} 截止・逾時不候</p>
   </div>;
 }
 
@@ -189,7 +207,8 @@ function MissionFuse({ onLit }: { onLit: (lit: boolean) => void }) {
 /** Below the key visual, only the trip itself, on the IMF console: the day's log, which hands straight over to accepting the
  *  mission, then the arena recon, the tea extraction and the protocols. */
 export default function MissionSections({ plan, planId, eventDate, now }: { plan?: TripPlan; planId?: string; eventDate: string; now: number }) {
-  const { stores, user, votes, teamConfig, declines } = useOuting();
+  const { stores, user, votes, teamConfig, declines, catalog } = useOuting();
+  const acceptClosesAt = catalog?.settings.acceptClosesAt || 0, acceptOpen = !catalog || isAcceptOpen(catalog, now);
   const boardVisible = useTeamBoardVisible();
   // the briefing's status follows this agent: waiting for an answer, or accepted
   const accepted = !!(user && votes[user.uid]), dormant = !accepted && !!(user && declines[user.uid]);
@@ -244,8 +263,9 @@ export default function MissionSections({ plan, planId, eventDate, now }: { plan
 
     <section id="accept" className="ms-section ms-accept" data-lit={lit} aria-labelledby="ms-accept-title">
       <div className="wrap">
-        <SectionHead no="02" en="ACCEPT THE MISSION" id="ms-accept-title" title={<>接受任務 <em>登記備註與家眷</em></>} />
-        <Terminal name="MISSION_ACCEPTANCE.EXE" status="AWAITING AGENTS" tone="red" className="ms-accept-term">
+        <SectionHead no="02" en="ACCEPT THE MISSION" id="ms-accept-title" title={<>接受任務 <em>登記備註與家眷</em></>}
+          aside={acceptClosesAt > 0 && <AcceptCountdown closesAt={acceptClosesAt} now={now} />} />
+        <Terminal name="MISSION_ACCEPTANCE.EXE" status={acceptOpen ? "AWAITING AGENTS" : "ACCEPTANCE CLOSED"} tone={acceptOpen ? "red" : "amber"} className="ms-accept-term">
           <MissionAccept />
         </Terminal>
         {/* the teams, right under accepting: shown once the organisers publish them */}

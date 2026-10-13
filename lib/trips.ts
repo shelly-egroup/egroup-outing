@@ -52,6 +52,8 @@ export type Catalog = {
     expectedVoters: number;
     votingOpen: boolean;
     closesAt: number;
+    /** When accepting the mission closes (ms, Asia/Taipei as set by the organisers); 0 or missing means no deadline. */
+    acceptClosesAt?: number;
   };
   plans: Record<string, TripPlan>;
   updatedAt: number;
@@ -110,6 +112,11 @@ export function isVotingOpen(catalog: Catalog, now = Date.now()) {
     catalog.settings.votingOpen &&
     (!catalog.settings.closesAt || now < catalog.settings.closesAt)
   );
+}
+/** Accepting, declining or editing the mission file stays open until the organisers' deadline, if they set one. */
+export function isAcceptOpen(catalog: Catalog, now = Date.now()) {
+  const closesAt = catalog.settings.acceptClosesAt || 0;
+  return !(closesAt > 0) || now < closesAt;
 }
 export function deadlineLabel(value: number) {
   return new Intl.DateTimeFormat("zh-TW", {

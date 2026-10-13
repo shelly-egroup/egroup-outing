@@ -4,7 +4,7 @@ import LoadingIndicator from "./loading-indicator";
 import AgentHat from "./agent-hat";
 import { useOuting } from "./outing-provider";
 import { createEmbers, createFilmBurn, type BurnSeed } from "@/lib/film-burn";
-import { initials, type PublicVote } from "@/lib/trips";
+import { isAcceptOpen, initials, type PublicVote } from "@/lib/trips";
 import { captainOf, TEAM_LABEL, withCaptains, type Team } from "@/lib/teams";
 
 /** An agent's photo (or initials), wearing the fedora. */
@@ -246,7 +246,9 @@ function DormantFile({ name, photo, fresh, actions }: { name: string; photo: str
  * trip is set; this is how the people who never voted join, and how everyone keeps their note and family up to date.
  */
 export default function MissionAccept() {
-  const { user, authReady, profileReady, signingIn, votingAccess, canVote, votes, myDetails, detailsReady, connected, teams, teamConfig, login, acceptMission, declines, declineMission } = useOuting();
+  const { user, authReady, profileReady, signingIn, votingAccess, canVote, votes, myDetails, detailsReady, connected, teams, teamConfig, login, acceptMission, declines, declineMission, catalog, now } = useOuting();
+  // past the organisers' deadline the files stand as they are: no new answers, no changes
+  const closed = !!catalog && !isAcceptOpen(catalog, now);
   const mine = user ? votes[user.uid] : undefined, out = user && !mine ? declines[user.uid] : undefined;
   const [editing, setEditing] = useState(false), [saving, setSaving] = useState(false), [failed, setFailed] = useState(""), [justAccepted, setJustAccepted] = useState(false), [burnt, setBurnt] = useState(false);
   const [declining, setDeclining] = useState(false), [declineFailed, setDeclineFailed] = useState(""), [justDeclined, setJustDeclined] = useState(false), [rejoining, setRejoining] = useState(false);
@@ -280,8 +282,15 @@ export default function MissionAccept() {
     finally { setDeclining(false); }
   }
 
+  const locked = <span className="accept-locked">接受任務已截止・如需更改請聯絡主辦人</span>;
   let panel: React.ReactNode;
   if (!authReady || (user && (!profileReady || !detailsReady))) panel = <LoadingIndicator label="確認特務身分" />;
+  else if (closed && !(user && (mine || out))) panel = <div className="accept-denied" role="status">
+    <span className="ms-label">ACCEPTANCE CLOSED</span>
+    <strong>接受任務已截止</strong>
+    <p>{user ? "這次沒有收到你的回覆，名單已經確定。如需加入，請聯絡主辦人。" : "名單已經確定。如需加入或更改，請聯絡主辦人。"}</p>
+    {!user && <button type="button" className="accept-link" onClick={login}>{signingIn ? "驗證中…" : "登入查看我的特務檔案 →"}</button>}
+  </div>;
   else if (!user) panel = <div className="accept-call">
     <Scanner mode="tap" label={signingIn ? "驗證中…" : "驗證身分，接受任務"} sub="出示總部核發的 egroup. 探員證件" busy={signingIn} onConfirm={login} />
     <p className="accept-hint">登入後填上注意事項與同行家眷；之前填過的探員也可以隨時進來更新。</p>
@@ -292,10 +301,10 @@ export default function MissionAccept() {
     <p>{votingAccess === "rejected" ? "請聯絡主辦人，或改用 egroup. 開頭的 Google 帳號。" : "主辦人確認後，這裡會自動開放接受任務。"}</p>
     <button type="button" className="accept-link" onClick={login}>改出示總部核發的 egroup. 證件 →</button>
   </div>;
-  else if (mine && !editing) panel = <AgentFile vote={mine} name={mine.displayName || user.displayName || "特務"} team={team} leading={leading} familyCount={myDetails?.familyCount || 0} note={myDetails?.note?.trim() || ""} fresh={justAccepted}
-    actions={<><button type="button" className="accept-link" onClick={() => { setEditing(true); setJustAccepted(false); }}>修改任務資料</button><Decline busy={declining} failed={declineFailed} onDecline={() => void decline()} /></>} />;
-  else if (out && !rejoining) panel = <DormantFile name={out.displayName || user.displayName || "探員"} photo={out.photoURL || user.photoURL || ""} fresh={justDeclined}
-    actions={<button type="button" className="accept-link" onClick={() => { setRejoining(true); setJustDeclined(false); }}>改變心意，歸隊 →</button>} />;
+  else if (mine && (!editing || closed)) panel = <AgentFile vote={mine} name={mine.displayName || user.displayName || "特務"} team={team} leading={leading} familyCount={myDetails?.familyCount || 0} note={myDetails?.note?.trim() || ""} fresh={justAccepted}
+    actions={closed ? locked : <><button type="button" className="accept-link" onClick={() => { setEditing(true); setJustAccepted(false); }}>修改任務資料</button><Decline busy={declining} failed={declineFailed} onDecline={() => void decline()} /></>} />;
+  else if (out && (!rejoining || closed)) panel = <DormantFile name={out.displayName || user.displayName || "探員"} photo={out.photoURL || user.photoURL || ""} fresh={justDeclined}
+    actions={closed ? locked : <button type="button" className="accept-link" onClick={() => { setRejoining(true); setJustDeclined(false); }}>改變心意，歸隊 →</button>} />;
   else panel = <form className="accept-form" onSubmit={event => { event.preventDefault(); void accept(); }}>
     <p className="accept-who"><span className="ms-label">AGENT FILE</span>特務 <strong>{user.displayName || user.email}</strong></p>
     <label className="accept-field">

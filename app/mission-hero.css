@@ -117,7 +117,11 @@
 .outing-page .outing-header::after { height: 2px; background: linear-gradient(90deg, #2f74ff 0 50%, #ff2a4a 50%); box-shadow: 0 0 10px rgb(255 42 74 / .35); }
 .outing-page .outing-header.is-compact { box-shadow: 0 8px 22px rgb(0 0 0 / .35); }
 .outing-page .header-date { border-color: rgb(242 237 228 / .4); background: transparent; color: #f2ede4; }
-.outing-page .header-countdown { border-color: rgb(242 237 228 / .4); }
+/* the accept countdown: a red-edged readout beside the date, solid laser red in the last day */
+.outing-page .header-countdown { border-color: rgb(255 42 74 / .6); background: rgb(255 42 74 / .1); color: #f2ede4; }
+.outing-page .header-countdown > i { background: #ff2a4a; box-shadow: 0 0 6px #ff2a4a; }
+.outing-page .header-countdown[data-state="urgent"] { border-color: #ff2a4a; background: #ff2a4a; color: #fff; }
+.outing-page .header-countdown[data-state="urgent"] > i { background: #fff; box-shadow: none; }
 .outing-page .header-link { border-color: rgb(242 237 228 / .4); background: transparent; color: #f2ede4; }
 .outing-page .header-link:hover { background: rgb(242 237 228 / .1); }
 .outing-page .header-link.is-current { border-color: #f2ede4; background: #f2ede4; color: #050506; }

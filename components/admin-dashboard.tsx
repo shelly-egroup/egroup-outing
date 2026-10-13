@@ -306,7 +306,7 @@ export default function AdminDashboard() {
                 if (detail) detail.open = true;
               }}>
                 <fieldset className="admin-settings" disabled={saving}>
-                  <legend>活動與投票</legend>
+                  <legend>活動、投票與接受任務</legend>
                   <div className="admin-fields">
                     <label>
                       活動名稱
@@ -338,6 +338,8 @@ export default function AdminDashboard() {
                       />
                     </label>
                     <CalendarField label="投票截止時間（台北時間，可留白）" withTime value={localDeadline(draft.settings.closesAt)} defaultDate={draft.settings.eventDate} onChange={value => edit(d => { d.settings.closesAt = taipeiDeadline(value); })} />
+                    {/* the header and 接受任務 count down to it; after it the console stops taking answers */}
+                    <CalendarField label="接受任務截止時間（台北時間，可留白）" kicker="ACCEPT DEADLINE" withTime value={localDeadline(draft.settings.acceptClosesAt || 0)} defaultDate={draft.settings.eventDate} onChange={value => edit(d => { d.settings.acceptClosesAt = taipeiDeadline(value); })} />
                   </div>
                   <label className="toggle-label">
                     <input

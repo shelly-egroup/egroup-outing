@@ -994,7 +994,8 @@ button.draft-card-face:hover { border-color: rgb(242 237 228 / .5); transform: t
 @media (max-width: 1100px) {
   .mission-page .outing-header .outing-quick-nav { border-bottom: 1px solid var(--ms-rule); background: var(--ms-ink); box-shadow: 0 10px 24px rgb(0 0 0 / .45); }
 }
-@media (max-width: 720px) { .mission-page .outing-header .header-date { display: inline-flex; } }
+/* phones keep the date unless the accept countdown needs its place, as the vote countdown once did */
+@media (max-width: 720px) { .mission-page .outing-header .header-date:not(:has(+ .header-countdown)) { display: inline-flex; } }
 /* sign-in and the account menu on the black bar */
 .outing-header .header-actions { margin-left: 18px; }
 .agent-signin { display: inline-flex; align-items: center; gap: 9px; min-height: 40px; padding: 0 14px; border: 1px solid rgb(255 42 74 / .7); background: rgb(255 42 74 / .1); color: var(--ms-paper, #f2ede4); font: 800 13px/1 "Noto Sans TC", system-ui, sans-serif; letter-spacing: .18em; white-space: nowrap; cursor: pointer; transition: background .2s, border-color .2s, box-shadow .2s; }
@@ -1089,3 +1090,5 @@ button.draft-card-face:hover { border-color: rgb(242 237 228 / .5); transform: t
 .duel[data-mode="cpu"] .duel-controls { grid-template-columns: minmax(0, 1fr) minmax(180px, auto); }
 .duel[data-mode="cpu"] .duel-pad-gap { display: none; }
 @media (max-width: 640px) { .duel[data-mode="cpu"] .duel-controls { grid-template-columns: minmax(0, 1fr); } .duel[data-mode="cpu"] .duel-pad { grid-column: auto; } }
+/* past the deadline the file's actions give way to this */
+.accept-locked { font: 600 13px/1.6 var(--ms-sans); letter-spacing: .04em; color: var(--ms-amber); }

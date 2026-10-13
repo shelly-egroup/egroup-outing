@@ -38,7 +38,7 @@ export default function TripShowdown() {
   return <>
     {intro && <OpeningAnimation onFinish={finishIntro} onReveal={revealPage} autoStart={replaying} />}
     <div ref={pageRef} hidden={!shown} className="outing-page mission-page">
-      <OutingHeader active={shown} heroActions={heroActionsRef} title={title} eventDate={eventDate} />
+      <OutingHeader active={shown} heroActions={heroActionsRef} title={title} eventDate={eventDate} acceptClosesAt={catalog.settings.acceptClosesAt || 0} now={now} />
       <MissionHero eventDate={eventDate} plan={plan} ready={shown} cued={cueNext} actionsRef={heroActionsRef} primaryRef={nextStepRef} onReplay={replay} />
       <main><MissionSections plan={plan} planId={planId} eventDate={eventDate} now={now} /></main>
       <MissionFooter plan={plan} eventDate={eventDate} title={title} onReplay={replay} />

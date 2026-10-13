@@ -7,6 +7,7 @@ export const defaultCatalog: Catalog = {
     expectedVoters: 12,
     votingOpen: true,
     closesAt: 1791540000000,
+    acceptClosesAt: 0,
   },
   plans: {
     A: {
