@@ -170,7 +170,7 @@ export default function OpeningAnimation({ onFinish, onReveal, autoStart = false
             : <><span className="trailer-play-ring" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" /></svg></span><span>{phase === "blocked" ? "再點一下播放" : "播放預告"}</span></>}
         </button>
         <p id="trailer-hint" className="trailer-hint" role="status">
-          {failed ? "影片暫時無法播放，可以先跳過。" : phase === "blocked" ? "瀏覽器需要再點一次，才能播放聲音。" : "建議開啟聲音・全長 32 秒"}
+          {failed ? "影片暫時無法播放，可以先跳過。" : phase === "blocked" ? "瀏覽器需要再點一次，才能播放聲音。" : "建議開啟聲音・全長 " + Math.round(TRAILER_BURN_AT) + " 秒"}
         </p>
       </div>
     </div>

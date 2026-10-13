@@ -22,7 +22,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-Hant">
+    <html lang="zh-Hant" data-scroll-behavior="smooth">
       <head>
         <script dangerouslySetInnerHTML={{ __html: preloadOpening }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
